@@ -2,6 +2,29 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
+// Widget imports
+import '../widgets/location_map_preview.dart';
+import '../widgets/location_card.dart';
+import '../widgets/today_shift_card.dart'; // Avoid name conflicts
+import '../widgets/recent_activity.dart';
+import '../widgets/on_duty_status.dart';
+
+// Model imports
+import '../models/workplace_location.dart';
+import '../models/activity_model.dart';
+import '../models/shift_model.dart';
+
+/// Main time clock screen for employee attendance tracking
+/// 
+/// Features:
+/// - Real-time location tracking with geofencing
+/// - Clock in/out functionality with location verification
+/// - Session time tracking
+/// - Activity history
+/// - Shift information display
+/// 
+/// The screen enforces geofencing for clock-in (must be within work zone)
+/// but allows clock-out from anywhere for flexibility
 class TimeClockScreen extends StatefulWidget {
   const TimeClockScreen({super.key});
 
@@ -9,38 +32,62 @@ class TimeClockScreen extends StatefulWidget {
   State<TimeClockScreen> createState() => _TimeClockScreenState();
 }
 
-class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProviderStateMixin {
+class _TimeClockScreenState extends State<TimeClockScreen> 
+    with SingleTickerProviderStateMixin {
+  
+  // ========== STATE VARIABLES ==========
+  
+  /// Whether the employee is currently clocked in
   bool _isOnDuty = false;
+  
+  /// Whether the employee is within the workplace geofence zone
   bool _isWithinWorkZone = false;
+  
+  /// Duration of the current work session
   Duration _sessionTime = const Duration(hours: 6, minutes: 15, seconds: 22);
+  
+  /// Timer for updating session time every second
   Timer? _timer;
+  
+  /// Animation controller for UI pulse effects
   late AnimationController _pulseController;
   
-  // Geolocation variables
+  // ========== GEOLOCATION VARIABLES ==========
+  
+  /// Current GPS position of the employee
   Position? _currentPosition;
+  
+  /// Distance from the workplace in meters
   double _distanceFromWorkplace = 0.0;
+  
+  /// Whether location is currently being fetched
   bool _isLoadingLocation = true;
+  
+  /// Error message if location fetch fails
   String _locationError = '';
   
-  // Workplace coordinates (Main Office, Berlin - example coordinates)
-  static const double _workplaceLat = 52.5200;
-  static const double _workplaceLon = 13.4050;
-  static const double _geofenceRadiusMeters = 200.0;
+  // ========== WORKPLACE CONFIGURATION ==========
   
-  // GPS BUFFER: Add tolerance for GPS inaccuracy (10m buffer = 5% of radius)
-  static const double _gpsBufferMeters = 10.0;
-  static const double _effectiveRadiusMeters = _geofenceRadiusMeters + _gpsBufferMeters;
+  /// Workplace location configuration
+  /// In a production app, this would be loaded from a database or API
+  final WorkplaceLocation _workplace = const WorkplaceLocation(
+    name: 'Main Office, Berlin',
+    address: 'Friedrichstraße 123, 10117 Berlin',
+    latitude: 52.5200,
+    longitude: 13.4050,
+    geofenceRadiusMeters: 200.0,  // 200m radius from workplace
+    gpsBufferMeters: 10.0,        // 10m buffer for GPS inaccuracy
+  );
+
+  // ========== LIFECYCLE METHODS ==========
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-    
+    _initializePulseAnimation();
     _checkLocationPermissionAndGetLocation();
     
+    // Start timer if already on duty (e.g., returning to screen)
     if (_isOnDuty) {
       _startTimer();
     }
@@ -53,12 +100,25 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     super.dispose();
   }
 
-  // Check location permissions and get current location
+  // ========== INITIALIZATION METHODS ==========
+
+  /// Initialize the pulse animation for UI effects
+  void _initializePulseAnimation() {
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  // ========== LOCATION PERMISSION & FETCHING ==========
+
+  /// Check location permissions and fetch current location
+  /// This is called on initialization and handles all permission states
   Future<void> _checkLocationPermissionAndGetLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Check if location services are enabled
+    // Check if location services are enabled on the device
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       setState(() {
@@ -68,9 +128,10 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
       return;
     }
 
-    // Check location permission
+    // Check current permission status
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
+      // Request permission if not yet asked
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         setState(() {
@@ -81,6 +142,7 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
       }
     }
 
+    // Handle permanently denied permission
     if (permission == LocationPermission.deniedForever) {
       setState(() {
         _isLoadingLocation = false;
@@ -89,31 +151,26 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
       return;
     }
 
-    // Get current location
+    // Permission granted, fetch location
     await _getCurrentLocation();
   }
 
-  // Get current location and calculate distance
+  /// Fetch current GPS location and calculate distance from workplace
   Future<void> _getCurrentLocation() async {
     try {
+      // Get high-accuracy position with 10-second timeout
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
 
-      // Calculate distance from workplace
-      double distanceInMeters = Geolocator.distanceBetween(
-        position.latitude,
-        position.longitude,
-        _workplaceLat,
-        _workplaceLon,
-      );
+      // Calculate straight-line distance to workplace
+      final distanceInMeters = _workplace.distanceTo(position);
 
       setState(() {
         _currentPosition = position;
         _distanceFromWorkplace = distanceInMeters;
-        // Use EFFECTIVE RADIUS (includes GPS buffer) for zone check
-        _isWithinWorkZone = distanceInMeters <= _effectiveRadiusMeters;
+        _isWithinWorkZone = _workplace.isWithinWorkZone(position);
         _isLoadingLocation = false;
         _locationError = '';
       });
@@ -125,7 +182,7 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     }
   }
 
-  // Refresh location
+  /// Refresh location manually when user taps the refresh button
   Future<void> _refreshLocation() async {
     setState(() {
       _isLoadingLocation = true;
@@ -133,18 +190,27 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     await _getCurrentLocation();
   }
 
+  // ========== TIMER METHODS ==========
+
+  /// Start the session timer (increments every second)
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _sessionTime = _sessionTime + const Duration(seconds: 1);
-      });
+      if (mounted) {
+        setState(() {
+          _sessionTime = _sessionTime + const Duration(seconds: 1);
+        });
+      }
     });
   }
 
+  /// Stop the session timer
   void _stopTimer() {
     _timer?.cancel();
   }
 
+  // ========== FORMATTING METHODS ==========
+
+  /// Format duration as HH:MM:SS
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String hours = twoDigits(duration.inHours);
@@ -153,6 +219,7 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     return "$hours:$minutes:$seconds";
   }
 
+  /// Format distance for display (e.g., "150m" or "1.5km")
   String _formatDistance(double meters) {
     if (meters < 1000) {
       return '${meters.toStringAsFixed(0)}m';
@@ -161,9 +228,12 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     }
   }
 
-  // IMPROVED: Handle Clock In - REQUIRES location check
+  // ========== CLOCK IN/OUT HANDLERS ==========
+
+  /// Handle clock-in action
+  /// REQUIRES the user to be within the work zone
   Future<void> _handleClockIn() async {
-    // Only check geofence for CLOCK IN
+    // Geofencing check: only allow clock-in if within work zone
     if (!_isWithinWorkZone) {
       _showLocationWarningDialog();
       return;
@@ -172,10 +242,11 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     setState(() {
       _isOnDuty = true;
       _sessionTime = Duration.zero;
-      _startTimer();
     });
+    
+    _startTimer();
 
-    // Save clock-in to database with location (always has location for clock-in)
+    // Save clock-in event to database
     await _saveClockInToDatabase(
       latitude: _currentPosition?.latitude,
       longitude: _currentPosition?.longitude,
@@ -183,6 +254,7 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
       accuracy: _currentPosition?.accuracy,
     );
 
+    // Show success message
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -190,53 +262,50 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
             'Clocked in successfully! (${_formatDistance(_distanceFromWorkplace)} from workplace)',
           ),
           backgroundColor: const Color(0xFF22C55E),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
   }
 
-  // ENHANCED: Handle Clock Out with detailed location status tracking
+  /// Handle clock-out action
+  /// ALWAYS allowed regardless of location for flexibility
+  /// Location is captured for record-keeping but doesn't block the action
   Future<void> _handleClockOut() async {
-    // Clock out is ALWAYS allowed, regardless of location
     setState(() {
       _isOnDuty = false;
-      _stopTimer();
     });
+    
+    _stopTimer();
 
-    // Try to get current location for record-keeping, but don't block if it fails
+    // Attempt to capture location for record-keeping
     Position? clockOutPosition;
     double? clockOutDistance;
     double? clockOutAccuracy;
-    String locationStatus = 'success';  // success, timeout, permission_denied, service_disabled, error
+    String locationStatus = 'success';
     String locationNote = '';
 
     try {
-      // Use shorter timeout and medium accuracy for clock out
+      // Use medium accuracy and shorter timeout for clock-out
       clockOutPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
         timeLimit: const Duration(seconds: 5),
       );
 
-      clockOutDistance = Geolocator.distanceBetween(
-        clockOutPosition.latitude,
-        clockOutPosition.longitude,
-        _workplaceLat,
-        _workplaceLon,
-      );
-      
+      clockOutDistance = _workplace.distanceTo(clockOutPosition);
       clockOutAccuracy = clockOutPosition.accuracy;
       locationStatus = 'success';
       locationNote = 'Location captured successfully';
       
     } on TimeoutException {
       locationStatus = 'timeout';
-      locationNote = 'GPS timeout after 5 seconds - user may be indoors or in poor signal area';
+      locationNote = 'GPS timeout - user may be indoors or in poor signal area';
       
     } catch (e) {
-      // Categorize the specific error for better reporting
+      // Categorize the error for better logging
       if (e.toString().contains('location service')) {
         locationStatus = 'service_disabled';
-        locationNote = 'Location services disabled on device';
+        locationNote = 'Location services disabled';
       } else if (e.toString().contains('permission')) {
         locationStatus = 'permission_denied';
         locationNote = 'Location permission not granted';
@@ -246,113 +315,83 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
       }
     }
 
-    // ENHANCED: Save clock-out with detailed location status for manager review
+    // Save clock-out event to database with detailed status
     await _saveClockOutToDatabase(
       latitude: clockOutPosition?.latitude,
       longitude: clockOutPosition?.longitude,
       distance: clockOutDistance,
       accuracy: clockOutAccuracy,
-      locationStatus: locationStatus,  // NEW: Status flag for managers
-      locationNote: locationNote,       // NEW: Detailed note explaining why location might be missing
+      locationStatus: locationStatus,
+      locationNote: locationNote,
     );
 
+    // Show success message
     if (mounted) {
-      String message;
-      Color backgroundColor;
-      
-      switch (locationStatus) {
-        case 'success':
-          message = 'Clocked out successfully! (${_formatDistance(clockOutDistance!)} from workplace)';
-          backgroundColor = const Color(0xFFEF4444);
-          break;
-        case 'timeout':
-          message = 'Clocked out successfully! (Location unavailable - GPS timeout)';
-          backgroundColor = const Color(0xFFF59E0B);
-          break;
-        case 'service_disabled':
-          message = 'Clocked out successfully! (Location services disabled)';
-          backgroundColor = const Color(0xFFF59E0B);
-          break;
-        case 'permission_denied':
-          message = 'Clocked out successfully! (Location permission denied)';
-          backgroundColor = const Color(0xFFF59E0B);
-          break;
-        default:
-          message = 'Clocked out successfully! (Location unavailable)';
-          backgroundColor = const Color(0xFFF59E0B);
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: backgroundColor,
-          duration: const Duration(seconds: 4),
+          content: Text(
+            clockOutPosition != null
+                ? 'Clocked out successfully! (${_formatDistance(clockOutDistance!)} from workplace)'
+                : 'Clocked out successfully! (Location: $locationStatus)',
+          ),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
   }
 
-  // ENHANCED: Clock-in database save with accuracy tracking
+  // ========== DATABASE OPERATIONS ==========
+  // These would interact with your backend API or local database
+
+  /// Save clock-in event to database
+  /// In a real app, this would make an API call or database insert
   Future<void> _saveClockInToDatabase({
     double? latitude,
     double? longitude,
     double? distance,
     double? accuracy,
   }) async {
-    // Example: Save to Firebase, SQLite, or your backend
-    final clockInData = {
-      'type': 'clock_in',
-      'timestamp': DateTime.now().toIso8601String(),
-      'latitude': latitude,
-      'longitude': longitude,
-      'distance_from_workplace': distance,
-      'gps_accuracy': accuracy,
-      'within_geofence': true,  // Always true for clock-in
-      'workplace_lat': _workplaceLat,
-      'workplace_lon': _workplaceLon,
-      'geofence_radius': _geofenceRadiusMeters,
-      'gps_buffer': _gpsBufferMeters,
-    };
+    // TODO: Implement actual database save
+    // Example:
+    // await apiService.saveClockIn(
+    //   timestamp: DateTime.now(),
+    //   latitude: latitude,
+    //   longitude: longitude,
+    //   distance: distance,
+    //   accuracy: accuracy,
+    // );
     
-    print('Saving clock in: $clockInData');
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+    debugPrint('Clock-in saved: lat=$latitude, lon=$longitude, distance=$distance');
   }
 
-  // ENHANCED: Clock-out database save with status flags for manager review
+  /// Save clock-out event to database with detailed location status
   Future<void> _saveClockOutToDatabase({
     double? latitude,
     double? longitude,
     double? distance,
     double? accuracy,
-    required String locationStatus,  // NEW: success, timeout, permission_denied, service_disabled, error
-    required String locationNote,    // NEW: Human-readable explanation
+    required String locationStatus,
+    required String locationNote,
   }) async {
-    // Example: Save to Firebase, SQLite, or your backend
-    final clockOutData = {
-      'type': 'clock_out',
-      'timestamp': DateTime.now().toIso8601String(),
-      'latitude': latitude,
-      'longitude': longitude,
-      'distance_from_workplace': distance,
-      'gps_accuracy': accuracy,
-      'location_status': locationStatus,  // NEW: Flag for managers to filter/review
-      'location_note': locationNote,      // NEW: Explanation for audit trail
-      'within_geofence': distance != null ? (distance <= _effectiveRadiusMeters) : null,
-      'workplace_lat': _workplaceLat,
-      'workplace_lon': _workplaceLon,
-      'session_duration': _formatDuration(_sessionTime),
-    };
+    // TODO: Implement actual database save
+    // Example:
+    // await apiService.saveClockOut(
+    //   timestamp: DateTime.now(),
+    //   latitude: latitude,
+    //   longitude: longitude,
+    //   distance: distance,
+    //   accuracy: accuracy,
+    //   locationStatus: locationStatus,
+    //   locationNote: locationNote,
+    // );
     
-    print('Saving clock out: $clockOutData');
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
-    
-    // OPTIONAL: Log to separate table for manager review if location unavailable
-    if (locationStatus != 'success') {
-      print('⚠️ MANAGER ALERT: Clock out without location - Status: $locationStatus');
-      // You could trigger a notification to managers here
-    }
+    debugPrint('Clock-out saved: status=$locationStatus, note=$locationNote');
   }
 
+  // ========== DIALOG METHODS ==========
+
+  /// Show warning dialog when user tries to clock in outside work zone
   void _showLocationWarningDialog() {
     showDialog(
       context: context,
@@ -365,9 +404,8 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
           ],
         ),
         content: Text(
-          'You are ${_formatDistance(_distanceFromWorkplace)} away from the workplace.\n\n'
-          'You must be within ${_geofenceRadiusMeters.toInt()}m to clock in.\n\n'
-          'Note: Clock out is allowed from anywhere.',
+          'You must be within ${_workplace.geofenceRadiusMeters.toInt()}m of the workplace to clock in.\n\n'
+          'Current distance: ${_formatDistance(_distanceFromWorkplace)}',
         ),
         actions: [
           TextButton(
@@ -377,117 +415,128 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Handle override request
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Override request sent to manager'),
-                ),
-              );
+              _refreshLocation();
             },
-            child: const Text('Request Override'),
+            child: const Text('Refresh Location'),
           ),
         ],
       ),
     );
   }
+
+  // ========== UI BUILD METHODS ==========
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Time Clock',
-          style: TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: _isLoadingLocation
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh, color: Color(0xFF64748B)),
-            onPressed: _isLoadingLocation ? null : _refreshLocation,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // IMPROVED: Show warning only for clock-in (not when clocked in)
-            if (!_isOnDuty && !_isWithinWorkZone && !_isLoadingLocation && _locationError.isEmpty) 
-              _buildLocationWarning(),
-            
-            if (_locationError.isNotEmpty)
-              _buildErrorBanner(),
-            
-            if (_isOnDuty) ...[
+      backgroundColor: const Color(0xFFF8FAFC), // Light gray background
+      appBar: _buildAppBar(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              
+              // Show error message if location fetch failed
+              if (_locationError.isNotEmpty)
+                _buildLocationError(),
+              
+              // Duty status badge or clock-in button
+              if (_isOnDuty)
+                const OnDutyStatus()
+              else
+                _buildLocationStatus(),
+              
               const SizedBox(height: 24),
-              _buildOnDutyStatus(),
-              const SizedBox(height: 16),
-              _buildTimer(),
-              const SizedBox(height: 32),
-              _buildActionButtons(),
-              const SizedBox(height: 32),
-              _buildTodayShiftCard(),
+              
+              // Session timer or map preview
+              if (_isOnDuty)
+                _buildSessionTimer()
+              else
+                _buildLocationMapPreview(),
+              
               const SizedBox(height: 24),
-              _buildRecentActivity(),
-            ] else ...[
-              const SizedBox(height: 40),
-              _buildLocationMapPreview(),
-              const SizedBox(height: 32),
-              _buildLocationCard(),
-              const SizedBox(height: 24),
-              _buildLocationStatus(),
-              const SizedBox(height: 32),
-              if (!_isWithinWorkZone && !_isLoadingLocation)
-                _buildLocationOverrideButton()
-              else if (!_isLoadingLocation)
+              
+              // Action buttons (clock in/out, break)
+              if (_isOnDuty)
+                _buildActionButtons()
+              else ...[
+                _buildLocationCard(),
+                const SizedBox(height: 16),
+                if (!_isWithinWorkZone && _currentPosition != null)
+                  _buildLocationOverrideButton(),
+                const SizedBox(height: 16),
                 _buildClockInButton(),
-              const SizedBox(height: 16),
+              ],
+              
+              const SizedBox(height: 24),
               _buildLocationDisclaimer(),
+              const SizedBox(height: 24),
+              
+              // Today's shift information
+              _buildTodayShiftCard(),
+              const SizedBox(height: 16),
+              
+              // Recent activity list
+              _buildRecentActivity(),
+              const SizedBox(height: 32),
             ],
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildErrorBanner() {
+  /// Build the app bar with title and potential menu
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      title: const Text(
+        'Time Clock',
+        style: TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      centerTitle: true,
+      leading: IconButton(
+        icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+        onPressed: () {
+          // TODO: Open navigation drawer
+        },
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Color(0xFF0F172A)),
+          onPressed: () {
+            // TODO: Open notifications
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Build location error message widget
+  Widget _buildLocationError() {
     return Container(
-      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       padding: const EdgeInsets.all(16),
-      color: const Color(0xFFEF4444),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEE2E2), // Light red background
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEF4444)),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.error_outline,
-              color: Color(0xFFEF4444),
-              size: 20,
-            ),
-          ),
+          const Icon(Icons.error_outline, color: Color(0xFFEF4444)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _locationError,
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFFEF4444),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -498,77 +547,8 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildLocationWarning() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      color: const Color(0xFFF59E0B),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.info_outline,
-              color: Color(0xFFF59E0B),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'You are ${_formatDistance(_distanceFromWorkplace)} from the workplace. '
-              'You must be within ${_geofenceRadiusMeters.toInt()}m to clock in. '
-              'Clock out is allowed from anywhere.',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOnDutyStatus() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFDCFCE7),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF22C55E),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'ON DUTY',
-            style: TextStyle(
-              color: Color(0xFF22C55E),
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimer() {
+  /// Build session timer display
+  Widget _buildSessionTimer() {
     return Column(
       children: [
         Text(
@@ -593,14 +573,18 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Build action buttons (break and clock out)
   Widget _buildActionButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
+          // Start Break button
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                // TODO: Implement break functionality
+              },
               icon: const Icon(Icons.coffee, size: 18),
               label: const Text(
                 'Start Break',
@@ -618,9 +602,11 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
             ),
           ),
           const SizedBox(width: 12),
+          
+          // Clock Out button
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: _handleClockOut, // ENHANCED: Always works with detailed status tracking
+              onPressed: _handleClockOut,
               icon: const Icon(Icons.exit_to_app, size: 18),
               label: const Text(
                 'Clock Out',
@@ -642,202 +628,28 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Build location map preview widget
   Widget _buildLocationMapPreview() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 280,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        image: const DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1497366216548-37526070297c?w=800'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Overlay gradient
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.1),
-                  Colors.black.withOpacity(0.3),
-                ],
-              ),
-            ),
-          ),
-          // Geofence circle (shows the effective radius with buffer)
-          Center(
-            child: AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) {
-                return Container(
-                  width: 200 + (_pulseController.value * 20),
-                  height: 200 + (_pulseController.value * 20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _isWithinWorkZone 
-                          ? const Color(0xFF2563EB).withOpacity(0.6 - (_pulseController.value * 0.3))
-                          : const Color(0xFFF59E0B).withOpacity(0.6 - (_pulseController.value * 0.3)),
-                      width: 3,
-                    ),
-                    color: _isWithinWorkZone
-                        ? const Color(0xFF2563EB).withOpacity(0.1)
-                        : const Color(0xFFF59E0B).withOpacity(0.1),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Center marker
-          Center(
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _isWithinWorkZone ? const Color(0xFF2563EB) : const Color(0xFFF59E0B),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: (_isWithinWorkZone ? const Color(0xFF2563EB) : const Color(0xFFF59E0B)).withOpacity(0.5),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.apartment,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-          // User location dot (top right when outside zone)
-          if (!_isWithinWorkZone && _currentPosition != null)
-            Positioned(
-              top: 60,
-              right: 60,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF2563EB).withOpacity(0.5),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          // Re-center button
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: GestureDetector(
-              onTap: _refreshLocation,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: _isLoadingLocation
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(
-                        Icons.my_location,
-                        color: Color(0xFF2563EB),
-                        size: 24,
-                      ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return LocationMapPreview(
+      isWithinWorkZone: _isWithinWorkZone,
+      isLoadingLocation: _isLoadingLocation,
+      currentPosition: _currentPosition,
+      onRefresh: _refreshLocation,
     );
   }
 
+  /// Build location card widget
   Widget _buildLocationCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.apartment,
-              color: Color(0xFF2563EB),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Main Office, Berlin',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Friedrichstraße 123, 10117 Berlin',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (_currentPosition != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Distance: ${_formatDistance(_distanceFromWorkplace)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _isWithinWorkZone ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+    return LocationCard(
+      workplace: _workplace,
+      isWithinWorkZone: _isWithinWorkZone,
+      distanceText: _currentPosition != null 
+          ? _formatDistance(_distanceFromWorkplace) 
+          : null,
     );
   }
 
+  /// Build location status indicator
   Widget _buildLocationStatus() {
     if (_isLoadingLocation) {
       return const Padding(
@@ -871,18 +683,22 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
         children: [
           Icon(
             _isWithinWorkZone ? Icons.check_circle : Icons.warning,
-            color: _isWithinWorkZone ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
+            color: _isWithinWorkZone 
+                ? const Color(0xFF22C55E) 
+                : const Color(0xFFF59E0B),
             size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               _isWithinWorkZone 
-                  ? 'You are within the work zone (${_geofenceRadiusMeters.toInt()}m + ${_gpsBufferMeters.toInt()}m GPS buffer)'
-                  : 'You are outside the work zone (Clock in requires ${_geofenceRadiusMeters.toInt()}m range)',
+                  ? 'You are within the work zone'
+                  : 'You are outside the work zone',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: _isWithinWorkZone ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
+                color: _isWithinWorkZone 
+                    ? const Color(0xFF22C55E) 
+                    : const Color(0xFFF59E0B),
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
@@ -893,40 +709,12 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Build location override request button
   Widget _buildLocationOverrideButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: OutlinedButton.icon(
-        onPressed: () {
-          // Show override request dialog
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Request Override'),
-              content: const Text(
-                'Send a location override request to your manager?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Handle override request
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Override request sent to manager'),
-                      ),
-                    );
-                  },
-                  child: const Text('Send Request'),
-                ),
-              ],
-            ),
-          );
-        },
+        onPressed: _showOverrideRequestDialog,
         icon: const Icon(Icons.location_searching, size: 20),
         label: const Text(
           'Request Location Override',
@@ -948,11 +736,45 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Show dialog for requesting location override
+  void _showOverrideRequestDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Request Override'),
+        content: const Text(
+          'Send a location override request to your manager? '
+          'They will be notified and can approve your clock-in remotely.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Send override request to manager
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Override request sent to manager'),
+                  backgroundColor: Color(0xFF2563EB),
+                ),
+              );
+            },
+            child: const Text('Send Request'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build clock-in button
   Widget _buildClockInButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ElevatedButton.icon(
-        onPressed: _handleClockIn, // IMPROVED: Checks geofence
+        onPressed: _isLoadingLocation ? null : _handleClockIn,
         icon: const Icon(Icons.fingerprint, size: 24),
         label: const Text(
           'Clock In',
@@ -964,6 +786,7 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2563EB),
           foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFE2E8F0),
           elevation: 0,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
@@ -974,11 +797,12 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Build location disclaimer text
   Widget _buildLocationDisclaimer() {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
       child: Text(
-        'Clock In: Must be within 200m of workplace.\n'
+        'Clock In: Must be within work zone.\n'
         'Clock Out: Can be done from anywhere.\n\n'
         'Your location is recorded for attendance verification.',
         textAlign: TextAlign.center,
@@ -992,228 +816,18 @@ class _TimeClockScreenState extends State<TimeClockScreen> with SingleTickerProv
     );
   }
 
+  /// Build today's shift card
   Widget _buildTodayShiftCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        image: const DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1497366216548-37526070297c?w=800'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.info_outline,
-              color: Color(0xFF2563EB),
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: 80),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'FLOOR MANAGER',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF64748B),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  "Today's Shift",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time,
-                      size: 18,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '09:00 AM - 05:00 PM',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {},
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF2563EB),
-                        backgroundColor: const Color(0xFFEFF6FF),
-                        minimumSize: const Size(0, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'View Details',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
-                const Row(
-                  children: [
-                    Text(
-                      'Location',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF94A3B8),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Spacer(),
-                    Text(
-                      'Main Office, Berlin',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF0F172A),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return TodayShiftCard(
+      onViewDetails: () {
+        // TODO: Navigate to shift details
+        debugPrint('View shift details tapped');
+      },
     );
   }
 
+  /// Build recent activity widget
   Widget _buildRecentActivity() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'RECENT ACTIVITY',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF64748B),
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildActivityItem(
-            Icons.login,
-            'Clock In',
-            'Monday, Oct 23',
-            '09:00 AM',
-            const Color(0xFF22C55E),
-          ),
-          const SizedBox(height: 16),
-          _buildActivityItem(
-            Icons.coffee,
-            'Break Start',
-            'Monday, Oct 23',
-            '12:30 PM',
-            const Color(0xFFF59E0B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    IconData icon,
-    String title,
-    String date,
-    String time,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                date,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          time,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-      ],
-    );
+    return const RecentActivity();
   }
 }

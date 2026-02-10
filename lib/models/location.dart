@@ -1,5 +1,7 @@
 // models/location.dart
 
+import 'package:flutter/material.dart';
+
 class WorkLocation {
   final int id;
   final String name;

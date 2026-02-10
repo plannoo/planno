@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# newly added files i kinda wanna not add 
+/lib/core/theme
+/lib/core/utils
+/lib/widgets/Buttons
+/lib/widgets/common

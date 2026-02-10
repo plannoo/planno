@@ -1,5 +1,7 @@
 import 'package:aplano/pages/abscense_page.dart';
+import 'package:aplano/pages/time_account_page.dart';
 import 'package:flutter/material.dart';
+import 'availability_page.dart';
 
 class AccountProfilePage extends StatelessWidget {
   const AccountProfilePage({super.key});
@@ -154,7 +156,13 @@ class AccountProfilePage extends StatelessWidget {
                   color: Color(0xFF2563EB),
                 ),
               ),
-              onTap: () {},
+              onTap: () {
+                // Navigate to time account details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TimeAccountPage()),
+                );
+              },
             ),
             
             const SizedBox(height: 12),
@@ -165,7 +173,13 @@ class AccountProfilePage extends StatelessWidget {
               iconBg: const Color(0xFFEDE9FE),
               title: 'Availability',
               subtitle: 'Set your weekly routine',
-              onTap: () {},
+              onTap: () {
+                // Navigate to availability settings
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AvailabilityPage()),
+                );
+              },
             ),
             
             const SizedBox(height: 32),
