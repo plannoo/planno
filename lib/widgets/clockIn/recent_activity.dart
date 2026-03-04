@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'activity_item.dart';
-import '../models/activity_model.dart';
+import '../activity_item.dart';
+import '../../models/activity_model.dart';
 
 /// Widget that displays a list of recent activities in a card
 /// Shows clock in/out events, breaks, and other work-related activities

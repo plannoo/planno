@@ -1,5 +1,6 @@
-import 'package:aplano/pages/login_page.dart';
+import 'package:aplano/pages/auth/login_page.dart';
 import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
+import '/services/prefs_service.dart';
 import 'package:flutter/material.dart';
 
 // ==================== ONBOARDING SCREEN ====================
@@ -20,17 +21,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _onNextPressed() {
+  void _onNextPressed() async {
     if (_currentPage < 2) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      // Navigate to login
+      // Mark onboarding complete and navigate to main app
+      await PrefsService.markOnboardingSeen();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const NavigationShell()),
       );
     }
   }
@@ -44,7 +47,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _onSkipPressed() {
+  void _onSkipPressed() async {
+    await PrefsService.markOnboardingSeen();
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -121,7 +126,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   TrackTimePage(onSkip: _onSkipPressed, onNext: _onNextPressed),
                   ManageSchedulePage(onBack: _onBackPressed, onNext: _onNextPressed),
-                  StayConnectedPage(),
+                  StayConnectedPage(onGetStarted: _onNextPressed),
                 ],
               ),
             ),
@@ -655,7 +660,9 @@ class ManageSchedulePage extends StatelessWidget {
 }
 // ==================== PAGE 3: STAY CONNECTED ====================
 class StayConnectedPage extends StatelessWidget {
-  const StayConnectedPage({super.key});
+  final VoidCallback onGetStarted;
+
+  const StayConnectedPage({super.key, required this.onGetStarted});
 
   @override
   Widget build(BuildContext context) {
@@ -886,12 +893,7 @@ class StayConnectedPage extends StatelessWidget {
           
           // Get Started Button
           ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const NavigationShell()),
-              );
-            },
+            onPressed: onGetStarted,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,

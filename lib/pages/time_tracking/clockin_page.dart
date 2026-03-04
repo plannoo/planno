@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
 // Widget imports
-import '../widgets/location_map_preview.dart';
-import '../widgets/location_card.dart';
-import '../widgets/today_shift_card.dart'; // Avoid name conflicts
-import '../widgets/recent_activity.dart';
-import '../widgets/on_duty_status.dart';
+import '../../widgets/clockIn/location_map_preview.dart';
+import '../../widgets/clockIn/location_card.dart';
+import '../../widgets/clockIn/today_shift_card.dart'; // Avoid name conflicts
+import '../../widgets/clockIn/recent_activity.dart';
+import '../../widgets/clockIn/on_duty_status.dart';
 
 // Model imports
-import '../models/workplace_location.dart';
-import '../models/activity_model.dart';
-import '../models/shift_model.dart';
+import '../../models/workplace_location.dart';
+import '../../models/activity_model.dart';
+import '../../models/shift_model.dart';
 
 /// Main time clock screen for employee attendance tracking
 /// 

@@ -1,5 +1,5 @@
-import 'package:aplano/pages/abscense_page.dart';
-import 'package:aplano/pages/time_account_page.dart';
+import 'package:aplano/pages/absence/absence_page.dart';
+import 'package:aplano/pages/time_tracking/time_account_page.dart';
 import 'package:flutter/material.dart';
 import 'availability_page.dart';
 
@@ -107,7 +107,7 @@ class AccountProfilePage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NewAbsencePage()),
+                  MaterialPageRoute(builder: (context) => const AbsencePage()),
                 );
               },
             ),

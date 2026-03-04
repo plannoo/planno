@@ -1,3 +1,5 @@
+import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
+import 'package:aplano/services/prefs_service.dart';
 import 'package:flutter/material.dart';
 
 
@@ -14,6 +16,34 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _employeeIdController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  Future<void> _onCreateAccountPressed() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final employeeId = _employeeIdController.text.trim();
+    final password = _passwordController.text;
+
+    if (name.isEmpty || email.isEmpty || employeeId.isEmpty || password.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      // TODO: Replace with real registration call
+      await PrefsService.saveRegistration(
+        email: email,
+        name: name,
+        employeeId: employeeId,
+      );
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const NavigationShell()),
+        (route) => false,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -167,8 +197,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const SizedBox(height: 24),
               // Create Account Button
               ElevatedButton(
-                onPressed: () {},
-                child: const Text('Create Account'),
+                onPressed: _isLoading ? null : _onCreateAccountPressed,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Create Account'),
               ),
               const SizedBox(height: 16),
               // Terms Text

@@ -1,4 +1,4 @@
-import 'package:aplano/pages/myschedule.dart';
+import 'package:aplano/pages/schedule/myschedule.dart';
 import 'package:flutter/material.dart';
 
 

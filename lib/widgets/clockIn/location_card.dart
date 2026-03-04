@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/workplace_location.dart';
+import '../../models/workplace_location.dart';
 
 /// Widget that displays workplace location information in a card format
 /// Shows the workplace name, address, and optional distance information

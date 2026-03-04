@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/shift_model.dart';
+import '../../models/shift_model.dart';
 
 /// Widget that displays today's shift information in a visually appealing card
 /// Shows the shift role, time range, location, and an option to view details

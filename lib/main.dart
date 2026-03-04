@@ -1,72 +1,50 @@
-import 'package:aplano/pages/login_page.dart';
+import 'package:aplano/pages/auth/login_page.dart';
 import 'package:aplano/pages/navigation_shell.dart';
-import 'package:aplano/pages/onboarding.dart';
-import 'package:aplano/pages/signup_page.dart';
+import 'package:aplano/pages/onboarding/onboarding.dart';
+import 'package:aplano/pages/auth/signup_page.dart';
+import 'package:aplano/providers/app_provider.dart';
+import 'package:aplano/services/prefs_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-void main() {
-  runApp(const AplanoApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final initialRoute = await _resolveInitialRoute();
+  runApp(AplanoApp(initialRoute: initialRoute));
+}
+
+/// Determines the first screen to show based on saved preferences.
+///
+/// Priority:
+///   1. Never seen onboarding → show onboarding
+///   2. Seen onboarding, still logged in → go straight to app
+///   3. Seen onboarding, not logged in → show login
+Future<String> _resolveInitialRoute() async {
+  final seenOnboarding = await PrefsService.hasSeenOnboarding();
+  if (!seenOnboarding) return '/onboarding';
+
+  final loggedIn = await PrefsService.isLoggedIn();
+  return loggedIn ? '/home' : '/login';
 }
 
 class AplanoApp extends StatelessWidget {
-  const AplanoApp({super.key});
+  final String initialRoute;
+
+  const AplanoApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return AppProviders(child:MaterialApp(
       title: 'Aplano',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: Brightness.light,
-        ),
-        fontFamily: 'Inter',
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 56),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-      initialRoute: '/welcome',
+      initialRoute: initialRoute,
       routes: {
-        '/welcome': (context) => const OnboardingScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const CreateAccountScreen(),
-        '/home': (context) => const NavigationShell(), 
+        '/onboarding': (_) => const OnboardingScreen(),
+        '/login':      (_) => const LoginScreen(),
+        '/signup':     (_) => const CreateAccountScreen(),
+        '/home':       (_) => const NavigationShell(),
       },
-    );
+    )
+    ); 
+    
   }
 }
