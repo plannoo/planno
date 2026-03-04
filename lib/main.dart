@@ -4,6 +4,7 @@ import 'package:aplano/pages/onboarding/onboarding.dart';
 import 'package:aplano/pages/auth/signup_page.dart';
 import 'package:aplano/providers/app_provider.dart';
 import 'package:aplano/core/services/prefs_service.dart';
+import 'package:aplano/core/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 Future<void> main() async {
@@ -37,9 +38,11 @@ class AplanoApp extends StatelessWidget {
       title: 'Aplano',
       debugShowCheckedModeBanner: false,
       initialRoute: initialRoute,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: {
         '/onboarding': (_) => const OnboardingScreen(),
-        '/login':      (_) => const LoginScreen(),
+        '/login':      (_) => const LoginPage(),
         '/signup':     (_) => const CreateAccountScreen(),
         '/home':       (_) => const NavigationShell(),
       },

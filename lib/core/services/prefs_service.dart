@@ -21,6 +21,9 @@ class PrefsService {
   static const _kAccessToken  = 'auth_access_token';
   static const _kRefreshToken = 'auth_refresh_token';
 
+  // Language key
+  static const _kLanguageCode = 'language_code';
+
   // ── Onboarding ──────────────────────────────────────────────────────────────
 
   /// Returns true once the user has completed or skipped onboarding.
@@ -143,5 +146,19 @@ class PrefsService {
   static Future<String?> getRememberedEmail() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_kRememberedEmail);
+  }
+
+  // ── Language / Locale ───────────────────────────────────────────────────────
+
+  /// Returns the saved language code (e.g., 'en', 'de'), or null if not set.
+  static Future<String?> getLanguageCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kLanguageCode);
+  }
+
+  /// Persists the user's selected language code.
+  static Future<void> saveLanguageCode(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kLanguageCode, code);
   }
 }

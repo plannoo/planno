@@ -1,0 +1,504 @@
+{
+  "@@locale": "en",
+
+  "appName": "Aplano",
+  "@appName": { "description": "Application name" },
+
+  "appTagline": "Simplify your work schedule",
+  "@appTagline": { "description": "Shown below the app name on the login screen" },
+
+  "languageCode": "en",
+  "@languageCode": {},
+
+  "languageName": "English",
+  "@languageName": {},
+
+  "ok": "OK",
+  "@ok": {},
+
+  "cancel": "Cancel",
+  "@cancel": {},
+
+  "save": "Save",
+  "@save": {},
+
+  "retry": "Retry",
+  "@retry": {},
+
+  "close": "Close",
+  "@close": {},
+
+  "back": "Back",
+  "@back": {},
+
+  "next": "Next",
+  "@next": {},
+
+  "submit": "Submit",
+  "@submit": {},
+
+  "loading": "Loading…",
+  "@loading": {},
+
+  "somethingWentWrong": "Something went wrong",
+  "@somethingWentWrong": {},
+
+  "noInternetConnection": "No internet connection. Please check your network.",
+  "@noInternetConnection": {},
+
+  "requestTimedOut": "The request timed out. Please try again.",
+  "@requestTimedOut": {},
+
+  "sessionExpired": "Your session has expired. Please log in again.",
+  "@sessionExpired": {},
+
+
+  "loginTitle": "Welcome back",
+  "@loginTitle": {},
+
+  "loginEmailLabel": "Email Address",
+  "@loginEmailLabel": {},
+
+  "loginEmailHint": "Enter your email",
+  "@loginEmailHint": {},
+
+  "loginPasswordLabel": "Password",
+  "@loginPasswordLabel": {},
+
+  "loginForgotPassword": "Forgot Password?",
+  "@loginForgotPassword": {},
+
+  "loginRememberMe": "Remember me",
+  "@loginRememberMe": {},
+
+  "loginButton": "Login",
+  "@loginButton": {},
+
+  "loginNoAccount": "Don't have an account? ",
+  "@loginNoAccount": {},
+
+  "loginSignUp": "Sign Up",
+  "@loginSignUp": {},
+
+  "loginEmptyFields": "Please enter your email and password.",
+  "@loginEmptyFields": {},
+
+  "loginWrongCredentials": "Incorrect email or password.",
+  "@loginWrongCredentials": {},
+
+
+  "signUpTitle": "Join your team",
+  "@signUpTitle": {},
+
+  "signUpSubtitle": "Create your Aplano account to manage your schedule and track your work hours.",
+  "@signUpSubtitle": {},
+
+  "signUpStep": "Step {step} of {total}: {label}",
+  "@signUpStep": {
+    "placeholders": {
+      "step":  { "type": "int" },
+      "total": { "type": "int" },
+      "label": { "type": "String" }
+    }
+  },
+
+  "signUpStepPersonalDetails": "Personal Details",
+  "@signUpStepPersonalDetails": {},
+
+  "signUpFullName": "Full Name",
+  "@signUpFullName": {},
+
+  "signUpFullNameHint": "e.g. John Doe",
+  "@signUpFullNameHint": {},
+
+  "signUpWorkEmail": "Work Email",
+  "@signUpWorkEmail": {},
+
+  "signUpWorkEmailHint": "name@company.com",
+  "@signUpWorkEmailHint": {},
+
+  "signUpEmployeeId": "Employee ID",
+  "@signUpEmployeeId": {},
+
+  "signUpEmployeeIdHint": "EMP-0000",
+  "@signUpEmployeeIdHint": {},
+
+  "signUpPassword": "Password",
+  "@signUpPassword": {},
+
+  "signUpPasswordHint": "Minimum 8 characters",
+  "@signUpPasswordHint": {},
+
+  "signUpButton": "Create Account",
+  "@signUpButton": {},
+
+  "signUpHaveAccount": "Already have an account? ",
+  "@signUpHaveAccount": {},
+
+  "signUpLogIn": "Log In",
+  "@signUpLogIn": {},
+
+  "signUpTerms": "By signing up, you agree to our {termsLink} and {privacyLink}.",
+  "@signUpTerms": {
+    "placeholders": {
+      "termsLink":   { "type": "String" },
+      "privacyLink": { "type": "String" }
+    }
+  },
+
+  "signUpTermsOfService": "Terms of Service",
+  "@signUpTermsOfService": {},
+
+  "signUpPrivacyPolicy": "Privacy Policy",
+  "@signUpPrivacyPolicy": {},
+
+
+  "onboardingPage1Title": "Track Your Time",
+  "@onboardingPage1Title": {},
+
+  "onboardingPage1Body": "Clocking in has never been easier. Log your work hours and breaks with just a single tap, keeping your schedule organized and accurate.",
+  "@onboardingPage1Body": {},
+
+  "onboardingPage2Title": "Manage Your Schedule",
+  "@onboardingPage2Title": {},
+
+  "onboardingPage2Body": "Stay on top of your shifts and see who else is working. Need a change? Request a swap in seconds.",
+  "@onboardingPage2Body": {},
+
+  "onboardingPage3Title": "Stay Connected",
+  "@onboardingPage3Title": {},
+
+  "onboardingPage3Body": "Get instant notifications for shift updates and stay in touch with your colleagues in real-time.",
+  "@onboardingPage3Body": {},
+
+  "onboardingSkip": "Skip",
+  "@onboardingSkip": {},
+
+  "onboardingGetStarted": "Get Started",
+  "@onboardingGetStarted": {},
+
+  "onboardingUpcomingShifts": "UPCOMING SHIFTS",
+  "@onboardingUpcomingShifts": {},
+
+  "onboardingTapToSwap": "Tap to request swap",
+  "@onboardingTapToSwap": {},
+
+  "onboardingYourShift": "YOUR SHIFT",
+  "@onboardingYourShift": {},
+
+
+  "navHome": "Home",
+  "@navHome": {},
+
+  "navSchedule": "Schedule",
+  "@navSchedule": {},
+
+  "navClock": "Clock",
+  "@navClock": {},
+
+  "navChat": "Chat",
+  "@navChat": {},
+
+  "navNotifications": "Notifications",
+  "@navNotifications": {},
+
+  "navMenu": "Menu",
+  "@navMenu": {},
+
+
+  "dashboardAnnouncements": "Announcements",
+  "@dashboardAnnouncements": {},
+
+  "dashboardViewAll": "View all",
+  "@dashboardViewAll": {},
+
+  "dashboardQuickActions": "Quick Actions",
+  "@dashboardQuickActions": {},
+
+  "dashboardOpenShifts": "Open Shifts",
+  "@dashboardOpenShifts": {},
+
+  "dashboardOpenShiftsSubtitle": "4 available",
+  "@dashboardOpenShiftsSubtitle": {},
+
+  "dashboardRequests": "Requests",
+  "@dashboardRequests": {},
+
+  "dashboardRequestsSubtitle": "1 pending",
+  "@dashboardRequestsSubtitle": {},
+
+  "dashboardHandover": "Handover",
+  "@dashboardHandover": {},
+
+  "dashboardHandoverSubtitle": "Start report",
+  "@dashboardHandoverSubtitle": {},
+
+  "dashboardWeeklySummary": "Weekly Summary",
+  "@dashboardWeeklySummary": {},
+
+  "dashboardWeeklyHours": "{logged} / {target} hours logged",
+  "@dashboardWeeklyHours": {
+    "placeholders": {
+      "logged": { "type": "String" },
+      "target": { "type": "String" }
+    }
+  },
+
+  "dashboardGreetingMorning": "Good morning, {name}! 👋",
+  "@dashboardGreetingMorning": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "dashboardGreetingAfternoon": "Good afternoon, {name}! 👋",
+  "@dashboardGreetingAfternoon": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "dashboardGreetingEvening": "Good evening, {name}! 👋",
+  "@dashboardGreetingEvening": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+
+  "clockOnDuty": "ON DUTY",
+  "@clockOnDuty": {},
+
+  "clockNotClockedIn": "NOT CLOCKED IN",
+  "@clockNotClockedIn": {},
+
+  "clockLive": "Live",
+  "@clockLive": {},
+
+  "clockIn": "Clock In",
+  "@clockIn": {},
+
+  "clockOut": "Clock Out",
+  "@clockOut": {},
+
+  "clockInNow": "Clock In Now",
+  "@clockInNow": {},
+
+  "clockedIn": "Clocked In",
+  "@clockedIn": {},
+
+  "clockInSuccess": "Clocked in successfully",
+  "@clockInSuccess": {},
+
+  "clockOutSuccess": "Clocked out - {session} logged",
+  "@clockOutSuccess": {
+    "placeholders": { "session": { "type": "String" } }
+  },
+
+  "clockStartBreak": "Start Break",
+  "@clockStartBreak": {},
+
+  "clockEndBreak": "End Break",
+  "@clockEndBreak": {},
+
+  "clockRequestOverride": "Request Location Override",
+  "@clockRequestOverride": {},
+
+  "clockOutsideWorkZoneTitle": "Outside Work Zone",
+  "@clockOutsideWorkZoneTitle": {},
+
+  "clockOutsideWorkZoneBody": "You must be within the work zone to clock in.",
+  "@clockOutsideWorkZoneBody": {},
+
+  "clockRequestOverrideTitle": "Request Override",
+  "@clockRequestOverrideTitle": {},
+
+  "clockRequestOverrideBody": "Send a location override request to your manager? They will be notified and can approve your clock-in remotely.",
+  "@clockRequestOverrideBody": {},
+
+  "clockSendRequest": "Send Request",
+  "@clockSendRequest": {},
+
+  "clockOverrideSent": "Override request sent to manager",
+  "@clockOverrideSent": {},
+
+  "clockOnDutyStatus": "On Duty",
+  "@clockOnDutyStatus": {},
+
+  "clockNotClockedInStatus": "Not Clocked In",
+  "@clockNotClockedInStatus": {},
+
+  "clockSessionActive": "Session active",
+  "@clockSessionActive": {},
+
+  "clockTodayShift": "Today's Shift: {time}",
+  "@clockTodayShift": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+
+  "clockTodaysShiftLabel": "Today's Shift",
+  "@clockTodaysShiftLabel": {},
+
+  "clockViewDetails": "View Details",
+  "@clockViewDetails": {},
+
+  "clockLocation": "Location",
+  "@clockLocation": {},
+
+  "clockGettingLocation": "Getting your location…",
+  "@clockGettingLocation": {},
+
+  "clockWithinWorkZone": "You are within the work zone",
+  "@clockWithinWorkZone": {},
+
+  "clockOutsideWorkZone": "You are outside the work zone",
+  "@clockOutsideWorkZone": {},
+
+  "clockRecentActivity": "Recent Activity",
+  "@clockRecentActivity": {},
+
+  "clockNoActivityToday": "No activity yet today",
+  "@clockNoActivityToday": {},
+
+
+  "absencesTitle": "Absences",
+  "@absencesTitle": {},
+
+  "absencesUpcoming": "Upcoming Absences",
+  "@absencesUpcoming": {},
+
+  "absencesPast": "Past Requests",
+  "@absencesPast": {},
+
+  "absencesNoneUpcoming": "No upcoming absences",
+  "@absencesNoneUpcoming": {},
+
+  "absencesNonePast": "No past requests",
+  "@absencesNonePast": {},
+
+  "absenceWorkingDay": "{count, plural, =1{1 working day} other{{count} working days}}",
+  "@absenceWorkingDay": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "absenceUsed": "Used",
+  "@absenceUsed": {},
+
+  "absenceRemaining": "Remaining",
+  "@absenceRemaining": {},
+
+  "absenceTotal": "Total",
+  "@absenceTotal": {},
+
+  "absenceValidUntil": "Valid until {date}",
+  "@absenceValidUntil": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "absenceTypeVacation": "Vacation",
+  "@absenceTypeVacation": {},
+
+  "absenceTypeTraining": "Training",
+  "@absenceTypeTraining": {},
+
+  "absenceTypeSickLeave": "Sick Leave",
+  "@absenceTypeSickLeave": {},
+
+  "absenceTypePersonalDay": "Personal Day",
+  "@absenceTypePersonalDay": {},
+
+  "absenceStatusApproved": "APPROVED",
+  "@absenceStatusApproved": {},
+
+  "absenceStatusPending": "PENDING",
+  "@absenceStatusPending": {},
+
+  "absenceStatusRejected": "REJECTED",
+  "@absenceStatusRejected": {},
+
+  "newAbsenceTitle": "New Absence",
+  "@newAbsenceTitle": {},
+
+  "newAbsenceType": "Absence Type",
+  "@newAbsenceType": {},
+
+  "newAbsenceStartDate": "Start Date",
+  "@newAbsenceStartDate": {},
+
+  "newAbsenceEndDate": "End Date",
+  "@newAbsenceEndDate": {},
+
+  "newAbsenceSelectDate": "Select",
+  "@newAbsenceSelectDate": {},
+
+  "newAbsenceReason": "Reason (optional)",
+  "@newAbsenceReason": {},
+
+  "newAbsenceReasonHint": "Briefly describe your absence…",
+  "@newAbsenceReasonHint": {},
+
+  "newAbsenceSubmit": "Submit Request",
+  "@newAbsenceSubmit": {},
+
+  "newAbsenceMissingDates": "Please select start and end dates",
+  "@newAbsenceMissingDates": {},
+
+  "newAbsenceInvalidDateRange": "End date cannot be before start date",
+  "@newAbsenceInvalidDateRange": {},
+
+  "newAbsenceSuccess": "Absence request submitted successfully",
+  "@newAbsenceSuccess": {},
+
+  "newAbsenceError": "Error: {message}",
+  "@newAbsenceError": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+
+
+  "teamScheduleTitle": "Team Schedule",
+  "@teamScheduleTitle": {},
+
+  "teamScheduleComingSoon": "Team Schedule coming soon",
+  "@teamScheduleComingSoon": {},
+
+  "chatTitle": "Chat",
+  "@chatTitle": {},
+
+  "chatComingSoon": "Chat coming soon",
+  "@chatComingSoon": {},
+
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {},
+
+  "notificationsComingSoon": "Notifications coming soon",
+  "@notificationsComingSoon": {},
+
+  "profileTitle": "Profile",
+  "@profileTitle": {},
+
+  "profileComingSoon": "Profile coming soon",
+  "@profileComingSoon": {},
+
+
+  "validatorRequired": "{label} is required",
+  "@validatorRequired": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+
+  "validatorThisFieldRequired": "This field is required",
+  "@validatorThisFieldRequired": {},
+
+  "validatorEmail": "Enter a valid email address",
+  "@validatorEmail": {},
+
+  "validatorEmailRequired": "Email is required",
+  "@validatorEmailRequired": {},
+
+  "validatorPasswordRequired": "Password is required",
+  "@validatorPasswordRequired": {},
+
+  "validatorPasswordLength": "Password must be at least 8 characters",
+  "@validatorPasswordLength": {},
+
+  "validatorMinLength": "{label} must be at least {min} characters",
+  "@validatorMinLength": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "min":   { "type": "int" }
+    }
+  }
+}
