@@ -1,6 +1,6 @@
 import 'package:aplano/pages/auth/login_page.dart';
 import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
-import '/services/prefs_service.dart';
+import '../../core/services/prefs_service.dart';
 import 'package:flutter/material.dart';
 
 // ==================== ONBOARDING SCREEN ====================

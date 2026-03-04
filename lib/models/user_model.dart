@@ -1,50 +1,121 @@
-/// Represents the authenticated employee.
+/// Represents the authenticated employee returned by `GET /api/users/me`.
+///
+/// JSON shape expected from the API:
+/// ```json
+/// {
+///   "id": "u-001",
+///   "email": "alex@aplano.io",
+///   "first_name": "Alex",
+///   "last_name": "Johnson",
+///   "role": "employee",
+///   "avatar_url": "https://...",
+///   "phone": "+49 170 1234567",
+///   "assigned_location_ids": ["loc-1", "loc-2"]
+/// }
+/// ```
 class UserModel {
-  final String id;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String? avatarUrl;
-  final String role;
-
   const UserModel({
     required this.id,
+    required this.email,
     required this.firstName,
     required this.lastName,
-    required this.email,
-    this.avatarUrl,
     required this.role,
+    this.avatarUrl,
+    this.phone,
+    this.assignedLocationIds = const [],
   });
 
-  String get fullName => '$firstName $lastName';
+  /// Unique server-side identifier.
+  final String id;
+
+  /// Work email address — also used as the login credential.
+  final String email;
+
+  final String firstName;
+  final String lastName;
+
+  /// Role string as returned by the API, e.g. `"employee"`, `"manager"`,
+  /// `"admin"`. Use [isManager] / [isAdmin] helpers for logic, not raw strings.
+  final String role;
+
+  /// Remote URL of the user's profile picture. May be null.
+  final String? avatarUrl;
+
+  /// Optional contact phone number.
+  final String? phone;
+
+  /// IDs of the workplace locations this user is assigned to.
+  final List<String> assignedLocationIds;
+
+  // ── Derived properties ──────────────────────────────────────────────────────
+
+  String get fullName    => '$firstName $lastName';
+  String get initials    => '${firstName.isNotEmpty ? firstName[0] : ''}'
+                            '${lastName.isNotEmpty  ? lastName[0]  : ''}'
+                            .toUpperCase();
+  bool   get isManager   => role == 'manager';
+  bool   get isAdmin     => role == 'admin';
+
+  // ── Serialisation ───────────────────────────────────────────────────────────
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as String,
-        firstName: json['first_name'] as String,
-        lastName: json['last_name'] as String,
-        email: json['email'] as String,
-        avatarUrl: json['avatar_url'] as String?,
-        role: json['role'] as String? ?? 'employee',
+        id:                  json['id']         as String,
+        email:               json['email']       as String,
+        firstName:           json['first_name']  as String,
+        lastName:            json['last_name']   as String,
+        role:                (json['role']        as String?) ?? 'employee',
+        avatarUrl:           json['avatar_url']  as String?,
+        phone:               json['phone']       as String?,
+        assignedLocationIds: (json['assigned_location_ids'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            const [],
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'avatar_url': avatarUrl,
-        'role': role,
+        'id':                    id,
+        'email':                 email,
+        'first_name':            firstName,
+        'last_name':             lastName,
+        'role':                  role,
+        'avatar_url':            avatarUrl,
+        'phone':                 phone,
+        'assigned_location_ids': assignedLocationIds,
       };
 
+  // ── copyWith ─────────────────────────────────────────────────────────────────
+
   UserModel copyWith({
-    String? id, String? firstName, String? lastName,
-    String? email, String? avatarUrl, String? role,
-  }) => UserModel(
-    id: id ?? this.id,
-    firstName: firstName ?? this.firstName,
-    lastName: lastName ?? this.lastName,
-    email: email ?? this.email,
-    avatarUrl: avatarUrl ?? this.avatarUrl,
-    role: role ?? this.role,
-  );
+    String?       id,
+    String?       email,
+    String?       firstName,
+    String?       lastName,
+    String?       role,
+    String?       avatarUrl,
+    String?       phone,
+    List<String>? assignedLocationIds,
+  }) =>
+      UserModel(
+        id:                  id                  ?? this.id,
+        email:               email               ?? this.email,
+        firstName:           firstName           ?? this.firstName,
+        lastName:            lastName            ?? this.lastName,
+        role:                role                ?? this.role,
+        avatarUrl:           avatarUrl           ?? this.avatarUrl,
+        phone:               phone               ?? this.phone,
+        assignedLocationIds: assignedLocationIds ?? this.assignedLocationIds,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'UserModel(id: $id, email: $email, role: $role)';
 }

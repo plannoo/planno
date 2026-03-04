@@ -349,3 +349,225 @@ The Aplano project has a solid UI foundation with comprehensive screens and comp
 5. **Incomplete testing** - Only placeholder tests exist
 
 The recommended path forward is to implement Clean Architecture with BLoC pattern, starting with authentication and user management, then progressively connecting the existing UI to real data.
+
+### Revised Plan for Enterprise MVP (100+ Users)
+
+Your original plan is solid for a quick MVP, but targeting enterprise scale (100+ users) with paying customers shifts priorities toward **reliability, security, and compliance from day one**. Solo dev remains tight, so we'll compress Phases 4-6 into Weeks 3-4, cut non-essentials (chat stub, notifications), and front-load enterprise must-haves. Total: **4 weeks** to launch-ready. Focus: No crashes, secure auth, audit-ready logging, basic offline. Backend assumptions hold (your API endpoints).
+
+Key changes:
+- **Elevate security/compliance to Week 2**: Use `flutter_secure_storage` immediately; add analytics/logging.
+- **Compress polish/testing**: Parallelize with core integration; mandatory device QA weekly.
+- **Add enterprise basics**: User auditing, multi-location, crash reporting (Sentry/Firebase).
+- **Cut scope**: Skip Phase 7 refactor, notifications, chat. Add post-launch only.
+- **Dependencies upfront**: `dio: ^5.x`, `flutter_secure_storage: ^9.x`, `sentry_flutter: ^8.x` (or Firebase Crashlytics), `shared_preferences`.
+
+***
+
+### Week 1: API Foundation & Secure Authentication
+Same as original, but enterprise-secure.
+
+- Set up `core/network/` (Dio client with JWT interceptors, `api_config.dart`, exceptions).
+- **Secure auth**: 
+  - Login → `POST /api/auth/login`; store **access + refresh tokens** in `flutter_secure_storage` via extended `prefs_service.dart`.
+  - App start: Check/refresh token; fallback to `AuthStatus.unauthenticated`.
+  - Add `secure_storage_service.dart` wrapper: `saveTokens()`, `getTokens()`, `clearTokens()`.
+- Complete `UserModel` (add `id, email, firstName, lastName, role, assignedLocationIds, locations[]` with `fromJson/toJson`).
+- `UserRepository`: `getMe()`, `updateProfile()` (real calls).
+- Wire `login_page.dart`: Real calls, loading, SnackBar errors.
+- **Enterprise add**: Integrate Sentry in `main.dart` for crash reporting; log auth events (`sentry.captureMessage('User logged in: ${user.id}')`).
+
+**Deliverable**: Secure login persists across restarts; crashes logged remotely. Test: Real credentials on iOS/Android emulators.
+
+***
+
+### Week 2: Core Features + Enterprise Security/Logging
+Wire repos/UI as original, but add logging, multi-location, validation.
+
+- **Repositories** (real API, error handling via SnackBar):
+  | Feature | Methods | Endpoints | Notes |
+  |---------|---------|-----------|-------|
+  | Shifts | `getShifts()`, `getTodayShift()`, `getTeamSchedule(date)` | `/api/shifts`, `/shifts/today`, `/shifts/team?date={}` | Cache todayShift in secure prefs for offline peek. |
+  | Clock | `clockIn(locationId)`, `clockOut()`, `getTodayActivity()` | `/api/clock/in`, `/out`, `/activities/today` | GPS geofence vs. user's `assignedLocationIds`; log activity ID. |
+  | Absences | `getAbsences()`, `createAbsence()`, `updateAbsence(id)`, `getAbsenceSummary()` | `/api/absences`, `POST`, `PUT/{id}`, `/summary` | Client-side validation via `validators.dart`. |
+
+- Wire pages (`dashboard_provider.dart`, `myschedule.dart`, `teamschedule.dart`, `clockin_page.dart`, absence pages): Real data, loading states.
+- **Enterprise adds**:
+  - Fetch/store `locations[]` in `UserModel` post-login; `clockin_page.dart` shows dropdown for multi-location.
+  - Global logging: `core/error/error_handler.dart` → Sentry for all errors + user-facing messages (e.g., "Network error, retrying...").
+  - Input validation: Inline errors on forms (login, absences).
+  - Token refresh: `POST /api/auth/refresh` on 401; clear/redirect if fails.
+
+**Deliverable**: Full core flows work with real data; multi-location clocking; all errors logged to Sentry. Test: Full journey on physical devices.
+
+***
+
+### Week 3: Stabilization, Offline Basics, Compliance
+Parallel polish + enterprise hardening. No new features.
+
+- **Global UX**: `LoadingOverlay` widget; debounce buttons; 10s timeout → "Retrying...".
+- **Offline basics**: Cache shifts/absences/summary in `shared_preferences` (JSON); show cached on no-network, queue clock/absence → retry on reconnect.
+- **Compliance/audit**:
+  - Analytics: Track key events (`login`, `clockIn(id:123)`, `absenceCreate(id:456)`) via Sentry or backend `/api/analytics`.
+  - Privacy: Add "Privacy Policy" + "Terms" links in `menu_page.dart` (external URLs); require terms accept on first login.
+  - Secure storage: All tokens/user data in `flutter_secure_storage`.
+- **Token security**: Auto-refresh pre-emptively (e.g., on app foreground).
+- Manual QA: Checklist runs (network fail, expiry, edge inputs); fix crashes.
+
+**Deliverable**: App handles offline/network fails gracefully; auditable logs; no raw errors to users.
+
+***
+
+### Week 4: Pre-Launch Hardening & Scale Prep
+Final QA + production tweaks for 100+ users.
+
+- **Performance**: DevTools profile; cache user data; lazy-load lists in `teamschedule.dart`, `absence_page.dart`.
+- **Testing**:
+  - Device matrix: iOS/Android (2 sizes each), session expiry, geofence edges.
+  - Mock API tests: Unit for models/validators/repos (skip widgets).
+- **Scale adds**:
+  - Certificate pinning in `Dio` (if backend provides cert).
+  - Monitor: API response times logged to Sentry.
+- **Launch checklist**:
+  - [ ] No crashes in QA.
+  - [ ] Offline shows data.
+  - [ ] Secure tokens persist.
+  - [ ] Logs capture user actions.
+  - Build/release to TestFlight/Play Console internal test.
+
+**Post-Launch (Month 2+)**: Add push (`firebase_messaging`), full offline queue, BLoC refactor based on feedback. Monitor Sentry for issues.
+
+***
+
+### Why These Changes Work for Enterprise
+- **Security first**: Tokens encrypted day 1; refresh + pinning prevents leaks.
+- **Reliability**: Offline/caching + Sentry = 99% uptime feel for 100+ users.
+- **Compliance**: Audit trail via logs; basic GDPR (export stub if needed).
+- **Timeline feasible**: Cuts fluff (notifications/chat); leverages existing UI/providers.
+- **Cost to payors**: Stable MVP justifies enterprise pricing.
+
+This gets you launch-ready in 4 weeks. Track daily progress against deliverables—adjust Week 4 if Weeks 1-2 slip. Need code snippets for `secure_storage_service.dart` or Dio pinning?
+
+
+Backend plan aligns with your enterprise Flutter MVP (100+ users, security/compliance-first). Assumes you're building/maintaining the API yourself alongside frontend. Use **Node.js/Express + PostgreSQL** (fastest solo setup) or **Spring Boot** if Java team exists. Deploy to **AWS/DigitalOcean** with auto-scaling. Total: **Parallel to frontend Weeks 1-4**, then harden.
+
+## Core Architecture
+- **Stack**: RESTful API (JSON), JWT auth (access/refresh tokens), PostgreSQL (audit-ready).
+- **Key Principles**: Design-first (OpenAPI spec), rate limiting, consistent errors, pagination. [genuinestack](https://www.genuinestack.com/blog/building-scalable-apis-enterprise-best-practices)
+- **Database**: 
+  | Table | Fields | Indexes | Enterprise Notes |
+  |-------|--------|---------|------------------|
+  | users | id, email, firstName, lastName, role, assignedLocationIds[] | email (unique), role | Role-based access (RBAC) |
+  | shifts | id, userId, start, end, locationId | userId, date range | Multi-location support |
+  | clock_activities | id, userId, type(in/out), timestamp, locationId, lat/lng | userId, date | Audit trail (immutable) |
+  | absences | id, userId, type, start, end, status | userId, status, date | Approval workflow |
+
+## Week 1-2: MVP Endpoints (Match Frontend Plan)
+Implement exact endpoints from your Flutter plan. Secure with middleware.
+
+```
+Auth (/api/auth):
+- POST /login {email, password} → {accessToken, refreshToken, user}
+- POST /refresh {refreshToken} → {accessToken}
+- GET /me → user profile + locations[]
+
+Shifts (/api/shifts):
+- GET / → user's shifts (paginated)
+- GET /today → today's shift
+- GET /team?date=YYYY-MM-DD → team schedule
+
+Clock (/api/clock):
+- POST /in {locationId} → activity + geofence check
+- POST /out → activity
+- GET /activities/today → list
+
+Absences (/api/absences):
+- GET / → user's absences
+- POST / {type, start, end} → create (pending status)
+- PUT /{id} → update
+- GET /summary → stats (counts by type/status)
+```
+
+**Security Baseline** (Week 1):
+```
+- JWT middleware: Verify access token on protected routes
+- Input validation: Joi/Zod schemas for ALL requests
+- Rate limiting: 100 req/min per IP (express-rate-limit)
+- HTTPS enforced; CORS restricted to your app domains
+- SQL injection prevention: ORM (Prisma/Sequelize) or parameterized queries
+```
+
+## Week 3: Enterprise Hardening
+**Scale & Reliability**:
+- **Pagination**: All GET lists: `?page=1&limit=20&sort=start:desc`
+- **Caching**: Redis for shifts/summaries (1hr TTL); ETag headers.
+- **Error Format**: `{error: {code: 'VALIDATION_ERROR', message: 'Invalid date', details: [...]}}` [group107](https://group107.com/blog/api-development-best-practices/)
+- **Logging**: Structured logs (Winston) to file + CloudWatch/DataDog. Log userId, endpoint, status, duration.
+- **Monitoring**: Prometheus metrics (response time, error rate, active users).
+
+**Compliance**:
+```
+Audit log table: {userId, action, resourceId, timestamp, ip, userAgent}
+Auto-log: clockIn/Out, absence create/update, login attempts
+GDPR: GET /export?format=json → all user data
+```
+
+## Week 4: Production Deployment
+```
+Infra (DigitalOcean App Platform or AWS ECS):
+- 2x Node.js containers (auto-scale on CPU>70%)
+- PostgreSQL managed (RDS/Supabase)
+- Redis cluster
+- Load balancer + WAF (Cloudflare)
+
+CI/CD:
+- GitHub Actions: Lint → Test → Deploy
+- Tests: 80% coverage (unit + integration)
+  - Jest/Supertest: Mock DB, test all endpoints + errors
+  - Contract tests: Match OpenAPI spec
+```
+
+**Rate Limits & Quotas**:
+```
+Per user: 500 req/hour
+Per IP: 2000 req/hour
+Enterprise: Burst 10 req/sec, smooth to 2 req/sec
+```
+
+## OpenAPI Documentation (Week 1 Start)
+Generate interactive docs (`/docs`):
+```
+npm i swagger-ui-express swagger-jsdoc
+```
+Include schemas, examples, auth flows. Critical for enterprise clients.
+
+## Post-Launch (Month 2+)
+```
+Phase 2 (100+ users confirmed):
+- WebSocket: Real-time team schedule updates
+- Admin API: /api/admin/users, /api/admin/reports
+- Queue: BullMQ for email notifications, failed clock-ins
+- Multi-tenancy: tenantId in JWT, DB partitioning
+```
+
+## Tech Stack Recommendation
+```
+**Fastest Solo (Node.js)**:
+express + prisma + jwt + redis + pg + swagger
+Deploy: DigitalOcean App Platform ($12/mo starter)
+
+**Enterprise-Ready (Java)**:
+Spring Boot + Spring Security + JPA/Hibernate + Redis
+Deploy: AWS ECS Fargate
+
+**Serverless (if no ops team)**:
+Supabase (Postgres + Auth) + Vercel/Netlify Functions
+```
+
+## Critical Decisions
+- **No GraphQL**: REST simpler for MVP, easier RBAC
+- **JWT > Sessions**: Stateless scales better
+- **PostgreSQL > Mongo**: ACID transactions for clock/audit
+- **Prisma > Raw SQL**: Schema migrations, type-safety
+- **Cloudflare**: Free WAF, CDN, DDoS protection
+
+This matches your Flutter frontend endpoints exactly while building enterprise-grade from day one. Backend dev can run parallel to frontend Weeks 1-2 (you or contractor). Need Prisma schema or OpenAPI spec template?

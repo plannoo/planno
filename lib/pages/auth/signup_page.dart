@@ -1,5 +1,5 @@
 import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
-import 'package:aplano/services/prefs_service.dart';
+import 'package:aplano/core/services/prefs_service.dart';
 import 'package:flutter/material.dart';
 
 
