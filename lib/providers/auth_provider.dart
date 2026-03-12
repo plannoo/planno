@@ -66,9 +66,10 @@ class AuthProvider extends ChangeNotifier {
     } on NetworkException {
       // Offline — keep the stored session as-is but stay unauthenticated
       // so the user is prompted to sign in when connectivity returns.
-      await PrefsService.clearTokens();
+      
       _setStatus(AuthStatus.unauthenticated);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('tryRestoreSession failed: $e');
       await PrefsService.clearTokens();
       _setStatus(AuthStatus.unauthenticated);
     }
@@ -128,7 +129,7 @@ class AuthProvider extends ChangeNotifier {
     } on NetworkException {
       _errorMessage = 'No internet connection. Please check your network.';
       _setStatus(AuthStatus.error);
-    } on TimeoutException {
+    } on RequestTimeoutException {
       _errorMessage = 'Request timed out. Please try again.';
       _setStatus(AuthStatus.error);
     } on ApiException catch (e) {
@@ -147,6 +148,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     await PrefsService.logout();
     _setStatus(AuthStatus.unauthenticated);
+    await PrefsService.clearTokens();
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

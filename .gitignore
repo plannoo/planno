@@ -50,3 +50,6 @@ app.*.map.json
 /lib/core/utils
 /lib/widgets/Buttons
 /lib/widgets/common
+
+/plans
+plans

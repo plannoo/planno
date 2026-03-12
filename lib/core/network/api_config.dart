@@ -25,8 +25,9 @@ class ApiConfig {
   static const String logout       = '/api/auth/logout';
 
   // ── User endpoints ─────────────────────────────────────────────────────────
-
+   /// GET: Retrieve current user profile.
   static const String me            = '/api/users/me';
+   /// PUT/PATCH: Update current user profile.
   static const String updateProfile = '/api/users/me';
 
   // ── Shift endpoints ────────────────────────────────────────────────────────

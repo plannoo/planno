@@ -79,9 +79,7 @@ class PrefsService {
     await prefs.setString(_kUserName, name);
     await prefs.setString(_kEmployeeId, employeeId);
   }
-
-  /// Clears the session flag and all profile data (logout).
-  /// Tokens are cleared separately via [clearTokens].
+  /// Clears the session flag, profile data, and tokens (full logout).
   /// The remembered email and onboarding flag are intentionally preserved.
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
@@ -91,9 +89,7 @@ class PrefsService {
     await prefs.remove(_kEmployeeId);
     await prefs.remove(_kAccessToken);
     await prefs.remove(_kRefreshToken);
-  }
-
-  // ── Token management ─────────────────────────────────────────────────────────
+  }  // ── Token management ─────────────────────────────────────────────────────────
 
   /// Persists the JWT access token and refresh token returned by the API.
   static Future<void> saveTokens({

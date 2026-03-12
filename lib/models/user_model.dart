@@ -13,6 +13,13 @@
 ///   "assigned_location_ids": ["loc-1", "loc-2"]
 /// }
 /// ```
+
+
+class Wrapped<T> {
+  const Wrapped.value(this.value);
+  final T value;
+}
+
 class UserModel {
   const UserModel({
     required this.id,
@@ -82,6 +89,7 @@ class UserModel {
         'phone':                 phone,
         'assigned_location_ids': assignedLocationIds,
       };
+      
 
   // ── copyWith ─────────────────────────────────────────────────────────────────
 
@@ -91,8 +99,8 @@ class UserModel {
     String?       firstName,
     String?       lastName,
     String?       role,
-    String?       avatarUrl,
-    String?       phone,
+     Wrapped<String?>? avatarUrl,
+     Wrapped<String?>? phone,
     List<String>? assignedLocationIds,
   }) =>
       UserModel(
@@ -101,8 +109,8 @@ class UserModel {
         firstName:           firstName           ?? this.firstName,
         lastName:            lastName            ?? this.lastName,
         role:                role                ?? this.role,
-        avatarUrl:           avatarUrl           ?? this.avatarUrl,
-        phone:               phone               ?? this.phone,
+        avatarUrl: avatarUrl != null ? avatarUrl.value : this.avatarUrl,
+        phone: phone != null ? phone.value : this.phone,
         assignedLocationIds: assignedLocationIds ?? this.assignedLocationIds,
       );
 

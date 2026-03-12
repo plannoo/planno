@@ -290,8 +290,8 @@ class _LoginPageState extends State<LoginPage> {
                     "Don't have an account? ",
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
-                  GestureDetector(
-                    onTap:
+                  TextButton(
+                    onPressed:
                         isLoading ? null : () => Navigator.pushNamed(context, '/signup'),
                     child: const Text(
                       'Sign Up',

@@ -107,7 +107,7 @@ class ApiClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return const TimeoutException();
+        return const RequestTimeoutException();
 
       case DioExceptionType.connectionError:
         return const NetworkException();
@@ -140,11 +140,13 @@ class ApiClient {
         final fieldErrors = _extractFieldErrors(body);
         return ValidationException(message, fieldErrors: fieldErrors);
       default:
-        if ((response.statusCode ?? 0) >= 500) {
-          return ServerException(message, statusCode: response.statusCode!);
+            final statusCode = response.statusCode ?? 0;
+        if (statusCode >= 500) {
+          return ServerException(message, statusCode: statusCode);
         }
-        return ServerException(message, statusCode: response.statusCode ?? 0);
-    }
+        // Consider adding ClientException for 4xx errors
+        return ServerException(message, statusCode: statusCode);
+     }
   }
 
   static String _extractMessage(dynamic body) {
@@ -181,13 +183,16 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    if (options.extra['skipAuthInterceptor'] == true) {
+      handler.next(options);
+      return;
+    }
     final token = await PrefsService.getAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
   }
-
   @override
   Future<void> onError(
     DioException err,

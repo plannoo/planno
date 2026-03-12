@@ -21,12 +21,11 @@ class NetworkException extends ApiException {
 }
 
 /// The request timed out before the server responded.
-class TimeoutException extends ApiException {
-  const TimeoutException([
-    super.message = 'The request timed out. Please try again.',
-  ]);
+class RequestTimeoutException extends ApiException {
+  const RequestTimeoutException([
+     super.message = 'The request timed out. Please try again.',
+   ]);
 }
-
 // ── Server / HTTP ─────────────────────────────────────────────────────────────
 
 /// The server returned a 4xx or 5xx status code.
