@@ -89,8 +89,11 @@ class PrefsService {
     await prefs.remove(_kEmployeeId);
     await prefs.remove(_kAccessToken);
     await prefs.remove(_kRefreshToken);
-  }  // ── Token management ─────────────────────────────────────────────────────────
+    await prefs.remove(_kAccessToken);
+    await prefs.remove(_kRefreshToken);
+  }
 
+  // ── Token management ─────────────────────────────────────────────────────────
   /// Persists the JWT access token and refresh token returned by the API.
   static Future<void> saveTokens({
     required String accessToken,
