@@ -1,4 +1,4 @@
-# aplano
+# planno
 
 A new Flutter project.
 
