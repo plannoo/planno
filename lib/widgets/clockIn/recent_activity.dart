@@ -1,172 +1,127 @@
 import 'package:flutter/material.dart';
-import '../activity_item.dart';
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_dimensions.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../models/activity_model.dart';
+import '../../widgets/common/section_header.dart';
 
-/// Widget that displays a list of recent activities in a card
-/// Shows clock in/out events, breaks, and other work-related activities
-/// 
-/// This widget can be populated with real data from a database or API
-class RecentActivity extends StatelessWidget {
-  /// List of activities to display
-  /// If null, sample data will be shown
-  final List<ActivityModel>? activities;
-  
-  /// Maximum number of activities to display
-  final int maxActivities;
+/// List of recent clock-in/out activity entries.
+class RecentActivityList extends StatelessWidget {
+  const RecentActivityList({super.key, required this.activities});
 
-  const RecentActivity({
-    super.key,
-    this.activities,
-    this.maxActivities = 5,
-  });
+  final List<ActivityModel> activities;
 
   @override
   Widget build(BuildContext context) {
-    final displayActivities = _getDisplayActivities();
-    
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section title from l10n
+        SectionHeader(title: l10n.recentActivityTitle),
+        const SizedBox(height: AppDimensions.spacingMd),
+        if (activities.isEmpty)
+          _EmptyState()
+        else
+          ...activities.map((a) => _ActivityItem(activity: a)),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: _buildCardDecoration(),
+      width:   double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color:        Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border:       Border.all(color: Theme.of(context).dividerColor),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
-          _buildSectionHeader(),
-          const SizedBox(height: 20),
-          
-          // Activity list or empty state
-          if (displayActivities.isEmpty)
-            _buildEmptyState()
-          else
-            _buildActivityList(displayActivities),
+          const Icon(Icons.history_toggle_off_outlined,
+              size: 28, color: AppColors.slate300),
+          const SizedBox(height: 8),
+          Text(
+            l10n.clockNoActivityToday,
+            style: AppTextStyles.caption
+                .copyWith(color: AppColors.slate400),
+          ),
         ],
       ),
     );
   }
+}
 
-  /// Builds the card decoration with rounded corners and border
-  BoxDecoration _buildCardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: const Color(0xFFF1F5F9), // Light gray border
+class _ActivityItem extends StatelessWidget {
+  const _ActivityItem({required this.activity});
+
+  final ActivityModel activity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin:  const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color:        Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border:       Border.all(color: Theme.of(context).dividerColor),
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.02),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    );
-  }
-
-  /// Builds the "RECENT ACTIVITY" section header
-  Widget _buildSectionHeader() {
-    return const Text(
-      'RECENT ACTIVITY',
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-        color: Color(0xFF64748B), // Slate gray
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  /// Builds the list of activity items
-  Widget _buildActivityList(List<ActivityModel> displayActivities) {
-    return Column(
-      children: List.generate(
-        displayActivities.length,
-        (index) {
-          final activity = displayActivities[index];
-          return Column(
-            children: [
-              ActivityItem(activity: activity),
-              // Add spacing between items (except after the last one)
-              if (index < displayActivities.length - 1)
-                const SizedBox(height: 16),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  /// Builds an empty state when no activities are available
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          children: [
-            Icon(
-              Icons.history,
-              size: 48,
-              color: Colors.grey.shade300,
+      child: Row(
+        children: [
+          // Icon badge
+          Container(
+            width:  38,
+            height: 38,
+            decoration: BoxDecoration(
+              color:        activity.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'No recent activity',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
+            child: Icon(activity.icon,
+                color: activity.color, size: 18),
+          ),
+          const SizedBox(width: 12),
+
+          // Title + date
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(activity.title,
+                    style: AppTextStyles.bodyBold
+                        .copyWith(fontSize: 14)),
+                const SizedBox(height: 1),
+                Text(activity.formattedDate,
+                    style: AppTextStyles.caption),
+              ],
+            ),
+          ),
+
+          // Time badge
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color:        Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              activity.formattedTime,
+              style: AppTextStyles.captionBold.copyWith(
+                color:    AppColors.slate600,
+                fontSize: 12,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  /// Gets the activities to display (either provided or sample data)
-  List<ActivityModel> _getDisplayActivities() {
-    if (activities != null) {
-      // Use provided activities, limited to maxActivities
-      return activities!.take(maxActivities).toList();
-    }
-    
-    // Return sample data for demonstration
-    return _getSampleActivities();
-  }
-
-  /// Returns sample activity data for demonstration purposes
-  /// In a real app, this would be replaced with actual data from a database
-  List<ActivityModel> _getSampleActivities() {
-    final now = DateTime.now();
-    
-    return [
-      ActivityModel(
-        id: '1',
-        icon: Icons.login,
-        title: 'Clock In',
-        date: DateTime(now.year, now.month, now.day, 9, 0),
-        time: DateTime(now.year, now.month, now.day, 9, 0),
-        color: const Color(0xFF22C55E), // Green
-        type: ActivityType.clockIn,
-      ),
-      ActivityModel(
-        id: '2',
-        icon: Icons.coffee,
-        title: 'Break Start',
-        date: DateTime(now.year, now.month, now.day, 12, 30),
-        time: DateTime(now.year, now.month, now.day, 12, 30),
-        color: const Color(0xFFF59E0B), // Amber
-        type: ActivityType.breakStart,
-      ),
-      ActivityModel(
-        id: '3',
-        icon: Icons.work,
-        title: 'Break End',
-        date: DateTime(now.year, now.month, now.day, 13, 0),
-        time: DateTime(now.year, now.month, now.day, 13, 0),
-        color: const Color(0xFF2563EB), // Blue
-        type: ActivityType.breakEnd,
-      ),
-    ];
   }
 }

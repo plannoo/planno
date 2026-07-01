@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -14,22 +15,29 @@ class AbsenceListCard extends StatelessWidget {
     super.key,
     required this.absence,
     this.showWorkingDays = false,
-    this.isExpandable = false,
+    this.isExpandable    = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final card = _CardContent(absence: absence);
+
     if (isExpandable) {
       return ExpansionTile(
         tilePadding: EdgeInsets.zero,
-        title: card,
+        title:       card,
         children: [
           if (absence.reason != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppDimensions.spacingMd, 0, AppDimensions.spacingMd, AppDimensions.spacingMd),
-              child: Text(absence.reason!, style: AppTextStyles.bodySmall),
+                AppDimensions.spacingMd,
+                0,
+                AppDimensions.spacingMd,
+                AppDimensions.spacingMd,
+              ),
+              child: Text(absence.reason!,
+                  style: AppTextStyles.bodySmall),
             ),
         ],
       );
@@ -40,17 +48,23 @@ class AbsenceListCard extends StatelessWidget {
         card,
         if (showWorkingDays)
           Padding(
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, AppDimensions.spacingSm),
+            padding: const EdgeInsets.fromLTRB(
+                0, 4, 0, AppDimensions.spacingSm),
             child: Row(
               children: [
-                const Icon(Icons.access_time, size: AppDimensions.iconXs, color: AppColors.slate400),
+                const Icon(Icons.access_time,
+                    size: AppDimensions.iconXs,
+                    color: AppColors.slate400),
                 const SizedBox(width: 6),
+                // Uses the centralized pluralization key
                 Text(
-                  '${absence.workingDays} working day${absence.workingDays > 1 ? 's' : ''}',
+                  l10n.absenceWorkingDay(absence.workingDays),
                   style: AppTextStyles.caption,
                 ),
                 const Spacer(),
-                const Icon(Icons.chevron_right, size: AppDimensions.iconSm, color: AppColors.slate300),
+                const Icon(Icons.chevron_right,
+                    size:  AppDimensions.iconSm,
+                    color: AppColors.slate300),
               ],
             ),
           ),
@@ -66,45 +80,53 @@ class _CardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spacingXs),
+      margin: const EdgeInsets.only(
+          bottom: AppDimensions.spacingXs),
       padding: const EdgeInsets.all(AppDimensions.spacingMd),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color:        Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        border: Border.all(color: AppColors.slate100),
+        border:       Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: absence.typeBackgroundColor,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              color:        absence.typeBackgroundColor,
+              borderRadius:
+                  BorderRadius.circular(AppDimensions.radiusSm),
             ),
-            child: Icon(absence.typeIcon, color: absence.typeIconColor, size: AppDimensions.iconSm),
+            child: Icon(absence.typeIcon,
+                color: absence.typeIconColor,
+                size:  AppDimensions.iconSm),
           ),
           const SizedBox(width: AppDimensions.spacingSm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(absence.typeLabel, style: AppTextStyles.bodyBold),
-                Text(absence.formattedDateRange, style: AppTextStyles.caption),
+                Text(absence.typeLabel,
+                    style: AppTextStyles.bodyBold),
+                Text(absence.formattedDateRange,
+                    style: AppTextStyles.caption),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: absence.statusBackgroundColor,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+              borderRadius: BorderRadius.circular(
+                  AppDimensions.radiusFull),
             ),
             child: Text(
               absence.statusLabel,
               style: TextStyle(
-                fontSize: 11,
+                fontSize:   11,
                 fontWeight: FontWeight.w700,
-                color: absence.statusTextColor,
+                color:      absence.statusTextColor,
               ),
             ),
           ),

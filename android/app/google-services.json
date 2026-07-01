@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "960371503104",
+    "project_id": "shifty-3ca43",
+    "storage_bucket": "shifty-3ca43.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:960371503104:android:04de9eddbc1bd887b668e5",
+        "android_client_info": {
+          "package_name": "com.example.aplano"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQpyV1_Y-4OC1e6fl__yAQuoznEYzAbNk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

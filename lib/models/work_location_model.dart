@@ -5,10 +5,10 @@ enum LocationType { office, warehouse, constructionSite, retail, remote }
 
 /// A workplace location with geofencing capabilities.
 class WorkLocationModel {
-  final int id;
+  final String id;
   final String name;
   final String? address;
-  final String locationCode;
+  final String? locationCode;
   final double latitude;
   final double longitude;
   final double geofenceRadiusMeters;
@@ -25,7 +25,7 @@ class WorkLocationModel {
     required this.id,
     required this.name,
     this.address,
-    required this.locationCode,
+    this.locationCode,
     required this.latitude,
     required this.longitude,
     this.geofenceRadiusMeters = 200.0,
@@ -64,16 +64,16 @@ class WorkLocationModel {
   };
 
   factory WorkLocationModel.fromJson(Map<String, dynamic> json) => WorkLocationModel(
-    id: json['id'] as int,
+    id: json['id'].toString(),
     name: json['name'] as String,
     address: json['address'] as String?,
-    locationCode: json['location_code'] as String,
+    locationCode: json['location_code'] as String?,
     latitude: (json['latitude'] as num).toDouble(),
     longitude: (json['longitude'] as num).toDouble(),
     geofenceRadiusMeters: (json['geofence_radius_meters'] as num?)?.toDouble() ?? 200.0,
     gpsBufferMeters: (json['gps_buffer_meters'] as num?)?.toDouble() ?? 10.0,
     locationType: LocationType.values.firstWhere(
-      (e) => e.name == (json['location_type'] ?? 'office'),
+      (e) => e.name == (json['location_type'] as String? ?? 'office').toLowerCase(),
       orElse: () => LocationType.office,
     ),
     isActive: json['is_active'] == 1 || json['is_active'] == true,
@@ -86,7 +86,7 @@ class WorkLocationModel {
 
   Map<String, dynamic> toJson() => {
     'id': id, 'name': name, 'address': address,
-    'location_code': locationCode,
+    if (locationCode != null) 'location_code': locationCode,
     'latitude': latitude, 'longitude': longitude,
     'geofence_radius_meters': geofenceRadiusMeters,
     'gps_buffer_meters': gpsBufferMeters,

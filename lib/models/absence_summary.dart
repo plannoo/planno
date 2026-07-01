@@ -1,4 +1,4 @@
-import '../../core/utils/date_formatter.dart';
+import '../core/utils/date_formatter.dart';
 
 /// Summary of an employee's absence quota for the year.
 class AbsenceSummaryModel {

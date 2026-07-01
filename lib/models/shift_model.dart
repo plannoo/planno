@@ -1,37 +1,5 @@
-/// Model representing a work shift
-/// Contains information about scheduled work hours and location
 class ShiftModel {
-  /// Unique identifier for this shift
-  final String id;
-  
-  /// Job role/title for this shift (e.g., "Floor Manager", "Sales Associate")
-  final String role;
-  
-  /// Date of the shift
-  final DateTime date;
-  
-  /// Start time of the shift
-  final DateTime startTime;
-  
-  /// End time of the shift
-  final DateTime endTime;
-  
-  /// Location where the shift takes place
-  final String location;
-  
-  /// Full address of the location
-  final String address;
-  
-  /// Latitude of the shift location
-  final double latitude;
-  
-  /// Longitude of the shift location
-  final double longitude;
-  
-  /// Optional notes about the shift
-  final String? notes;
-
-  ShiftModel({
+  const ShiftModel({
     required this.id,
     required this.role,
     required this.date,
@@ -42,96 +10,99 @@ class ShiftModel {
     required this.latitude,
     required this.longitude,
     this.notes,
+    this.breakMinutes,
+    this.roleColor,
+    this.label,
+    this.hashtags = const [],
   });
 
-  /// Calculate total duration of the shift
-  Duration get duration => endTime.difference(startTime);
+  final String       id;
+  final String       role;
+  final DateTime     date;
+  final DateTime     startTime;
+  final DateTime     endTime;
+  final String       location;
+  final String       address;
+  final double       latitude;
+  final double       longitude;
+  final String?      notes;
+  final int?         breakMinutes;
+  final String?      roleColor;
+  final String?      label;
+  final List<String> hashtags;
 
-  /// Format start time in 12-hour format
-  String get formattedStartTime {
-    return _formatTime(startTime);
+  Duration get duration    => endTime.difference(startTime);
+  bool     get isToday     => _sameDay(date, DateTime.now());
+
+  String get formattedStartTime => _fmt(startTime);
+  String get formattedEndTime   => _fmt(endTime);
+  String get timeRange          => '$formattedStartTime - $formattedEndTime';
+
+  String _fmt(DateTime t) {
+    final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
   }
 
-  /// Format end time in 12-hour format
-  String get formattedEndTime {
-    return _formatTime(endTime);
-  }
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
-  /// Get formatted time range (e.g., "09:00 AM - 05:00 PM")
-  String get timeRange => '$formattedStartTime - $formattedEndTime';
-
-  /// Format time in 12-hour format with AM/PM
-  String _formatTime(DateTime time) {
-    final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
-
-  /// Check if this is today's shift
-  bool get isToday {
-    final now = DateTime.now();
-    return date.year == now.year && 
-           date.month == now.month && 
-           date.day == now.day;
-  }
-
-  /// Factory constructor to create ShiftModel from JSON
-  factory ShiftModel.fromJson(Map<String, dynamic> json) {
+  factory ShiftModel.fromJson(Map<String, dynamic> j) {
+    // `location` and `address` can be either a plain string or a nested object
+    // (the general shifts endpoint embeds the full location object).
+    String loc(dynamic v) {
+      if (v is String) return v;
+      if (v is Map) return (v['name'] as String?) ?? (v['address'] as String?) ?? '';
+      return '';
+    }
+    String addr(dynamic v) {
+      if (v is String) return v;
+      if (v is Map) return (v['address'] as String?) ?? (v['name'] as String?) ?? '';
+      return '';
+    }
+    double num_(dynamic v) => (v as num?)?.toDouble() ?? 0;
     return ShiftModel(
-      id: json['id'] as String,
-      role: json['role'] as String,
-      date: DateTime.parse(json['date'] as String),
-      startTime: DateTime.parse(json['startTime'] as String),
-      endTime: DateTime.parse(json['endTime'] as String),
-      location: json['location'] as String,
-      address: json['address'] as String,
-      latitude: json['latitude'] as double,
-      longitude: json['longitude'] as double,
-      notes: json['notes'] as String?,
+      id:           j['id']        as String,
+      role:         (j['role']     as String?) ?? '',
+      date:         DateTime.parse((j['date'] as String?) ?? DateTime.now().toIso8601String()),
+      startTime:    DateTime.parse(j['startTime'] as String),
+      endTime:      DateTime.parse(j['endTime']   as String),
+      location:     loc(j['location']),
+      address:      addr(j['address'] ?? j['shiftAddress']),
+      latitude:     num_(j['latitude']),
+      longitude:    num_(j['longitude']),
+      notes:        j['notes']     as String?,
+      breakMinutes: j['breakMinutes'] as int?,
+      roleColor:    j['roleColor'] as String?,
+      label:        j['label']     as String?,
+      hashtags:     (j['hashtags'] as List<dynamic>?)
+                        ?.map((e) => e as String).toList() ?? const [],
     );
   }
 
-  /// Convert ShiftModel to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'role': role,
-      'date': date.toIso8601String(),
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
-      'location': location,
-      'address': address,
-      'latitude': latitude,
-      'longitude': longitude,
-      'notes': notes,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id, 'role': role,
+    'date':      date.toIso8601String().split('T').first,
+    'startTime': startTime.toIso8601String(),
+    'endTime':   endTime.toIso8601String(),
+    'location':  location, 'address': address,
+    'latitude':  latitude, 'longitude': longitude,
+    'notes':     notes,
+  };
 
-  /// Create a copy of this shift with optional field updates
   ShiftModel copyWith({
-    String? id,
-    String? role,
-    DateTime? date,
-    DateTime? startTime,
-    DateTime? endTime,
-    String? location,
-    String? address,
-    double? latitude,
-    double? longitude,
-    String? notes,
-  }) {
-    return ShiftModel(
-      id: id ?? this.id,
-      role: role ?? this.role,
-      date: date ?? this.date,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      location: location ?? this.location,
-      address: address ?? this.address,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      notes: notes ?? this.notes,
-    );
-  }
+    String? id, String? role, DateTime? date,
+    DateTime? startTime, DateTime? endTime,
+    String? location, String? address,
+    double? latitude, double? longitude, String? notes,
+  }) => ShiftModel(
+    id: id ?? this.id, role: role ?? this.role,
+    date: date ?? this.date,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    location: location ?? this.location,
+    address:  address  ?? this.address,
+    latitude: latitude ?? this.latitude, longitude: longitude ?? this.longitude,
+    notes: notes ?? this.notes,
+  );
 }

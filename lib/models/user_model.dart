@@ -41,8 +41,7 @@ class UserModel {
   final String firstName;
   final String lastName;
 
-  /// Role string as returned by the API, e.g. `"employee"`, `"manager"`,
-  /// `"admin"`. Use [isManager] / [isAdmin] helpers for logic, not raw strings.
+  /// Role string as returned by the API, e.g. `"employee"`, `"manager"`, `"admin"`.
   final String role;
 
   /// Remote URL of the user's profile picture. May be null.
@@ -60,34 +59,40 @@ class UserModel {
   String get initials    => '${firstName.isNotEmpty ? firstName[0] : ''}'
                             '${lastName.isNotEmpty  ? lastName[0]  : ''}'
                             .toUpperCase();
-  bool   get isManager   => role == 'manager';
-  bool   get isAdmin     => role == 'admin';
-
   // ── Serialisation ───────────────────────────────────────────────────────────
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id:                  json['id']         as String,
-        email:               json['email']       as String,
-        firstName:           json['first_name']  as String,
-        lastName:            json['last_name']   as String,
-        role:                (json['role']        as String?) ?? 'employee',
-        avatarUrl:           json['avatar_url']  as String?,
-        phone:               json['phone']       as String?,
-        assignedLocationIds: (json['assigned_location_ids'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            const [],
-      );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Extract location IDs from either locations array of objects or flat id list
+    final locationIds = (json['locations'] as List<dynamic>?)
+            ?.map((e) => e is Map ? e['id'] as String? ?? '' : e as String)
+            .where((id) => id.isNotEmpty)
+            .toList() ??
+        (json['assigned_location_ids'] as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        const <String>[];
+
+    return UserModel(
+      id:                  json['id']          as String,
+      email:               json['email']        as String,
+      firstName:           (json['firstName']   ?? json['first_name'])  as String,
+      lastName:            (json['lastName']    ?? json['last_name'])   as String,
+      role:                ((json['role']        as String?) ?? 'employee').toLowerCase(),
+      avatarUrl:           (json['avatarUrl']   ?? json['avatar_url'])  as String?,
+      phone:               json['phone']        as String?,
+      assignedLocationIds: locationIds,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id':                    id,
         'email':                 email,
-        'first_name':            firstName,
-        'last_name':             lastName,
+        'firstName':             firstName,
+        'lastName':              lastName,
         'role':                  role,
-        'avatar_url':            avatarUrl,
+        'avatarUrl':             avatarUrl,
         'phone':                 phone,
-        'assigned_location_ids': assignedLocationIds,
+        'assignedLocationIds':   assignedLocationIds,
       };
       
 

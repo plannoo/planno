@@ -1,833 +1,729 @@
+﻿import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:provider/provider.dart';
 
-// Widget imports
-import '../../widgets/clockIn/location_map_preview.dart';
-import '../../widgets/clockIn/location_card.dart';
-import '../../widgets/clockIn/today_shift_card.dart'; // Avoid name conflicts
-import '../../widgets/clockIn/recent_activity.dart';
-import '../../widgets/clockIn/on_duty_status.dart';
-
-// Model imports
-import '../../models/workplace_location.dart';
-import '../../models/activity_model.dart';
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_config.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_dimensions.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/clock_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../models/shift_model.dart';
+import '../../widgets/clockIn/clock_face_card.dart';
+import '../../widgets/clockIn/location_card.dart';
+import '../../widgets/clockIn/location_status_widget.dart';
+import '../../widgets/clockIn/recent_activity.dart';
+import '../../widgets/clockIn/today_shift_card.dart';
+import '../../../models/activity_model.dart';
+import '../../../models/work_location_model.dart';
+import 'qr_scan_page.dart';
 
-/// Main time clock screen for employee attendance tracking
-/// 
-/// Features:
-/// - Real-time location tracking with geofencing
-/// - Clock in/out functionality with location verification
-/// - Session time tracking
-/// - Activity history
-/// - Shift information display
-/// 
-/// The screen enforces geofencing for clock-in (must be within work zone)
-/// but allows clock-out from anywhere for flexibility
-class TimeClockScreen extends StatefulWidget {
-  const TimeClockScreen({super.key});
+class ClockPage extends StatefulWidget {
+  const ClockPage({super.key});
 
   @override
-  State<TimeClockScreen> createState() => _TimeClockScreenState();
+  State<ClockPage> createState() => _ClockPageState();
 }
 
-class _TimeClockScreenState extends State<TimeClockScreen> 
-    with SingleTickerProviderStateMixin {
-  
-  // ========== STATE VARIABLES ==========
-  
-  /// Whether the employee is currently clocked in
-  bool _isOnDuty = false;
-  
-  /// Whether the employee is within the workplace geofence zone
-  bool _isWithinWorkZone = false;
-  
-  /// Duration of the current work session
-  Duration _sessionTime = const Duration(hours: 6, minutes: 15, seconds: 22);
-  
-  /// Timer for updating session time every second
-  Timer? _timer;
-  
-  /// Animation controller for UI pulse effects
-  late AnimationController _pulseController;
-  
-  // ========== GEOLOCATION VARIABLES ==========
-  
-  /// Current GPS position of the employee
-  Position? _currentPosition;
-  
-  /// Distance from the workplace in meters
-  double _distanceFromWorkplace = 0.0;
-  
-  /// Whether location is currently being fetched
-  bool _isLoadingLocation = true;
-  
-  /// Error message if location fetch fails
-  String _locationError = '';
-  
-  // ========== WORKPLACE CONFIGURATION ==========
-  
-  /// Workplace location configuration
-  /// In a production app, this would be loaded from a database or API
-  final WorkplaceLocation _workplace = const WorkplaceLocation(
-    name: 'Main Office, Berlin',
-    address: 'Friedrichstraße 123, 10117 Berlin',
-    latitude: 52.5200,
-    longitude: 13.4050,
-    geofenceRadiusMeters: 200.0,  // 200m radius from workplace
-    gpsBufferMeters: 10.0,        // 10m buffer for GPS inaccuracy
-  );
-
-  // ========== LIFECYCLE METHODS ==========
-
+class _ClockPageState extends State<ClockPage> {
   @override
   void initState() {
     super.initState();
-    _initializePulseAnimation();
-    _checkLocationPermissionAndGetLocation();
-    
-    // Start timer if already on duty (e.g., returning to screen)
-    if (_isOnDuty) {
-      _startTimer();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  // ========== INITIALIZATION METHODS ==========
-
-  /// Initialize the pulse animation for UI effects
-  void _initializePulseAnimation() {
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  // ========== LOCATION PERMISSION & FETCHING ==========
-
-  /// Check location permissions and fetch current location
-  /// This is called on initialization and handles all permission states
-  Future<void> _checkLocationPermissionAndGetLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Check if location services are enabled on the device
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      setState(() {
-        _isLoadingLocation = false;
-        _locationError = 'Location services are disabled. Please enable them in settings.';
-      });
-      return;
-    }
-
-    // Check current permission status
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      // Request permission if not yet asked
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        setState(() {
-          _isLoadingLocation = false;
-          _locationError = 'Location permission denied. Please grant permission in settings.';
-        });
-        return;
-      }
-    }
-
-    // Handle permanently denied permission
-    if (permission == LocationPermission.deniedForever) {
-      setState(() {
-        _isLoadingLocation = false;
-        _locationError = 'Location permissions are permanently denied. Please enable them in settings.';
-      });
-      return;
-    }
-
-    // Permission granted, fetch location
-    await _getCurrentLocation();
-  }
-
-  /// Fetch current GPS location and calculate distance from workplace
-  Future<void> _getCurrentLocation() async {
-    try {
-      // Get high-accuracy position with 10-second timeout
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      // Calculate straight-line distance to workplace
-      final distanceInMeters = _workplace.distanceTo(position);
-
-      setState(() {
-        _currentPosition = position;
-        _distanceFromWorkplace = distanceInMeters;
-        _isWithinWorkZone = _workplace.isWithinWorkZone(position);
-        _isLoadingLocation = false;
-        _locationError = '';
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingLocation = false;
-        _locationError = 'Failed to get location: ${e.toString()}';
-      });
-    }
-  }
-
-  /// Refresh location manually when user taps the refresh button
-  Future<void> _refreshLocation() async {
-    setState(() {
-      _isLoadingLocation = true;
-    });
-    await _getCurrentLocation();
-  }
-
-  // ========== TIMER METHODS ==========
-
-  /// Start the session timer (increments every second)
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _sessionTime = _sessionTime + const Duration(seconds: 1);
-        });
-      }
+    // The clock screen reads today's shift from DashboardProvider, but the
+    // employee shell never opens the admin dashboard that loads it â€” so fetch
+    // it here. Otherwise the card always reads "No shift today".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<DashboardProvider>().load();
     });
   }
 
-  /// Stop the session timer
-  void _stopTimer() {
-    _timer?.cancel();
-  }
+  // â”€â”€ Shift detail sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  // ========== FORMATTING METHODS ==========
-
-  /// Format duration as HH:MM:SS
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    String hours = twoDigits(duration.inHours);
-    String minutes = twoDigits(duration.inMinutes.remainder(60));
-    String seconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$hours:$minutes:$seconds";
-  }
-
-  /// Format distance for display (e.g., "150m" or "1.5km")
-  String _formatDistance(double meters) {
-    if (meters < 1000) {
-      return '${meters.toStringAsFixed(0)}m';
-    } else {
-      return '${(meters / 1000).toStringAsFixed(2)}km';
-    }
-  }
-
-  // ========== CLOCK IN/OUT HANDLERS ==========
-
-  /// Handle clock-in action
-  /// REQUIRES the user to be within the work zone
-  Future<void> _handleClockIn() async {
-    // Geofencing check: only allow clock-in if within work zone
-    if (!_isWithinWorkZone) {
-      _showLocationWarningDialog();
-      return;
-    }
-    
-    setState(() {
-      _isOnDuty = true;
-      _sessionTime = Duration.zero;
-    });
-    
-    _startTimer();
-
-    // Save clock-in event to database
-    await _saveClockInToDatabase(
-      latitude: _currentPosition?.latitude,
-      longitude: _currentPosition?.longitude,
-      distance: _distanceFromWorkplace,
-      accuracy: _currentPosition?.accuracy,
-    );
-
-    // Show success message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Clocked in successfully! (${_formatDistance(_distanceFromWorkplace)} from workplace)',
-          ),
-          backgroundColor: const Color(0xFF22C55E),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  /// Handle clock-out action
-  /// ALWAYS allowed regardless of location for flexibility
-  /// Location is captured for record-keeping but doesn't block the action
-  Future<void> _handleClockOut() async {
-    setState(() {
-      _isOnDuty = false;
-    });
-    
-    _stopTimer();
-
-    // Attempt to capture location for record-keeping
-    Position? clockOutPosition;
-    double? clockOutDistance;
-    double? clockOutAccuracy;
-    String locationStatus = 'success';
-    String locationNote = '';
-
-    try {
-      // Use medium accuracy and shorter timeout for clock-out
-      clockOutPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 5),
-      );
-
-      clockOutDistance = _workplace.distanceTo(clockOutPosition);
-      clockOutAccuracy = clockOutPosition.accuracy;
-      locationStatus = 'success';
-      locationNote = 'Location captured successfully';
-      
-    } on TimeoutException {
-      locationStatus = 'timeout';
-      locationNote = 'GPS timeout - user may be indoors or in poor signal area';
-      
-    } catch (e) {
-      // Categorize the error for better logging
-      if (e.toString().contains('location service')) {
-        locationStatus = 'service_disabled';
-        locationNote = 'Location services disabled';
-      } else if (e.toString().contains('permission')) {
-        locationStatus = 'permission_denied';
-        locationNote = 'Location permission not granted';
-      } else {
-        locationStatus = 'error';
-        locationNote = 'Error: ${e.toString()}';
-      }
-    }
-
-    // Save clock-out event to database with detailed status
-    await _saveClockOutToDatabase(
-      latitude: clockOutPosition?.latitude,
-      longitude: clockOutPosition?.longitude,
-      distance: clockOutDistance,
-      accuracy: clockOutAccuracy,
-      locationStatus: locationStatus,
-      locationNote: locationNote,
-    );
-
-    // Show success message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            clockOutPosition != null
-                ? 'Clocked out successfully! (${_formatDistance(clockOutDistance!)} from workplace)'
-                : 'Clocked out successfully! (Location: $locationStatus)',
-          ),
-          backgroundColor: const Color(0xFFEF4444),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  // ========== DATABASE OPERATIONS ==========
-  // These would interact with your backend API or local database
-
-  /// Save clock-in event to database
-  /// In a real app, this would make an API call or database insert
-  Future<void> _saveClockInToDatabase({
-    double? latitude,
-    double? longitude,
-    double? distance,
-    double? accuracy,
-  }) async {
-    // TODO: Implement actual database save
-    // Example:
-    // await apiService.saveClockIn(
-    //   timestamp: DateTime.now(),
-    //   latitude: latitude,
-    //   longitude: longitude,
-    //   distance: distance,
-    //   accuracy: accuracy,
-    // );
-    
-    debugPrint('Clock-in saved: lat=$latitude, lon=$longitude, distance=$distance');
-  }
-
-  /// Save clock-out event to database with detailed location status
-  Future<void> _saveClockOutToDatabase({
-    double? latitude,
-    double? longitude,
-    double? distance,
-    double? accuracy,
-    required String locationStatus,
-    required String locationNote,
-  }) async {
-    // TODO: Implement actual database save
-    // Example:
-    // await apiService.saveClockOut(
-    //   timestamp: DateTime.now(),
-    //   latitude: latitude,
-    //   longitude: longitude,
-    //   distance: distance,
-    //   accuracy: accuracy,
-    //   locationStatus: locationStatus,
-    //   locationNote: locationNote,
-    // );
-    
-    debugPrint('Clock-out saved: status=$locationStatus, note=$locationNote');
-  }
-
-  // ========== DIALOG METHODS ==========
-
-  /// Show warning dialog when user tries to clock in outside work zone
-  void _showLocationWarningDialog() {
-    showDialog(
+  void _showShiftDetails(BuildContext context, ShiftModel shift) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+            20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning, color: Color(0xFFF59E0B)),
-            SizedBox(width: 8),
-            Text('Outside Work Zone'),
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: cs.outline.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(shift.role,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700,
+                    color: cs.onSurface)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Icon(Icons.access_time_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(shift.timeRange,
+                  style: TextStyle(fontSize: 15, color: cs.onSurface)),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(Icons.location_on_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(child: Text(shift.location,
+                  style: TextStyle(fontSize: 15, color: cs.onSurface))),
+            ]),
           ],
         ),
-        content: Text(
-          'You must be within ${_workplace.geofenceRadiusMeters.toInt()}m of the workplace to clock in.\n\n'
-          'Current distance: ${_formatDistance(_distanceFromWorkplace)}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      ),
+    );
+  }
+
+  // â”€â”€ Action handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<void> _handleClockIn(BuildContext context) async {
+    final l10n  = AppLocalizations.of(context);
+    final clock = context.read<ClockProvider>();
+
+    // Gate 1 â€” require an active shift today (also enforced server-side).
+    var dashboard = context.read<DashboardProvider>();
+    if (dashboard.todayShift == null) {
+      // The shift fetch may have failed due to a token race (load() was
+      // fire-and-forget while a concurrent 401 was being resolved). Retry
+      // silently before concluding there's no shift.
+      await dashboard.refresh();
+      if (!context.mounted) return;
+      dashboard = context.read<DashboardProvider>();
+    }
+    if (dashboard.todayShift == null) {
+      if (dashboard.lastErrorWasAuth) {
+        _handleSessionExpired(context);
+        return;
+      }
+      _snack(context,
+          'You have no shift scheduled for today, so you cannot clock in.',
+          AppColors.error);
+      return;
+    }
+
+    // Gate 2 â€” biometric (mobile only). Skipped on web/desktop where local_auth
+    // has no implementation (calling it throws MissingPluginException). Any
+    // failure to probe biometrics is treated as "not available" so it proceeds.
+    if (!kIsWeb) {
+      try {
+        final localAuth = LocalAuthentication();
+        final canBiometric = await localAuth.canCheckBiometrics &&
+            await localAuth.isDeviceSupported();
+        if (canBiometric) {
+          final authenticated = await localAuth.authenticate(
+            localizedReason: l10n.clockBiometricReason,
+          );
+          if (!context.mounted) return;
+          if (!authenticated) {
+            _snack(context, l10n.clockBiometricFailed, AppColors.error);
+            return;
+          }
+        }
+      } on MissingPluginException {
+        // No biometric plugin on this platform â€” proceed without it.
+      } on PlatformException {
+        // Biometrics unavailable/not enrolled â€” proceed without it.
+      }
+    }
+
+    // Gate 3 â€” require the employee's clock PIN.
+    final pinOk = await _verifyClockPin(context);
+    if (!context.mounted || !pinOk) return;
+
+    // _verifyClockPin's dialog now uses a zero-duration transition, so its
+    // element tree is already gone by the time we get here â€” no settle delay
+    // needed before calling clockIn(), which fires notifyListeners().
+
+    // Pass the shift ID so the server knows which shift to clock into.
+    // Without it the server returns 400 "No active shift right now".
+    final shiftId = context.read<DashboardProvider>().todayShift?.id;
+    final error = await clock.clockIn(shiftId: shiftId);
+    if (!context.mounted) return;
+
+    if (error != null) {
+      if (error.contains('Unauthorized') || error.contains('session')) {
+        _handleSessionExpired(context);
+      } else if (error.contains('work zone')) {
+        _showLocationDialog(context);
+      } else {
+        _snack(context, error, AppColors.error);
+      }
+    } else {
+      HapticFeedback.heavyImpact();
+      _snack(context, l10n.clockInSuccess, AppColors.success);
+    }
+  }
+
+  /// Fetches the employee's clock PIN and prompts for it. Returns true only
+  /// when the entered PIN matches. Used as a clock-in security gate.
+  Future<bool> _verifyClockPin(BuildContext context) async {
+    String? pin;
+    try {
+      final res = await ApiClient.instance.get(ApiConfig.clockPin);
+      final raw = res is Map<String, dynamic> ? res : <String, dynamic>{};
+      final data = raw['data'] is Map ? raw['data'] as Map : raw;
+      pin = data['pin']?.toString();
+    } catch (_) {
+      // If the PIN can't be loaded, don't hard-block clock-in.
+      return true;
+    }
+    if (pin == null || pin.isEmpty) return true; // no PIN configured
+    if (!context.mounted) return false;
+
+    final controller = TextEditingController();
+    // showGeneralDialog with a zero transition duration (instead of
+    // showDialog's default ~150ms animated exit) so the dialog's element
+    // subtree is fully unmounted by the time this await resolves. With an
+    // animated exit, Navigator.pop() resolves before the transition finishes,
+    // so code right after this call (clockIn(), which fires notifyListeners())
+    // could run while the dialog is still mid-unmount, tripping a
+    // "_dependents.isEmpty" assertion in Selectors watching ClockProvider.
+    final ok = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: Duration.zero,
+      pageBuilder: (dctx, _, _) {
+        final cs = Theme.of(dctx).colorScheme;
+        return AlertDialog(
+          title: const Text('Enter clock PIN'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            maxLength: 6,
+            style: TextStyle(color: cs.onSurface, letterSpacing: 4),
+            decoration: const InputDecoration(
+              counterText: '',
+              hintText: 'â€¢â€¢â€¢â€¢',
+            ),
+            onSubmitted: (v) => Navigator.pop(dctx, v.trim() == pin),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.pop(dctx, controller.text.trim() == pin),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    if (ok != true) {
+      if (context.mounted) {
+        _snack(context, 'Incorrect PIN', AppColors.error);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _handleClockOut(BuildContext context) async {
+    final l10n   = AppLocalizations.of(context);
+    final clock  = context.read<ClockProvider>();
+    final session = clock.formattedSession;
+
+    final error = await clock.clockOut();
+    if (!context.mounted) return;
+
+    if (error != null) {
+      _snack(context, error, AppColors.error);
+    } else {
+      HapticFeedback.heavyImpact();
+      _snack(context, l10n.clockOutSuccess(session), AppColors.slate700);
+    }
+  }
+
+  Future<void> _handleBreak(BuildContext context) async {
+    final clock = context.read<ClockProvider>();
+    final error = clock.isOnBreak
+        ? await clock.endBreak()
+        : await clock.startBreak();
+
+    if (!context.mounted) return;
+    if (error != null) {
+      _snack(context, error, AppColors.error);
+    } else {
+      HapticFeedback.lightImpact();
+    }
+  }
+
+  void _snack(BuildContext context, String msg, Color color) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+          SnackBar(
+            content:         Text(msg),
+            backgroundColor: color,
+            behavior:        SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          ),
+        );
+  }
+
+  // â”€â”€ Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  void _handleSessionExpired(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.sessionExpired),
+        content: const Text('Please log in again to continue.'),
+        actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _refreshLocation();
+              context.read<AuthProvider>().signOut();
             },
-            child: const Text('Refresh Location'),
+            child: Text(l10n.ok),
           ),
         ],
       ),
     );
   }
 
-  // ========== UI BUILD METHODS ==========
+  void _showLocationDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    // Clock-in is geofenced and server-enforced â€” there is no override path.
+    // The user must be physically within the work zone to clock in.
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title:   Text(l10n.clockOutsideWorkZoneTitle),
+        content: Text(l10n.clockOutsideWorkZoneBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child:     Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleScanQr(BuildContext context) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScanPage()),
+    );
+    if (!context.mounted || result == null) return;
+    _snack(context, result, const Color(0xFF43A047));
+    context.read<ClockProvider>().initialise();
+  }
+
+  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Light gray background
-      appBar: _buildAppBar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              
-              // Show error message if location fetch failed
-              if (_locationError.isNotEmpty)
-                _buildLocationError(),
-              
-              // Duty status badge or clock-in button
-              if (_isOnDuty)
-                const OnDutyStatus()
-              else
-                _buildLocationStatus(),
-              
-              const SizedBox(height: 24),
-              
-              // Session timer or map preview
-              if (_isOnDuty)
-                _buildSessionTimer()
-              else
-                _buildLocationMapPreview(),
-              
-              const SizedBox(height: 24),
-              
-              // Action buttons (clock in/out, break)
-              if (_isOnDuty)
-                _buildActionButtons()
-              else ...[
-                _buildLocationCard(),
-                const SizedBox(height: 16),
-                if (!_isWithinWorkZone && _currentPosition != null)
-                  _buildLocationOverrideButton(),
-                const SizedBox(height: 16),
-                _buildClockInButton(),
-              ],
-              
-              const SizedBox(height: 24),
-              _buildLocationDisclaimer(),
-              const SizedBox(height: 24),
-              
-              // Today's shift information
-              _buildTodayShiftCard(),
-              const SizedBox(height: 16),
-              
-              // Recent activity list
-              _buildRecentActivity(),
-              const SizedBox(height: 32),
-            ],
+      body: Column(
+        children: [
+          Container(
+            color: cs.surface,
+            padding: EdgeInsets.only(
+              top:    AppDimensions.pagePaddingH,
+              left:   AppDimensions.pagePaddingH,
+              right:  AppDimensions.pagePaddingH,
+              bottom: AppDimensions.spacingXl,
+            ),
+            child: const _PageHeader(),
           ),
-        ),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                physics: Theme.of(context).platform == TargetPlatform.iOS
+                    ? const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics())
+                    : const ClampingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics()),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.pagePaddingH,
+                  vertical:   AppDimensions.spacingXl,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Selector<DashboardProvider, ShiftModel?>(
+                      selector: (_, p) => p.todayShift,
+                      builder: (ctx, todayShift, _) => TodayShiftCard(
+                        shift: todayShift,
+                        onViewDetails: todayShift == null ? null : () =>
+                            _showShiftDetails(ctx, todayShift),
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMd),
+
+                    // Clock face â€” rebuilds every second via sessionTime
+                    Selector<ClockProvider,
+                        ({ClockStatus status, Duration session, Duration breakTime, bool onBreak})>(
+                      selector: (_, c) => (
+                        status:    c.clockStatus,
+                        session:   c.sessionTime,
+                        breakTime: c.breakTime,
+                        onBreak:   c.isOnBreak,
+                      ),
+                      builder: (_, data, _) => ClockFaceCard(
+                        clockStatus: data.status,
+                        sessionTime: data.session,
+                        breakTime:   data.breakTime,
+                        isOnBreak:   data.onBreak,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMd),
+
+                    // Location â€” only rebuilds when location state changes
+                    Selector<ClockProvider,
+                        ({WorkLocationModel? workplace, bool isWithin, bool isLoading, String? dist, String? err, bool workplaceLoading})>(
+                      selector: (_, c) => (
+                        workplace:       c.workplace,
+                        isWithin:        c.isWithinWorkZone,
+                        isLoading:       c.isLoadingLocation,
+                        dist:            c.formattedDistance,
+                        err:             c.locationError,
+                        workplaceLoading: c.isLoadingWorkplace,
+                      ),
+                      builder: (ctx, data, _) {
+                        if (data.workplaceLoading) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+                        if (data.workplace == null) {
+                          return _WorkplaceError(
+                            message: ctx.watch<ClockProvider>().workplaceError,
+                          );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            LocationCard(
+                              workplace:        data.workplace!,
+                              isWithinWorkZone: data.isWithin,
+                              distanceText:     data.dist,
+                            ),
+                            const SizedBox(height: AppDimensions.spacingXs),
+                            LocationStatusWidget(
+                              isLoading:        data.isLoading,
+                              isWithinWorkZone: data.isWithin,
+                              errorMessage:     data.err,
+                              distanceText:     data.dist,
+                              onRefresh: () =>
+                                  ctx.read<ClockProvider>().fetchCurrentLocation(),
+                            ),
+                            const SizedBox(height: AppDimensions.spaceLg),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // Action buttons â€” rebuilds on status / loading / location changes
+                    Selector<ClockProvider,
+                        ({ClockStatus status, bool isActionLoading, bool isLocationLoading, bool isWithin})>(
+                      selector: (_, c) => (
+                        status:            c.clockStatus,
+                        isActionLoading:   c.isActionLoading,
+                        isLocationLoading: c.isLoadingLocation,
+                        isWithin:          c.isWithinWorkZone,
+                      ),
+                      builder: (ctx, data, _) => _ActionButtons(
+                        clockStatus:       data.status,
+                        isActionLoading:   data.isActionLoading,
+                        isLoadingLocation: data.isLocationLoading,
+                        isWithinWorkZone:  data.isWithin,
+                        onClockIn:   () => _handleClockIn(ctx),
+                        onClockOut:  () => _handleClockOut(ctx),
+                        onBreak:     () => _handleBreak(ctx),
+                        onScanQr:    () => _handleScanQr(ctx),
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXxl),
+
+                    Selector<ClockProvider, List<ActivityModel>>(
+                      selector: (_, c) => c.activities,
+                      builder:  (_, acts, _) =>
+                          RecentActivityList(activities: acts),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingXxl),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  /// Build the app bar with title and potential menu
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: const Text(
-        'Time Clock',
-        style: TextStyle(
-          color: Color(0xFF0F172A),
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      centerTitle: true,
-      leading: IconButton(
-        icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
-        onPressed: () {
-          // TODO: Open navigation drawer
-        },
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Color(0xFF0F172A)),
-          onPressed: () {
-            // TODO: Open notifications
-          },
-        ),
-      ],
-    );
-  }
+// â”€â”€ Workplace error fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /// Build location error message widget
-  Widget _buildLocationError() {
+class _WorkplaceError extends StatelessWidget {
+  const _WorkplaceError({this.message});
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEE2E2), // Light red background
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEF4444)),
+        color:        AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        border:       Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFEF4444)),
+          const Icon(Icons.location_off_outlined, color: AppColors.error),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              _locationError,
-              style: const TextStyle(
-                color: Color(0xFFEF4444),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              message ?? 'Could not load work location. Please try again.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  /// Build session timer display
-  Widget _buildSessionTimer() {
+// â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _PageHeader extends StatelessWidget {
+  const _PageHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    const months = [
+      'Jan','Feb','Mar','Apr','May','Jun',
+      'Jul','Aug','Sep','Oct','Nov','Dec',
+    ];
+    final now       = DateTime.now();
+    final dateLabel = '${months[now.month - 1]} ${now.day}';
+
+    // No back button â€” the clock-in screen is a root navigation tab.
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _formatDuration(_sessionTime),
-          style: const TextStyle(
-            fontSize: 56,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF2563EB),
-            letterSpacing: 2,
+        Text(dateLabel,
+            style: AppTextStyles.caption
+                .copyWith(color: AppColors.slate500, fontSize: 12)),
+        const SizedBox(height: 1),
+        Text(l10n.clockTitle, style: AppTextStyles.h5),
+      ],
+    );
+  }
+}
+
+// â”€â”€ Action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _ActionButtons extends StatelessWidget {
+  const _ActionButtons({
+    required this.clockStatus,
+    required this.isActionLoading,
+    required this.isLoadingLocation,
+    required this.isWithinWorkZone,
+    required this.onClockIn,
+    required this.onClockOut,
+    required this.onBreak,
+    required this.onScanQr,
+  });
+
+  final ClockStatus  clockStatus;
+  final bool         isActionLoading;
+  final bool         isLoadingLocation;
+  final bool         isWithinWorkZone;
+  final VoidCallback onClockIn;
+  final VoidCallback onClockOut;
+  final VoidCallback onBreak;
+  final VoidCallback onScanQr;
+
+  bool get _isIdle    => clockStatus == ClockStatus.idle;
+  bool get _isOnBreak => clockStatus == ClockStatus.onBreak;
+
+  // Disable all buttons while any action or location fetch is in progress
+  bool get _buttonsDisabled => isActionLoading || isLoadingLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _isIdle
+            ? _buildIdleButtons(context)
+            : _buildActiveButtons(context),
+
+        // Overlay spinner while API call is in flight
+        if (isActionLoading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color:        Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Current Session Time',
-          style: TextStyle(
-            fontSize: 15,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
       ],
     );
   }
 
-  /// Build action buttons (break and clock out)
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // Start Break button
-          Expanded(
+  Widget _buildIdleButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: AppDimensions.buttonHeightLg,
+          child: ElevatedButton.icon(
+            // Disable if loading OR if location isn't ready yet
+            onPressed: _buttonsDisabled ? null : onClockIn,
+            icon:  const Icon(Icons.fingerprint, size: 22),
+            label: Text(l10n.clockIn),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(AppDimensions.radiusMd)),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppDimensions.spacingSm),
+        // QR scan button â€” always visible on idle screen
+        SizedBox(
+          width: double.infinity,
+          height: AppDimensions.buttonHeightMd,
+          child: OutlinedButton.icon(
+            onPressed: _buttonsDisabled ? null : onScanQr,
+            icon:  const Icon(Icons.qr_code_scanner, size: 18),
+            label: const Text('Scan Terminal QR'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+            ),
+          ),
+        ),
+        // Outside the geofence: inform the user instead of offering a bypass.
+        // Clock-in is geofenced (and re-checked server-side), so there is no
+        // override â€” the employee must be physically within the work zone.
+        if (!isWithinWorkZone && !isLoadingLocation) ...[
+          const SizedBox(height: AppDimensions.spacingSm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.location_off_outlined,
+                  size: 16, color: AppColors.warning),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  l10n.clockOutsideWorkZoneTitle,
+                  style: const TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActiveButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: AppDimensions.buttonHeightMd,
             child: OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Implement break functionality
-              },
-              icon: const Icon(Icons.coffee, size: 18),
-              label: const Text(
-                'Start Break',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              // Can't start/end break while another action is loading
+              onPressed: _buttonsDisabled ? null : onBreak,
+              icon: Icon(
+                _isOnBreak
+                    ? Icons.play_arrow_rounded
+                    : Icons.free_breakfast_outlined,
+                size: 18,
               ),
+              label: Text(_isOnBreak
+                  ? l10n.clockEndBreakLabel
+                  : l10n.clockBreakLabel),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF64748B),
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
-                minimumSize: const Size(0, 52),
+                foregroundColor: _isOnBreak
+                    ? AppColors.success
+                    : AppColors.slate700,
+                side: BorderSide(
+                    color: _isOnBreak
+                        ? AppColors.success
+                        : AppColors.slate200),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                backgroundColor: Colors.white,
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusMd)),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          
-          // Clock Out button
-          Expanded(
+        ),
+        const SizedBox(width: AppDimensions.spacingSm),
+        Expanded(
+          flex: 2,
+          child: SizedBox(
+            height: AppDimensions.buttonHeightMd,
             child: ElevatedButton.icon(
-              onPressed: _handleClockOut,
-              icon: const Icon(Icons.exit_to_app, size: 18),
-              label: const Text(
-                'Clock Out',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
+              // Disable clock-out while on break OR while action is loading
+              onPressed: (_isOnBreak || _buttonsDisabled) ? null : onClockOut,
+              icon:  const Icon(Icons.logout_rounded, size: 18),
+              label: Text(l10n.clockOut),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                minimumSize: const Size(0, 52),
+                backgroundColor:         AppColors.error,
+                foregroundColor:         Colors.white,
+                disabledBackgroundColor: AppColors.slate200,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusMd)),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  /// Build location map preview widget
-  Widget _buildLocationMapPreview() {
-    return LocationMapPreview(
-      isWithinWorkZone: _isWithinWorkZone,
-      isLoadingLocation: _isLoadingLocation,
-      currentPosition: _currentPosition,
-      onRefresh: _refreshLocation,
-    );
-  }
-
-  /// Build location card widget
-  Widget _buildLocationCard() {
-    return LocationCard(
-      workplace: _workplace,
-      isWithinWorkZone: _isWithinWorkZone,
-      distanceText: _currentPosition != null 
-          ? _formatDistance(_distanceFromWorkplace) 
-          : null,
-    );
-  }
-
-  /// Build location status indicator
-  Widget _buildLocationStatus() {
-    if (_isLoadingLocation) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Getting your location...',
-              style: TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
         ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _isWithinWorkZone ? Icons.check_circle : Icons.warning,
-            color: _isWithinWorkZone 
-                ? const Color(0xFF22C55E) 
-                : const Color(0xFFF59E0B),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _isWithinWorkZone 
-                  ? 'You are within the work zone'
-                  : 'You are outside the work zone',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _isWithinWorkZone 
-                    ? const Color(0xFF22C55E) 
-                    : const Color(0xFFF59E0B),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
-  }
-
-  /// Build location override request button
-  Widget _buildLocationOverrideButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: OutlinedButton.icon(
-        onPressed: _showOverrideRequestDialog,
-        icon: const Icon(Icons.location_searching, size: 20),
-        label: const Text(
-          'Request Location Override',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFF59E0B),
-          side: const BorderSide(color: Color(0xFFF59E0B), width: 2),
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  /// Show dialog for requesting location override
-  void _showOverrideRequestDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Request Override'),
-        content: const Text(
-          'Send a location override request to your manager? '
-          'They will be notified and can approve your clock-in remotely.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Send override request to manager
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Override request sent to manager'),
-                  backgroundColor: Color(0xFF2563EB),
-                ),
-              );
-            },
-            child: const Text('Send Request'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build clock-in button
-  Widget _buildClockInButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: ElevatedButton.icon(
-        onPressed: _isLoadingLocation ? null : _handleClockIn,
-        icon: const Icon(Icons.fingerprint, size: 24),
-        label: const Text(
-          'Clock In',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2563EB),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFE2E8F0),
-          elevation: 0,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build location disclaimer text
-  Widget _buildLocationDisclaimer() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        'Clock In: Must be within work zone.\n'
-        'Clock Out: Can be done from anywhere.\n\n'
-        'Your location is recorded for attendance verification.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          color: Color(0xFF94A3B8),
-          fontWeight: FontWeight.w500,
-          height: 1.5,
-        ),
-      ),
-    );
-  }
-
-  /// Build today's shift card
-  Widget _buildTodayShiftCard() {
-    return TodayShiftCard(
-      onViewDetails: () {
-        // TODO: Navigate to shift details
-        debugPrint('View shift details tapped');
-      },
-    );
-  }
-
-  /// Build recent activity widget
-  Widget _buildRecentActivity() {
-    return const RecentActivity();
   }
 }

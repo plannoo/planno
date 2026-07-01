@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -11,37 +12,54 @@ class AbsenceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingLg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16)],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04), blurRadius: 16)
+        ],
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _StatCell(label: 'Used',      value: '${summary.usedDays}',      color: AppColors.primary),
-              _StatCell(label: 'Remaining', value: '${summary.remainingDays}', color: AppColors.success),
-              _StatCell(label: 'Total',     value: '${summary.totalDays}',     color: AppColors.slate400),
+              _StatCell(
+                  label: l10n.absenceUsed,
+                  value: '${summary.usedDays}',
+                  color: AppColors.primary),
+              _StatCell(
+                  label: l10n.absenceRemaining,
+                  value: '${summary.remainingDays}',
+                  color: AppColors.success),
+              _StatCell(
+                  label: l10n.absenceTotal,
+                  value: '${summary.totalDays}',
+                  color: AppColors.slate400),
             ],
           ),
           const SizedBox(height: AppDimensions.spacingMd),
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+            borderRadius:
+                BorderRadius.circular(AppDimensions.radiusFull),
             child: LinearProgressIndicator(
-              value: summary.usagePercentage,
-              minHeight: 8,
+              value:           summary.usagePercentage,
+              minHeight:       8,
               backgroundColor: AppColors.slate100,
-              color: AppColors.primary,
+              color:           AppColors.primary,
             ),
           ),
           const SizedBox(height: AppDimensions.spacingXs),
           Align(
             alignment: Alignment.centerRight,
-            child: Text('Valid until ${summary.formattedValidUntil}', style: AppTextStyles.caption),
+            child: Text(
+              l10n.absenceValidUntil(summary.formattedValidUntil),
+              style: AppTextStyles.caption,
+            ),
           ),
         ],
       ),
@@ -52,15 +70,21 @@ class AbsenceSummaryCard extends StatelessWidget {
 class _StatCell extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
-  const _StatCell({required this.label, required this.value, required this.color});
+  final Color  color;
+  const _StatCell(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) => Column(
-    children: [
-      Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: color, height: 1.1)),
-      const SizedBox(height: 2),
-      Text(label, style: AppTextStyles.caption),
-    ],
-  );
+        children: [
+          Text(value,
+              style: TextStyle(
+                  fontSize:   28,
+                  fontWeight: FontWeight.w800,
+                  color:      color,
+                  height:     1.1)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.caption),
+        ],
+      );
 }

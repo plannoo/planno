@@ -1,293 +1,620 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-class MySchedulePage extends StatelessWidget {
+import '../../../core/network/api_client.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+
+// â”€â”€ German locale helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const _de       = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const _months   = ['Jan','Feb','MÃ¤r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+DateTime _monday(DateTime d) {
+  final diff = d.weekday - 1;
+  return DateTime(d.year, d.month, d.day - diff);
+}
+
+String _cwLabel(DateTime d) {
+  final jan4 = DateTime(d.year, 1, 4);
+  final startOfWeek1 = jan4.subtract(Duration(days: jan4.weekday - 1));
+  final diff = d.difference(startOfWeek1).inDays;
+  return 'CW ${(diff ~/ 7) + 1}';
+}
+
+/// Formats an ISO datetime string (e.g. the shift's startTime/endTime) to a
+/// local HH:MM label. Returns '--:--' when the value is missing/unparseable.
+String _hhmm(String? iso) {
+  if (iso == null || iso.isEmpty) return '--:--';
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return '--:--';
+  return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+}
+
+// â”€â”€ Data model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _Shift {
+  final String id;
+  final String dateIso;
+  final String start;
+  final String end;
+  final int    breakMin;
+  final String role;
+
+  const _Shift({
+    required this.id,
+    required this.dateIso,
+    required this.start,
+    required this.end,
+    required this.breakMin,
+    required this.role,
+  });
+}
+
+/// A school-holiday range (e.g. "Sommerferien", 20 Jul â€“ 1 Sep).
+class _Holiday {
+  final String name;
+  final DateTime start;
+  final DateTime end;
+  const _Holiday(this.name, this.start, this.end);
+
+  /// True if [d]'s calendar day falls within the holiday range (inclusive).
+  bool covers(DateTime d) {
+    final day = DateTime(d.year, d.month, d.day);
+    final s   = DateTime(start.year, start.month, start.day);
+    final e   = DateTime(end.year, end.month, end.day);
+    return !day.isBefore(s) && !day.isAfter(e);
+  }
+
+  factory _Holiday.fromJson(Map<String, dynamic> j) => _Holiday(
+        j['name'] as String? ?? 'Holiday',
+        DateTime.parse(j['startDate'] as String),
+        DateTime.parse(j['endDate'] as String),
+      );
+}
+
+// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class MySchedulePage extends StatefulWidget {
   const MySchedulePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildTopAppBar(),
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                _buildHorizontalDatePicker(),
-                const SizedBox(height: 32),
-                _buildSectionHeader("Today, Oct 13", "2 Shifts"),
-                const SizedBox(height: 16),
-                _buildPrimaryShiftCard(),
-                const SizedBox(height: 16),
-                _buildBackupShiftCard(),
-                const SizedBox(height: 32),
-                _buildWeeklyProgressCard(),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+  State<MySchedulePage> createState() => _MySchedulePageState();
+}
+
+class _MySchedulePageState extends State<MySchedulePage> {
+
+  late DateTime _weekStart;
+  late DateTime _selectedDay;
+  bool _showEntireMonth = false;
+  bool _minimizeEmpty   = false;
+  List<_Shift> _shifts  = [];
+  List<_Holiday> _holidays = [];
+  bool _loading         = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _weekStart   = _monday(now);
+    _selectedDay = now;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Widget _buildTopAppBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.calendar_month, color: Color(0xFF2563EB), size: 24),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'My Schedule',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-          ),
-          const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search, color: Color(0xFF64748B))),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, color: Color(0xFF64748B))),
-        ],
-      ),
-    );
+  DateTime get _weekEnd => _weekStart.add(const Duration(days: 6));
+
+  // All days for the current view (week or full month)
+  List<DateTime> get _allDays {
+    if (_showEntireMonth) {
+      final daysInMonth = DateUtils.getDaysInMonth(_weekStart.year, _weekStart.month);
+      return List.generate(daysInMonth, (i) => DateTime(_weekStart.year, _weekStart.month, i + 1));
+    }
+    return List.generate(7, (i) => _weekStart.add(Duration(days: i)));
   }
 
-  Widget _buildHorizontalDatePicker() {
-    // Mock data for the horizontal calendar
-    final days = [
-      {'day': 'MON', 'date': '12', 'selected': false},
-      {'day': 'TUE', 'date': '13', 'selected': true},
-      {'day': 'WED', 'date': '14', 'selected': false},
-      {'day': 'THU', 'date': '15', 'selected': false},
-      {'day': 'FRI', 'date': '16', 'selected': false},
-      {'day': 'SAT', 'date': '17', 'selected': false},
-    ];
+  // Days after applying "minimize empty days" filter
+  List<DateTime> get _weekDays {
+    if (!_minimizeEmpty || _shifts.isEmpty) return _allDays;
+    final shiftDates = _shifts.map((s) => s.dateIso).toSet();
+    return _allDays.where((d) {
+      final isoKey =
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      return shiftDates.contains(isoKey);
+    }).toList();
+  }
 
-    return SizedBox(
-      height: 90,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: days.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final item = days[index];
-          bool isSelected = item['selected'] as bool;
-          return Container(
-            width: 65,
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF2563EB) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: isSelected ? null : Border.all(color: const Color(0xFFF1F5F9)),
-              boxShadow: isSelected 
-                ? [BoxShadow(color: const Color(0xFF2563EB).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))] 
-                : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(item['day'] as String, 
-                  style: TextStyle(
-                    fontSize: 12, 
-                    fontWeight: FontWeight.w700, 
-                    color: isSelected ? Colors.white.withOpacity(0.8) : const Color(0xFF94A3B8)
-                  )
-                ),
-                const SizedBox(height: 4),
-                Text(item['date'] as String, 
-                  style: TextStyle(
-                    fontSize: 20, 
-                    fontWeight: FontWeight.w800, 
-                    color: isSelected ? Colors.white : const Color(0xFF1E293B)
-                  )
-                ),
-              ],
-            ),
+  Future<void> _load() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final rangeStart = _showEntireMonth
+          ? DateTime(_weekStart.year, _weekStart.month, 1)
+          : _weekStart;
+      final rangeEnd = _showEntireMonth
+          ? DateTime(_weekStart.year, _weekStart.month,
+              DateUtils.getDaysInMonth(_weekStart.year, _weekStart.month))
+          : _weekEnd;
+      final from = rangeStart.toIso8601String().split('T')[0];
+      final to   = rangeEnd.toIso8601String().split('T')[0];
+      // Fetch shifts and school holidays for the visible range together.
+      final results = await Future.wait([
+        ApiClient.instance.get('/api/shifts?from=$from&to=$to&limit=100'),
+        ApiClient.instance
+            .get('/api/absences/school-holidays?year=${_weekStart.year}')
+            .catchError((_) => <String, dynamic>{}),
+      ]);
+      if (!mounted) return;
+      final data = results[0] as Map<String, dynamic>;
+      final rawShifts = (data['data'] as List<dynamic>?) ?? [];
+      final hData = results[1] is Map<String, dynamic>
+          ? results[1] as Map<String, dynamic>
+          : <String, dynamic>{};
+      final rawHolidays = (hData['data'] as List<dynamic>?) ?? [];
+      setState(() {
+        _shifts   = rawShifts.map((s) {
+          final m = s as Map<String, dynamic>;
+          return _Shift(
+            id:       m['id']     as String? ?? '',
+            dateIso:  (m['date']  as String? ?? '').split('T').first,
+            start:    _hhmm(m['startTime'] as String?),
+            end:      _hhmm(m['endTime']   as String?),
+            breakMin: (m['breakMinutes'] as num? ?? 0).toInt(),
+            role:     m['role']   as String? ?? '',
           );
-        },
-      ),
-    );
+        }).toList();
+        _holidays = rawHolidays
+            .map((h) => _Holiday.fromJson(h as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (_) {
+      // silently keep empty state
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  Widget _buildSectionHeader(String title, String badge) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: const Color(0xFFDBEAFE), borderRadius: BorderRadius.circular(8)),
-          child: Text(badge, style: const TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w700, fontSize: 13)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrimaryShiftCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('MORNING SHIFT', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w800, fontSize: 13, letterSpacing: 0.5)),
-              Icon(Icons.more_vert, color: Colors.grey.shade400),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text('09:00 - 17:00', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.work_outline, 'Cashier • Floor Manager'),
-          const SizedBox(height: 8),
-          _buildInfoRow(Icons.location_on_outlined, 'Downtown Branch - Main Entrance'),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.access_time, size: 18),
-                  label: const Text('Clock In'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    minimumSize: const Size(0, 48),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFF1F5F9)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    minimumSize: const Size(0, 48),
-                    backgroundColor: const Color(0xFFF8FAFC),
-                  ),
-                  child: const Text('Details', style: TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          )
+  /// Employee requests to give up / swap one of their shifts. Releases it to
+  /// the open pool on approval (no specific target colleague for now).
+  Future<void> _requestSwap(_Shift s) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title:   const Text('Request shift swap'),
+        content: Text('Request to give up your shift on ${s.dateIso} '
+            '(${s.start}â€“${s.end})? A manager must approve it.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Request')),
         ],
       ),
     );
+    if (confirm != true) return;
+    try {
+      await ApiClient.instance.post('/api/shifts/${s.id}/swap-request', data: {});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Swap request sent to your manager'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
-  Widget _buildBackupShiftCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+  void _prevWeek() {
+    setState(() {
+      _weekStart   = _weekStart.subtract(const Duration(days: 7));
+      _selectedDay = _weekStart;
+    });
+    _load();
+  }
+
+  void _nextWeek() {
+    setState(() {
+      _weekStart   = _weekStart.add(const Duration(days: 7));
+      _selectedDay = _weekStart;
+    });
+    _load();
+  }
+
+  void _showSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SettingsSheet(
+        showMonth:    _showEntireMonth,
+        minimizeEmpty: _minimizeEmpty,
+        onShowMonth:   (v) { setState(() => _showEntireMonth = v); _load(); },
+        onMinimize:    (v) => setState(() => _minimizeEmpty   = v),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      body: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('EVENING BACKUP', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w800, fontSize: 13)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(6)),
-                child: const Text('ON CALL', style: TextStyle(color: Color(0xFFB45309), fontSize: 10, fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text('18:30 - 22:00', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.inventory_2_outlined, 'Inventory • North Warehouse'),
-          const SizedBox(height: 8),
-          _buildInfoRow(Icons.map_outlined, 'Logistics Center A2'),
-          const SizedBox(height: 20),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.visibility_outlined, size: 18),
-              label: const Text('View Details', style: TextStyle(fontWeight: FontWeight.w700)),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF475569),
-                backgroundColor: const Color(0xFFF8FAFC),
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+          _buildHeader(cs),
+          Expanded(
+            child: _MyScheduleTab(
+              weekDays:    _weekDays,
+              selectedDay: _selectedDay,
+              shifts:      _shifts,
+              holidays:    _holidays,
+              loading:     _loading,
+              onSelectDay: (d) => setState(() => _selectedDay = d),
+              onRequestSwap: _requestSwap,
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildWeeklyProgressCard() {
+  Widget _buildHeader(ColorScheme cs) {
+    final cw   = _cwLabel(_weekStart);
+    final year = _weekStart.year;
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Weekly Progress', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w800, fontSize: 14)),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
+      color: AppColors.primary,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
             children: [
               RichText(
-                text: const TextSpan(
+                text: TextSpan(
+                  style: const TextStyle(fontFamily: 'Inter'),
                   children: [
-                    TextSpan(text: '32.5 ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-                    TextSpan(text: '/ 40h', style: TextStyle(fontSize: 16, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                    TextSpan(
+                      text: '$cw ',
+                      style: const TextStyle(
+                          fontSize: 26, fontWeight: FontWeight.w400,
+                          color: Colors.white),
+                    ),
+                    TextSpan(
+                      text: '$year',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w400,
+                          color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
-              const Text('81% Complete', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w700, fontSize: 13)),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined,
+                    color: Colors.white70, size: 22),
+                onPressed: _showSettings,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 12),
+              _NavButtons(onPrev: _prevWeek, onNext: _nextWeek),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: 0.81,
-              minHeight: 10,
-              backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF64748B)),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500, fontSize: 14)),
-      ],
+}
+
+// â”€â”€ Nav buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _NavButtons extends StatelessWidget {
+  const _NavButtons({required this.onPrev, required this.onNext});
+  final VoidCallback onPrev, onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white54),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          _NavBtn(icon: Icons.chevron_left, onTap: onPrev),
+          Container(width: 1, height: 32, color: Colors.white54),
+          _NavBtn(icon: Icons.chevron_right, onTap: onNext),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavBtn extends StatelessWidget {
+  const _NavBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Icon(icon, color: Colors.white, size: 18),
+    ),
+  );
+}
+
+// â”€â”€ "My Schedule" tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _MyScheduleTab extends StatelessWidget {
+  const _MyScheduleTab({
+    required this.weekDays,
+    required this.selectedDay,
+    required this.shifts,
+    required this.holidays,
+    required this.loading,
+    required this.onSelectDay,
+    required this.onRequestSwap,
+  });
+
+  final List<DateTime>     weekDays;
+  final DateTime           selectedDay;
+  final List<_Shift>       shifts;
+  final List<_Holiday>     holidays;
+  final bool               loading;
+  final ValueChanged<DateTime> onSelectDay;
+  final ValueChanged<_Shift>   onRequestSwap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs  = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: weekDays.length,
+      separatorBuilder: (_, _) =>
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
+      itemBuilder: (_, i) {
+        final d       = weekDays[i];
+        final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+        final isSelected = d.year == selectedDay.year &&
+            d.month == selectedDay.month && d.day == selectedDay.day;
+        final isoKey  = '${d.year.toString().padLeft(4,'0')}-'
+            '${d.month.toString().padLeft(2,'0')}-'
+            '${d.day.toString().padLeft(2,'0')}';
+        final dayShifts = shifts.where((s) => s.dateIso == isoKey).toList();
+        final hasShift  = dayShifts.isNotEmpty;
+        String? holidayName;
+        for (final h in holidays) {
+          if (h.covers(d)) { holidayName = h.name; break; }
+        }
+
+        return InkWell(
+          onTap: () => onSelectDay(d),
+          child: Container(
+            // Tint shift days and the selected row, and mark shift days with a
+            // left accent border. (A bordered container avoids the unbounded-
+            // height issue a stretched Row stripe causes inside a ListView.)
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.10)
+                  : hasShift
+                      ? AppColors.primary.withValues(alpha: 0.04)
+                      : cs.surface,
+              border: Border(
+                left: BorderSide(
+                  width: 4,
+                  color: hasShift ? AppColors.primary : Colors.transparent,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Day label
+                SizedBox(
+                  width: 52,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _de[d.weekday - 1].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: (isToday || hasShift)
+                              ? AppColors.primary
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        '${d.day}. ${_months[d.month - 1]}',
+                        style: TextStyle(
+                            fontSize: 11, color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                // Shift chips, holiday badge, or a muted placeholder
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasShift)
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: dayShifts.map((s) => GestureDetector(
+                            onTap: () => onRequestSwap(s), // tap to request a swap
+                            child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${s.start} â€“ ${s.end}',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ))).toList(),
+                        )
+                      else if (holidayName == null)
+                        Text('No shift',
+                            style: AppTextStyles.caption.copyWith(
+                                color: cs.onSurfaceVariant
+                                    .withValues(alpha: 0.6))),
+                      // School-holiday badge (shown even alongside a shift).
+                      if (holidayName != null)
+                        Padding(
+                          padding: EdgeInsets.only(top: hasShift ? 4 : 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF22C55E)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.celebration_outlined,
+                                    size: 13, color: Color(0xFF16A34A)),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    holidayName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: const Color(0xFF16A34A),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (hasShift)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4, left: 6),
+                    width: 8, height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary, shape: BoxShape.circle),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// â”€â”€ Settings sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _SettingsSheet extends StatefulWidget {
+  const _SettingsSheet({
+    required this.showMonth,
+    required this.minimizeEmpty,
+    required this.onShowMonth,
+    required this.onMinimize,
+  });
+
+  final bool showMonth, minimizeEmpty;
+  final ValueChanged<bool> onShowMonth, onMinimize;
+
+  @override
+  State<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends State<_SettingsSheet> {
+  late bool _showMonth, _minimizeEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _showMonth     = widget.showMonth;
+    _minimizeEmpty = widget.minimizeEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 10),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: cs.outline.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(Icons.close, size: 22, color: cs.onSurfaceVariant),
+                ),
+                const Expanded(
+                  child: Text('Settings',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(width: 22),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
+          SwitchListTile(
+            value: _showMonth,
+            onChanged: (v) {
+              setState(() => _showMonth = v);
+              widget.onShowMonth(v);
+            },
+            title: Text('Show entire month',
+                style: TextStyle(fontSize: 15, color: cs.onSurface)),
+            activeColor: AppColors.primary,
+          ),
+          Divider(height: 1, indent: 16, color: cs.outline.withValues(alpha: 0.2)),
+          SwitchListTile(
+            value: _minimizeEmpty,
+            onChanged: (v) {
+              setState(() => _minimizeEmpty = v);
+              widget.onMinimize(v);
+            },
+            title: Text('Minimize empty days',
+                style: TextStyle(fontSize: 15, color: cs.onSurface)),
+            activeColor: AppColors.primary,
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+        ],
+      ),
     );
   }
 }

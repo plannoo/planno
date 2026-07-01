@@ -1,19 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/date_formatter.dart';
+import '../core/utils/date_formatter.dart';
 
-enum AbsenceType { vacation, training, sickLeave, personalDay }
+enum AbsenceType { vacation, training, sickLeave, personalDay, unpaid, standby }
 enum AbsenceStatus { pending, approved, rejected }
 
-/// Represents an employee absence request.
 class AbsenceModel {
-  final String id;
-  final AbsenceType type;
-  final DateTime startDate;
-  final DateTime endDate;
-  final int workingDays;
-  final AbsenceStatus status;
-  final String? reason;
-
   const AbsenceModel({
     required this.id,
     required this.type,
@@ -24,15 +15,24 @@ class AbsenceModel {
     this.reason,
   });
 
-  // ── Display helpers ────────────────────────────────────────────────────────
+  final String        id;
+  final AbsenceType   type;
+  final DateTime      startDate;
+  final DateTime      endDate;
+  final int           workingDays;
+  final AbsenceStatus status;
+  final String?       reason;
 
-  String get formattedDateRange => DateFormatter.formatDateRange(startDate, endDate);
+  String get formattedDateRange =>
+      DateFormatter.formatDateRange(startDate, endDate);
 
   String get typeLabel => switch (type) {
     AbsenceType.vacation    => 'Vacation',
     AbsenceType.training    => 'Training',
     AbsenceType.sickLeave   => 'Sick Leave',
     AbsenceType.personalDay => 'Personal Day',
+    AbsenceType.unpaid      => 'Unpaid Leave',
+    AbsenceType.standby     => 'Stand-by',
   };
 
   IconData get typeIcon => switch (type) {
@@ -40,6 +40,8 @@ class AbsenceModel {
     AbsenceType.training    => Icons.school,
     AbsenceType.sickLeave   => Icons.medical_services,
     AbsenceType.personalDay => Icons.calendar_today,
+    AbsenceType.unpaid      => Icons.money_off,
+    AbsenceType.standby     => Icons.timer,
   };
 
   Color get typeBackgroundColor => switch (type) {
@@ -47,6 +49,8 @@ class AbsenceModel {
     AbsenceType.training    => const Color(0xFFF3E5F5),
     AbsenceType.sickLeave   => const Color(0xFFFFEBEE),
     AbsenceType.personalDay => const Color(0xFFF5F5F5),
+    AbsenceType.unpaid      => const Color(0xFFFFF3E0),
+    AbsenceType.standby     => const Color(0xFFE8F5E9),
   };
 
   Color get typeIconColor => switch (type) {
@@ -54,6 +58,8 @@ class AbsenceModel {
     AbsenceType.training    => const Color(0xFF9C27B0),
     AbsenceType.sickLeave   => const Color(0xFFF44336),
     AbsenceType.personalDay => const Color(0xFF757575),
+    AbsenceType.unpaid      => const Color(0xFFFF9800),
+    AbsenceType.standby     => const Color(0xFF4CAF50),
   };
 
   String get statusLabel => switch (status) {
@@ -74,42 +80,75 @@ class AbsenceModel {
     AbsenceStatus.rejected => const Color(0xFF721C24),
   };
 
-  // ── Aliases for backward compatibility ────────────────────────────────
+  Color    get typeColor        => typeBackgroundColor;
+  String   get typeDisplayName  => typeLabel;
+  Color    get statusColor      => statusBackgroundColor;
+  String   get statusDisplayName => statusLabel;
 
-  /// Alias for typeBackgroundColor for backward compatibility with widgets
-  Color get typeColor => typeBackgroundColor;
+  /// The exact enum value the backend `createAbsenceSchema` accepts.
+  /// The app has more granular types than the API, so a couple map onto the
+  /// nearest supported value (`unpaid`/`standby` → `UNEXCUSED`/`PERSONAL_DAY`).
+  String get apiType => apiTypeFor(type);
 
-  /// Alias for typeLabel for backward compatibility with widgets
-  String get typeDisplayName => typeLabel;
+  static String apiTypeFor(AbsenceType type) => switch (type) {
+    AbsenceType.vacation    => 'VACATION',
+    AbsenceType.training    => 'TRAINING',
+    AbsenceType.sickLeave   => 'SICK_LEAVE',
+    AbsenceType.personalDay => 'PERSONAL_DAY',
+    AbsenceType.unpaid      => 'UNEXCUSED',
+    AbsenceType.standby     => 'PERSONAL_DAY',
+  };
 
-  /// Alias for statusBackgroundColor for backward compatibility with widgets
-  Color get statusColor => statusBackgroundColor;
+  factory AbsenceModel.fromJson(Map<String, dynamic> j) {
+    final rawType   = (j['type']   as String?) ?? '';
+    final rawStatus = (j['status'] as String?) ?? '';
 
-  /// Alias for statusLabel for backward compatibility with widgets
-  String get statusDisplayName => statusLabel;
-
-  // ── JSON ──────────────────────────────────────────────────────────────────
-
-  factory AbsenceModel.fromJson(Map<String, dynamic> json) => AbsenceModel(
-    id: json['id'] as String,
-    type: AbsenceType.values.firstWhere((e) => e.name == json['type']),
-    startDate: DateTime.parse(json['start_date'] as String),
-    endDate: DateTime.parse(json['end_date'] as String),
-    workingDays: json['working_days'] as int,
-    status: AbsenceStatus.values.firstWhere((e) => e.name == json['status']),
-    reason: json['reason'] as String?,
-  );
+    return AbsenceModel(
+      id:          j['id'] as String,
+      type:        _parseType(rawType),
+      status:      _parseStatus(rawStatus),
+      startDate:   _parseDate(j['start_date'] ?? j['startDate']),
+      endDate:     _parseDate(j['end_date']   ?? j['endDate']),
+      workingDays: (j['working_days'] ?? j['workingDays'] ?? 1) as int,
+      reason:      j['reason'] as String? ?? j['note'] as String?,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type.name,
-    'start_date': startDate.toIso8601String(),
-    'end_date': endDate.toIso8601String(),
+    'id':           id,
+    'type':         type.name,
+    'start_date':   startDate.toIso8601String().split('T').first,
+    'end_date':     endDate.toIso8601String().split('T').first,
     'working_days': workingDays,
-    'status': status.name,
-    'reason': reason,
+    'status':       status.name,
+    'reason':       reason,
   };
+
+  static DateTime _parseDate(dynamic v) {
+    if (v is DateTime) return v;
+    return DateTime.parse(v as String);
+  }
+
+  static AbsenceType _parseType(String raw) {
+    final normalised = raw.toLowerCase().replaceAll('_', '');
+    return switch (normalised) {
+      'vacation'     || 'urlaub'        => AbsenceType.vacation,
+      'training'     || 'qualifikation' => AbsenceType.training,
+      'sickleave'    || 'krankheit'     => AbsenceType.sickLeave,
+      'personalday'  || 'wunschfrei'    => AbsenceType.personalDay,
+      'unpaid'       || 'unentschuldigt'=> AbsenceType.unpaid,
+      'standby'      => AbsenceType.standby,
+      _              => AbsenceType.vacation,
+    };
+  }
+
+  static AbsenceStatus _parseStatus(String raw) {
+    return switch (raw.toLowerCase()) {
+      'approved' || 'genehmigt'    => AbsenceStatus.approved,
+      'rejected' || 'abgelehnt'    => AbsenceStatus.rejected,
+      _                            => AbsenceStatus.pending,
+    };
+  }
 }
 
-/// Type alias for AbsenceModel for backward compatibility
 typedef Absence = AbsenceModel;

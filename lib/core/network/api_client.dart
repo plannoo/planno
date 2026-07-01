@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode, kIsWeb, debugPrint;
 
 import '../services/prefs_service.dart';
 import 'api_config.dart';
@@ -25,26 +31,75 @@ class ApiClient {
         connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.receiveTimeout,
         sendTimeout:    ApiConfig.sendTimeout,
-        headers: const {
-          'Content-Type': 'application/json',
-          'Accept':       'application/json',
+        headers: {
+          'Content-Type':    'application/json',
+          'Accept':          'application/json',
+          'Accept-Language': 'en',
         },
       ),
     );
 
-    _dio.interceptors.addAll([
+    // Certificate pinning — only on native (non-web) platforms
+    if (!kIsWeb && _pinnedHashes.isNotEmpty) {
+      final adapter = _dio.httpClientAdapter;
+      if (adapter is IOHttpClientAdapter) {
+        adapter.createHttpClient = () {
+          final client = HttpClient();
+          client.badCertificateCallback =
+              (X509Certificate cert, String host, int port) {
+            final digest = sha256.convert(utf8.encode(cert.pem));
+            final hex = digest.toString();
+            final matched = _pinnedHashes.any((pin) => hex.contains(pin));
+            if (!matched) {
+              debugPrint('[ApiClient] Certificate pin mismatch for $host');
+            }
+            return matched;
+          };
+          return client;
+        };
+      }
+    }
+
+    final interceptors = <Interceptor>[
       _AuthInterceptor(_dio),
-      LogInterceptor(
-        requestBody:  true,
-        responseBody: true,
-        logPrint: (o) => print('[ApiClient] $o'), // ignore: avoid_print
-      ),
-    ]);
+    ];
+
+    if (!kReleaseMode) {
+      interceptors.add(
+        LogInterceptor(
+          requestBody:  true,
+          responseBody: true,
+          logPrint: (o) => debugPrint('[ApiClient] $o'),
+        ),
+      );
+    }
+
+    _dio.interceptors.addAll(interceptors);
   }
 
   static final ApiClient instance = ApiClient._();
 
   late final Dio _dio;
+
+  /// SHA-256 hashes of pinned server certificate public keys.
+  ///
+  /// Generate with:
+  /// ```bash
+  /// openssl s_client -connect api.aplano.io:443 -showcerts </dev/null 2>/dev/null |
+  ///   openssl x509 -pubkey -noout |
+  ///   openssl pkey -pubin -outform DER |
+  ///   openssl dgst -sha256
+  /// ```
+  /// Replace the values below with the actual hashes for your deployment.
+  ///
+  /// In dev/staging, set the `API_CERT_PINS` environment variable as a
+  /// comma-separated list of hex-encoded SHA-256 hashes:
+  ///   --dart-define=API_CERT_PINS=abc123...,def456...
+  static final List<String> _pinnedHashes = (() {
+    const encoded = String.fromEnvironment('API_CERT_PINS');
+    if (encoded.isEmpty) return <String>[];
+    return encoded.split(',').map((s) => s.trim()).toList();
+  })();
 
   // ── Public helpers ──────────────────────────────────────────────────────────
 
@@ -85,9 +140,31 @@ class ApiClient {
 
   Future<dynamic> delete(
     String path, {
+    dynamic data,
     Options? options,
   }) =>
-      _request(() => _dio.delete(path, options: options));
+      _request(() => _dio.delete(path, data: data, options: options));
+
+  /// POST with exponential backoff + jitter on network/timeout errors.
+  /// Use for high-contention endpoints (e.g. 500 users clocking in at 08:00).
+  Future<dynamic> postWithRetry(
+    String path, {
+    dynamic data,
+    int maxAttempts = 3,
+  }) async {
+    final rng = Random();
+    for (var i = 0; i < maxAttempts; i++) {
+      try {
+        return await post(path, data: data);
+      } on NetworkException {
+        if (i == maxAttempts - 1) rethrow;
+        await Future.delayed(Duration(seconds: (1 << i) + rng.nextInt(3)));
+      } on RequestTimeoutException {
+        if (i == maxAttempts - 1) rethrow;
+        await Future.delayed(Duration(seconds: (1 << i) + rng.nextInt(3)));
+      }
+    }
+  }
 
   // ── Internal ────────────────────────────────────────────────────────────────
 
@@ -151,19 +228,46 @@ class ApiClient {
 
   static String _extractMessage(dynamic body) {
     if (body is Map<String, dynamic>) {
-      return (body['message'] ?? body['error'] ?? 'Server error').toString();
+      final message = body['message'] ?? body['error'];
+      if (message != null) return message.toString();
+
+      final details = body['details'];
+      if (details is List && details.isNotEmpty) {
+        final first = details.first;
+        if (first is Map<String, dynamic>) {
+          return first['message']?.toString() ?? 'Server error';
+        }
+      }
+
+      return 'Server error';
     }
     return 'Server error';
   }
 
   static Map<String, List<String>> _extractFieldErrors(dynamic body) {
-    if (body is Map<String, dynamic> && body['errors'] is Map) {
+    if (body is! Map<String, dynamic>) return {};
+
+    if (body['errors'] is Map) {
       final raw = body['errors'] as Map<String, dynamic>;
       return raw.map((k, v) => MapEntry(
             k,
             v is List ? v.map((e) => e.toString()).toList() : [v.toString()],
           ));
     }
+
+    if (body['details'] is List) {
+      final raw = body['details'] as List;
+      final result = <String, List<String>>{};
+      for (final item in raw) {
+        if (item is Map<String, dynamic>) {
+          final field = item['field']?.toString() ?? '';
+          final message = item['message']?.toString() ?? '';
+          result.putIfAbsent(field, () => []).add(message);
+        }
+      }
+      return result;
+    }
+
     return {};
   }
 }
@@ -176,7 +280,15 @@ class _AuthInterceptor extends Interceptor {
   _AuthInterceptor(this._dio);
 
   final Dio _dio;
-  bool _isRefreshing = false;
+
+  /// A single in-flight refresh shared by all concurrent 401s.
+  ///
+  /// Without this, when several requests fire at once (e.g. the clock page
+  /// loading work-location + session + activities together) and the access
+  /// token has just expired, only the first request would refresh while the
+  /// others bubbled the 401 straight up as UnauthorizedException. Now every
+  /// concurrent 401 awaits the same refresh and then retries.
+  Future<bool>? _refreshFuture;
 
   @override
   Future<void> onRequest(
@@ -193,34 +305,53 @@ class _AuthInterceptor extends Interceptor {
     }
     handler.next(options);
   }
+
   @override
   Future<void> onError(
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // Only attempt refresh on 401, and not on the refresh endpoint itself
     final is401         = err.response?.statusCode == 401;
     final isRefreshPath = err.requestOptions.path == ApiConfig.refreshToken;
+    // Don't loop forever if the retried request also 401s.
+    final alreadyRetried = err.requestOptions.extra['retriedAfterRefresh'] == true;
 
-    if (is401 && !isRefreshPath && !_isRefreshing) {
-      _isRefreshing = true;
-      try {
-        await _doRefresh();
-        // Retry the original request with the new token
-        final token = await PrefsService.getAccessToken();
-        err.requestOptions.headers['Authorization'] = 'Bearer $token';
-        final retried = await _dio.fetch(err.requestOptions);
-        handler.resolve(retried);
-        return;
-      } catch (_) {
-        // Refresh failed — propagate as UnauthorizedException
-        await PrefsService.clearTokens();
-        handler.reject(err);
-      } finally {
-        _isRefreshing = false;
-      }
-    } else {
+    if (!is401 || isRefreshPath || alreadyRetried) {
       handler.next(err);
+      return;
+    }
+
+    // Join the in-flight refresh, or start one. All concurrent 401s share it.
+    final refreshed = await (_refreshFuture ??= _runRefresh());
+
+    if (!refreshed) {
+      handler.reject(err);
+      return;
+    }
+
+    try {
+      // Retry the original request once with the new token.
+      final token = await PrefsService.getAccessToken();
+      err.requestOptions.headers['Authorization'] = 'Bearer $token';
+      err.requestOptions.extra['retriedAfterRefresh'] = true;
+      final retried = await _dio.fetch(err.requestOptions);
+      handler.resolve(retried);
+    } on DioException catch (e) {
+      handler.reject(e);
+    }
+  }
+
+  /// Performs the refresh exactly once; resets the shared future when done so
+  /// a later expiry can refresh again. Returns true on success.
+  Future<bool> _runRefresh() async {
+    try {
+      await _doRefresh();
+      return true;
+    } catch (_) {
+      await PrefsService.clearTokens();
+      return false;
+    } finally {
+      _refreshFuture = null;
     }
   }
 
@@ -230,15 +361,15 @@ class _AuthInterceptor extends Interceptor {
 
     final response = await _dio.post(
       ApiConfig.refreshToken,
-      data: {'refresh_token': refreshToken},
+      data: {'refreshToken': refreshToken},
       // Skip this interceptor for the refresh call itself
       options: Options(extra: {'skipAuthInterceptor': true}),
     );
 
     final data = response.data as Map<String, dynamic>;
     await PrefsService.saveTokens(
-      accessToken:  data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String? ??
+      accessToken:  data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String? ??
           (await PrefsService.getRefreshToken())!,
     );
   }

@@ -6,6 +6,10 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Aplano</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to photos for document upload</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>This app needs access to files for document upload</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,6 +28,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to scan the Time Clock Terminal QR code for quick clock-in</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
     <string>We need your location to verify you're at the workplace</string>
 	<key>UILaunchStoryboardName</key>

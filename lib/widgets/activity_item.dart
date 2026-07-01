@@ -73,7 +73,7 @@ class ActivityItem extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         // Light colored background matching the activity color
-        color: activity.color.withOpacity(0.1),
+        color: activity.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(

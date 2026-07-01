@@ -65,9 +65,9 @@ class DatePickerField extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(AppDimensions.spacingLg),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-              border: Border.all(color: AppColors.slate200),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Row(
               children: [
@@ -79,7 +79,7 @@ class DatePickerField extends StatelessWidget {
                 const SizedBox(width: AppDimensions.spacingMd),
                 Text(
                   selectedDate != null
-                      ? DateFormatter.formatDate(selectedDate!)
+                      ? DateFormatter.formatWeekdayDate(selectedDate!)
                       : 'Select date',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: selectedDate != null

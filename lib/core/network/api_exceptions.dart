@@ -7,8 +7,12 @@ sealed class ApiException implements Exception {
 
   final String message;
 
+  /// User-facing message. Kept identical to [message] so snackbars/dialogs that
+  /// print `e.toString()` show a clean, friendly message rather than
+  /// "UnauthorizedException: ..." (which the common `.replaceFirst('Exception: ',
+  /// '')` cleanup would further mangle).
   @override
-  String toString() => '$runtimeType: $message';
+  String toString() => message;
 }
 
 // ── Connectivity ─────────────────────────────────────────────────────────────

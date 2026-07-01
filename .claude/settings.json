@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(dart analyze *)",
+      "Bash(flutter clean *)",
+      "Bash(flutter pub *)",
+      "Bash(flutter build *)",
+      "Bash(flutter run *)",
+      "Read(//c/FlutterApps/planno_backend/**)",
+      "Bash(node -e \"const c=require\\('crypto'\\); console.log\\('ACCESS='+c.randomBytes\\(32\\).toString\\('base64'\\)\\); console.log\\('REFRESH='+c.randomBytes\\(32\\).toString\\('base64'\\)\\);\")",
+      "Bash(cat > *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Read(//c/FlutterApps/planno_backend/src/config/**)",
+      "Bash(npx prisma *)",
+      "Bash(grep -n \"directUrl\\\\|url\\\\|provider\" \"C:/FlutterApps/planno_backend/prisma/schema.prisma\" | head -20)",
+      "Read(//c/FlutterApps/planno_backend/prisma/**)",
+      "Bash(cp -r \"C:/FlutterApps/planno_backend/src/generated/prisma/\"*.js \"C:/FlutterApps/planno_backend/dist/src/generated/prisma/\")",
+      "Bash(cp -r \"C:/FlutterApps/planno_backend/src/generated/prisma/runtime\" \"C:/FlutterApps/planno_backend/dist/src/generated/prisma/\")",
+      "Bash(cp \"C:/FlutterApps/planno_backend/src/generated/prisma/\"*.wasm \"C:/FlutterApps/planno_backend/dist/src/generated/prisma/\")",
+      "Bash(grep -v \"newer version\\\\|^  \\\\|packages have\\\\|Try \\\\`flutter\")",
+      "Read(//c/FlutterApps/planno_backend/src/**)",
+      "Read(//c/FlutterApps/planno_backend/src/routes/**)",
+      "Bash(ls \"C:\\\\FlutterApps\\\\planno_backend\\\\src\\\\routes\\\\\" && ls \"C:\\\\FlutterApps\\\\planno_backend\\\\src\\\\controllers\\\\\")",
+      "Read(//c/FlutterApps/planno_backend/src/controllers/**)",
+      "Read(//c/FlutterApps/planno_backend/src/services/**)",
+      "Bash(flutter test *)"
+    ],
+    "additionalDirectories": [
+      "C:\\FlutterApps\\planno_backend",
+      "C:\\FlutterApps\\planno_backend\\src\\services",
+      "C:\\FlutterApps\\planno_backend\\src\\controllers",
+      "C:\\FlutterApps\\planno_backend\\src\\routes",
+      "C:\\Users\\SQUARE~1\\AppData\\Local\\Temp\\claude\\c--FlutterApps-Aplano\\e0722c33-e338-454a-8901-f48194377c18\\scratchpad"
+    ]
+  }
+}

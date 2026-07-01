@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/absence.dart';
 
+/// Simple (non-expandable) absence card used in upcoming absence lists.
+///
+/// All display strings come from the [Absence] model's computed properties
+/// (typeDisplayName, statusDisplayName, formattedDateRange) which are already
+/// driven by the app's data layer. No UI-level hardcoded strings exist here,
+/// so no l10n changes are needed beyond what the model provides.
 class AbsenceCard extends StatelessWidget {
   final Absence absence;
   final VoidCallback? onTap;
@@ -16,71 +22,71 @@ class AbsenceCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color:        Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color:      Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset:     const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap:        onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Icon container
+                // Type icon
                 Container(
-                  width: 56,
+                  width:  56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: absence.typeColor,
+                    color:        absence.typeColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     absence.typeIcon,
                     color: absence.typeIconColor,
-                    size: 28,
+                    size:  28,
                   ),
                 ),
                 const SizedBox(width: 16),
+
                 // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             absence.typeDisplayName,
                             style: const TextStyle(
-                              fontSize: 17,
+                              fontSize:   17,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1A1A),
+                              color:      Color(0xFF1A1A1A),
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: absence.statusColor,
+                              color:        absence.statusColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               absence.statusDisplayName,
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: absence.statusTextColor,
+                                fontSize:      11,
+                                fontWeight:    FontWeight.w700,
+                                color:         absence.statusTextColor,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -91,9 +97,8 @@ class AbsenceCard extends StatelessWidget {
                       Text(
                         absence.formattedDateRange,
                         style: const TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF666666),
-                        ),
+                            fontSize: 15,
+                            color:    Color(0xFF666666)),
                       ),
                     ],
                   ),

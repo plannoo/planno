@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../../../models/absence.dart';
-import '../../../models/absence_summary.dart';
-import '../../../repositories/absence_repository.dart';
+import '../models/absence.dart';
+import '../models/absence_summary.dart';
+import '../repositories/absence_repository.dart';
 
 enum AbsenceLoadState { initial, loading, loaded, submitting, error }
 

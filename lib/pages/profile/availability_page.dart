@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_dimensions.dart';
+import '../../../core/theme/app_text_styles.dart';
+
 class AvailabilityPage extends StatefulWidget {
   const AvailabilityPage({super.key});
 
@@ -8,165 +13,387 @@ class AvailabilityPage extends StatefulWidget {
 }
 
 class _AvailabilityPageState extends State<AvailabilityPage> {
-  // Mock data structure for days
-  final List<DaySettings> _days = [
-    DaySettings(day: "Monday", isEnabled: true, slots: [TimeSlot(start: "08:00", end: "17:00")]),
-    DaySettings(day: "Tuesday", isEnabled: true, isAllDay: true),
-    DaySettings(day: "Wednesday", isEnabled: true, slots: [TimeSlot(start: "09:00", end: "13:00")]),
-    DaySettings(day: "Thursday", isEnabled: false),
-    DaySettings(day: "Friday", isEnabled: true, isAllDay: true),
+  final List<_DaySettings> _days = [
+    _DaySettings(day: 'Monday'),
+    _DaySettings(day: 'Tuesday'),
+    _DaySettings(day: 'Wednesday'),
+    _DaySettings(day: 'Thursday'),
+    _DaySettings(day: 'Friday'),
+    _DaySettings(day: 'Saturday'),
+    _DaySettings(day: 'Sunday'),
   ];
-   void _toggleAllDay(int index) {
+
+  bool _isSaving  = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      // The weekly availability template (per-day enabled/allDay/slots).
+      final data = await ApiClient.instance.get('/api/availabilities/me/template');
+      final raw  = data is Map<String, dynamic>
+          ? data
+          : <String, dynamic>{};
+      final weekly = (raw['weeklySchedule'] ?? raw['availability'] ?? []) as List? ?? [];
+      if (!mounted) return;
+      setState(() {
+        for (final item in weekly) {
+          final m       = item as Map<String, dynamic>;
+          final dayName = (m['day'] as String? ?? '').toLowerCase();
+          final idx     = _days.indexWhere(
+              (d) => d.day.toLowerCase() == dayName);
+          if (idx < 0) continue;
+          _days[idx].isEnabled = m['enabled'] as bool? ?? true;
+          _days[idx].isAllDay  = m['allDay']  as bool? ?? false;
+          final rawSlots = (m['slots'] as List?) ?? [];
+          _days[idx].slots = rawSlots.map((s) {
+            final sm = s as Map<String, dynamic>;
+            return _TimeSlot(
+              sm['start'] as String? ?? '09:00',
+              sm['end']   as String? ?? '17:00',
+            );
+          }).toList();
+        }
+      });
+    } catch (_) {
+      // keep defaults on error
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _selectTime(
+      int dayIdx, int slotIdx, bool isStart) async {
+    final slot    = _days[dayIdx].slots[slotIdx];
+    final initial = _parseTime(isStart ? slot.start : slot.end);
+    final picked  = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppColors.primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
     setState(() {
-      _days[index].isAllDay = !_days[index].isAllDay;
-      if (_days[index].isAllDay) {
-        _days[index].slots.clear();
+      final formatted =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      if (isStart) {
+        _days[dayIdx].slots[slotIdx].start = formatted;
       } else {
-        _days[index].slots.add(TimeSlot(start: '09:00', end: '17:00'));
+        _days[dayIdx].slots[slotIdx].end = formatted;
       }
     });
   }
 
-  void _addTimeSlot(int dayIndex) {
-    setState(() {
-      _days[dayIndex].slots.add(TimeSlot(start: '09:00', end: '17:00'));
-    });
+  TimeOfDay _parseTime(String t) {
+    final parts = t.split(':');
+    return TimeOfDay(
+        hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
-  void _removeTimeSlot(int dayIndex, int slotIndex) {
-    setState(() {
-      _days[dayIndex].slots.removeAt(slotIndex);
-    });
-  }
-
-  Future<void> _selectTime(BuildContext context, int dayIndex, int slotIndex, bool isStart) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2563EB),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null) {
-      setState(() {
-        final timeString = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-        if (isStart) {
-          _days[dayIndex].slots[slotIndex].start = timeString;
-        } else {
-          _days[dayIndex].slots[slotIndex].end = timeString;
-        }
-      });
+  Future<void> _save() async {
+    setState(() => _isSaving = true);
+    try {
+      final body = {
+        'weeklySchedule': _days.map((d) => {
+          'day':     d.day.toUpperCase(),
+          'enabled': d.isEnabled,
+          'allDay':  d.isAllDay,
+          'slots':   d.slots.map((s) => {'start': s.start, 'end': s.end}).toList(),
+        }).toList(),
+      };
+      await ApiClient.instance.put('/api/availabilities/me/template', data: body);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Availability saved'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 18, color: AppColors.slate700),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Weekly Availability",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        title: Text('Weekly Availability', style: AppTextStyles.h5),
       ),
-      body: Stack(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 100),
+            physics: Theme.of(context).platform == TargetPlatform.iOS
+                ? const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())
+                : const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            padding: const EdgeInsets.only(
+              left: AppDimensions.pagePaddingH,
+              right: AppDimensions.pagePaddingH,
+              top: AppDimensions.spacingMd,
+              bottom: 110,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Text(
-                    "Set your standard weekly routine. This will be used as your default availability for scheduling.",
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 15, height: 1.4),
+                // Subtitle
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLighter,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primaryLight),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 18, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Set your standard weekly routine. This will be used as your default availability for scheduling.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                ..._days.map((day) => _buildDayCard(day)).toList(),
+                const SizedBox(height: AppDimensions.spaceLg),
+
+                ..._days.asMap().entries.map(
+                      (e) => _DayCard(
+                        dayIdx:   e.key,
+                        settings: e.value,
+                        onToggleEnabled: (val) =>
+                            setState(() => e.value.isEnabled = val),
+                        onToggleAllDay: () => setState(() {
+                          e.value.isAllDay = !e.value.isAllDay;
+                          if (e.value.isAllDay) {
+                            e.value.slots.clear();
+                          } else {
+                            e.value.slots
+                                .add(_TimeSlot('09:00', '17:00'));
+                          }
+                        }),
+                        onAddSlot: () => setState(() =>
+                            e.value.slots.add(_TimeSlot('09:00', '17:00'))),
+                        onRemoveSlot: (si) =>
+                            setState(() => e.value.slots.removeAt(si)),
+                        onPickTime: (si, isStart) =>
+                            _selectTime(e.key, si, isStart),
+                      ),
+                    ),
               ],
             ),
           ),
+
+          // Sticky save button
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.fromLTRB(
+                  AppDimensions.pagePaddingH,
+                  AppDimensions.spacingMd,
+                  AppDimensions.pagePaddingH,
+                  AppDimensions.spacingMd +
+                      MediaQuery.of(context).padding.bottom),
               decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
               ),
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: SizedBox(
+                width: double.infinity,
+                height: AppDimensions.buttonHeightLg,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Save Routine'),
                 ),
-                child: const Text("Save Routine", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
+}
 
-  Widget _buildDayCard(DaySettings settings) {
+// ── Day card ──────────────────────────────────────────────────────────────────
+
+class _DayCard extends StatelessWidget {
+  const _DayCard({
+    required this.dayIdx,
+    required this.settings,
+    required this.onToggleEnabled,
+    required this.onToggleAllDay,
+    required this.onAddSlot,
+    required this.onRemoveSlot,
+    required this.onPickTime,
+  });
+
+  final int           dayIdx;
+  final _DaySettings  settings;
+  final ValueChanged<bool> onToggleEnabled;
+  final VoidCallback  onToggleAllDay;
+  final VoidCallback  onAddSlot;
+  final ValueChanged<int> onRemoveSlot;
+  final void Function(int slotIdx, bool isStart) onPickTime;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
+      padding: const EdgeInsets.all(AppDimensions.spacingMd),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: settings.isEnabled
+              ? Theme.of(context).dividerColor
+              : Theme.of(context).dividerColor,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Day header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 settings.day,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: settings.isEnabled ? Colors.black : Colors.black38,
+                style: AppTextStyles.bodyBold.copyWith(
+                  color: settings.isEnabled
+                      ? AppColors.slate900
+                      : AppColors.slate300,
+                  fontSize: 15,
                 ),
               ),
-              Switch(
+              const Spacer(),
+              Switch.adaptive(
                 value: settings.isEnabled,
-                activeColor: const Color(0xFF2563EB),
-                onChanged: (val) => setState(() => settings.isEnabled = val),
+                activeColor: AppColors.primary,
+                onChanged: onToggleEnabled,
               ),
             ],
           ),
+
           if (!settings.isEnabled)
-            const Text("Unavailable", style: TextStyle(color: Colors.black38, fontStyle: FontStyle.italic)),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 4),
+              child: Text('Unavailable',
+                  style: AppTextStyles.caption
+                      .copyWith(fontStyle: FontStyle.italic)),
+            ),
+
           if (settings.isEnabled) ...[
-            const SizedBox(height: 12),
-            if (settings.isAllDay) _buildAllDayBadge() else ...[
-              ...settings.slots.map((slot) => _buildTimeSlotRow(slot, settings)),
+            const SizedBox(height: 10),
+
+            // All-day toggle
+            GestureDetector(
+              onTap: onToggleAllDay,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: settings.isAllDay
+                      ? AppColors.primaryLighter
+                      : AppColors.slate50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: settings.isAllDay
+                        ? AppColors.primaryLight
+                        : AppColors.slate200,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'All Day',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: settings.isAllDay
+                            ? AppColors.primary
+                            : AppColors.slate500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      settings.isAllDay
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked,
+                      size: 18,
+                      color: settings.isAllDay
+                          ? AppColors.primary
+                          : AppColors.slate300,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Time slots
+            if (!settings.isAllDay) ...[
+              const SizedBox(height: 10),
+              ...settings.slots.asMap().entries.map((e) => _TimeSlotRow(
+                    slot:          e.value,
+                    onRemove:      () => onRemoveSlot(e.key),
+                    onPickStart:   () => onPickTime(e.key, true),
+                    onPickEnd:     () => onPickTime(e.key, false),
+                  )),
               TextButton.icon(
-                onPressed: () => setState(() => settings.slots.add(TimeSlot(start: "09:00", end: "17:00"))),
-                icon: const Icon(Icons.add, size: 18, color: Color(0xFF2563EB)),
-                label: const Text("Add slot", style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                onPressed: onAddSlot,
+                icon: const Icon(Icons.add_rounded,
+                    size: 16, color: AppColors.primary),
+                label: Text('Add slot',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.primary)),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             ],
           ],
@@ -174,83 +401,102 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
       ),
     );
   }
+}
 
-  Widget _buildAllDayBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text("All Day", style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
-          Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 20),
-        ],
-      ),
-    );
-  }
+class _TimeSlotRow extends StatelessWidget {
+  const _TimeSlotRow({
+    required this.slot,
+    required this.onRemove,
+    required this.onPickStart,
+    required this.onPickEnd,
+  });
 
-  Widget _buildTimeSlotRow(TimeSlot slot, DaySettings day) {
+  final _TimeSlot      slot;
+  final VoidCallback   onRemove;
+  final VoidCallback   onPickStart;
+  final VoidCallback   onPickEnd;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          _timePickerBox(slot.start),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("—", style: TextStyle(color: Colors.black38))),
-          _timePickerBox(slot.end),
+          _TimeBox(time: slot.start, onTap: onPickStart),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text('–',
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.slate400)),
+          ),
+          _TimeBox(time: slot.end, onTap: onPickEnd),
           const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () => setState(() => day.slots.remove(slot)),
+          GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline_rounded,
+                  size: 16, color: AppColors.error),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _timePickerBox(String time) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+class _TimeBox extends StatelessWidget {
+  const _TimeBox({required this.time, required this.onTap});
+  final String       time;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.slate50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.slate200),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.access_time_outlined,
+                size: 14, color: AppColors.slate400),
+            const SizedBox(width: 6),
+            Text(time,
+                style: AppTextStyles.labelMedium.copyWith(fontSize: 13)),
+          ],
+        ),
       ),
-      child: Text(time, style: const TextStyle(fontWeight: FontWeight.w500)),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      showSelectedLabels: false,
-      showUnselectedLabels: false,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.calendar_month_outlined), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.access_time), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ""),
-        BottomNavigationBarItem(icon: Icon(Icons.menu), label: ""),
-      ],
     );
   }
 }
 
-class DaySettings {
-  String day;
-  bool isEnabled;
-  bool isAllDay;
-  List<TimeSlot> slots;
-  DaySettings({required this.day, this.isEnabled = true, this.isAllDay = false, List<TimeSlot>? slots})
-      : slots = slots ?? [];
+// ── Data classes ──────────────────────────────────────────────────────────────
+
+class _DaySettings {
+  _DaySettings({
+    required this.day,
+    this.isEnabled = true,
+    this.isAllDay  = false,
+    List<_TimeSlot>? slots,
+  }) : slots = slots ?? [];
+
+  final String       day;
+  bool               isEnabled;
+  bool               isAllDay;
+  List<_TimeSlot>    slots;
 }
 
-class TimeSlot {
+class _TimeSlot {
+  _TimeSlot(this.start, this.end);
   String start;
   String end;
-  TimeSlot({required this.start, required this.end});
 }

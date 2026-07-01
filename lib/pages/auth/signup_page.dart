@@ -1,7 +1,7 @@
+import 'package:provider/provider.dart';
 import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
-import 'package:aplano/core/services/prefs_service.dart';
+import 'package:aplano/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
-
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -11,68 +11,95 @@ class CreateAccountScreen extends StatefulWidget {
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _employeeIdController = TextEditingController();
+  final _orgNameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isLoading = false;
+  AuthProvider? _auth; // saved so dispose() never calls context.read()
 
-  Future<void> _onCreateAccountPressed() async {
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
-    final employeeId = _employeeIdController.text.trim();
-    final password = _passwordController.text;
-
-    if (name.isEmpty || email.isEmpty || employeeId.isEmpty || password.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      // TODO: Replace with real registration call
-      await PrefsService.saveRegistration(
-        email: email,
-        name: name,
-        employeeId: employeeId,
-      );
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const NavigationShell()),
-        (route) => false,
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+      _auth = context.read<AuthProvider>()..addListener(_onAuthChanged);
+    });
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
-    _employeeIdController.dispose();
+    _orgNameController.dispose();
     _passwordController.dispose();
+    _auth?.removeListener(_onAuthChanged);
     super.dispose();
+  }
+
+  void _onAuthChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+
+      if (auth.status == AuthStatus.authenticated) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const NavigationShell()),
+          (route) => false,
+        );
+        return;
+      }
+
+      if (auth.status == AuthStatus.error && auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> _onCreateAccountPressed() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final email = _emailController.text.trim();
+    final orgName = _orgNameController.text.trim();
+    final password = _passwordController.text;
+    final orgSlug = orgName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9-]'), '-').replaceAll(RegExp(r'-+'), '-');
+
+    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || orgName.isEmpty || password.isEmpty) return;
+
+    await context.read<AuthProvider>().register(
+      orgName:   orgName,
+      orgSlug:   orgSlug,
+      email:     email,
+      password:  password,
+      firstName: firstName,
+      lastName:  lastName,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading =
+        context.watch<AuthProvider>().status == AuthStatus.loading;
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1E293B)),
+          icon: Icon(Icons.arrow_back_ios, color: cs.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Create Account',
-          style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -86,107 +113,96 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Step 1 of 2: Personal Details',
+                    'Create your organization',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const Text(
-                    '50%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2563EB),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              // Progress Bar
-              LinearProgressIndicator(
-                value: 0.5,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 32),
               // Title
-              const Text(
-                'Join your team',
+              const SizedBox(height: 16),
+              Text(
+                'Set up your company',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: cs.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Create your Aplano account to manage your schedule and track your work hours.',
+                'Create your organization and admin account to get started.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade600,
+                  color: cs.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 32),
-              // Full Name
-              _buildLabel('Full Name'),
+              // Organization Name
+              _buildLabel('Organization Name', cs),
               const SizedBox(height: 8),
               TextField(
-                controller: _nameController,
+                controller: _orgNameController,
+                enabled: !isLoading,
                 decoration: const InputDecoration(
-                  hintText: 'e.g. John Doe',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintText: 'e.g. Acme Corp',
+                ),
+              ),
+              const SizedBox(height: 20),
+              // First Name
+              _buildLabel('First Name', cs),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _firstNameController,
+                enabled: !isLoading,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. John',
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Last Name
+              _buildLabel('Last Name', cs),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _lastNameController,
+                enabled: !isLoading,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. Doe',
                 ),
               ),
               const SizedBox(height: 20),
               // Work Email
-              _buildLabel('Work Email'),
+              _buildLabel('Work Email', cs),
               const SizedBox(height: 8),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                enabled: !isLoading,
                 decoration: const InputDecoration(
                   hintText: 'name@company.com',
-                  hintStyle: TextStyle(color: Colors.grey),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Employee ID
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildLabel('Employee ID'),
-                  Icon(Icons.help_outline, size: 18, color: Colors.grey.shade500),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _employeeIdController,
-                decoration: const InputDecoration(
-                  hintText: 'EMP-0000',
-                  hintStyle: TextStyle(color: Colors.grey),
                 ),
               ),
               const SizedBox(height: 20),
               // Password
-              _buildLabel('Password'),
+              _buildLabel('Password', cs),
               const SizedBox(height: 8),
               TextField(
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
+                enabled: !isLoading,
                 decoration: InputDecoration(
                   hintText: 'Minimum 8 characters',
-                  hintStyle: const TextStyle(color: Colors.grey),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey.shade600,
+                      color: cs.onSurfaceVariant,
                     ),
-                    onPressed: () {
+                    onPressed: isLoading ? null : () {
                       setState(() {
                         _isPasswordVisible = !_isPasswordVisible;
                       });
@@ -197,8 +213,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               const SizedBox(height: 24),
               // Create Account Button
               ElevatedButton(
-                onPressed: _isLoading ? null : _onCreateAccountPressed,
-                child: _isLoading
+                onPressed: isLoading ? null : _onCreateAccountPressed,
+                child: isLoading
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -216,27 +232,27 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 text: TextSpan(
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: cs.onSurfaceVariant,
                     height: 1.5,
                   ),
-                  children: const [
-                    TextSpan(text: 'By signing up, you agree to our '),
+                  children: [
+                    const TextSpan(text: 'By signing up, you agree to our '),
                     TextSpan(
                       text: 'Terms of Service',
                       style: TextStyle(
-                        color: Color(0xFF2563EB),
+                        color: cs.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    TextSpan(text: '\nand '),
+                    const TextSpan(text: '\nand '),
                     TextSpan(
                       text: 'Privacy Policy',
                       style: TextStyle(
-                        color: Color(0xFF2563EB),
+                        color: cs.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    TextSpan(text: '.'),
+                    const TextSpan(text: '.'),
                   ],
                 ),
               ),
@@ -247,16 +263,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 children: [
                   Text(
                     'Already have an account? ',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                   GestureDetector(
-                    onTap: () {
+                    onTap: isLoading ? null : () {
                       Navigator.pop(context);
                     },
-                    child: const Text(
+                    child: Text(
                       'Log In',
                       style: TextStyle(
-                        color: Color(0xFF2563EB),
+                        color: cs.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -271,13 +287,13 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, ColorScheme cs) {
     return Text(
       text,
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: Colors.grey.shade700,
+        color: cs.onSurfaceVariant,
       ),
     );
   }

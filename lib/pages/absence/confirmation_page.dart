@@ -1,297 +1,212 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_colors.dart';
 import '../../models/absence.dart';
-import 'request_history.dart';
 
 class ConfirmationScreen extends StatelessWidget {
-  final Absence absence;
+  const ConfirmationScreen({super.key, required this.absence});
+  final AbsenceModel absence;
 
-  const ConfirmationScreen({
-    super.key,
-    required this.absence,
-  });
-
-  String _getMonthAbbreviation(int month) {
+  String _fmt(DateTime d) {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
-    return months[month - 1];
-  }
-
-  String _formatDateRange() {
-    final startMonth = _getMonthAbbreviation(absence.startDate.month);
-    final endMonth = _getMonthAbbreviation(absence.endDate.month);
-    final startDay = absence.startDate.day;
-    final endDay = absence.endDate.day;
-    
-    return '$startMonth $startDay - $endMonth $endDay';
+    return '${months[d.month - 1]} ${d.day}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        surfaceTintColor:       Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation:              0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Color(0xFF2563EB),
-          ),
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.primary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Confirmation',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
         centerTitle: true,
+        title: Text('Confirmation',
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w600,
+                color: cs.onSurface)),
       ),
-      body: Padding(
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 40),
-            // Success Icon
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                shape: BoxShape.circle,
-              ),
-              child: Container(
-                margin: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2563EB),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
 
-            // Title
-            const Text(
-              'Request Submitted',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
+            // ── Success icon ──────────────────────────────────────────────
+            Container(
+              width: 110, height: 110,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 70, height: 70,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 38),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
 
-            // Description
+            // ── Title ─────────────────────────────────────────────────────
+            Text('Request Submitted',
+                style: TextStyle(
+                    fontSize: 26, fontWeight: FontWeight.w700,
+                    color: cs.onSurface)),
+            const SizedBox(height: 12),
             RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
-                ),
+                style: TextStyle(
+                    fontSize: 15, color: cs.onSurfaceVariant, height: 1.5),
                 children: [
                   const TextSpan(text: 'Your absence request for '),
                   TextSpan(
-                    text: _formatDateRange(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
+                    text: '${_fmt(absence.startDate)} – ${_fmt(absence.endDate)}',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: cs.onSurface),
                   ),
                   const TextSpan(
                       text: ' has been sent to your manager for approval.'),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
 
-            // Request Card
+            // ── Request card ──────────────────────────────────────────────
             Container(
               width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFDBEAFE),
-                    Color(0xFFBFDBFE),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                color:        AppColors.primaryLighter,
+                borderRadius: BorderRadius.circular(16),
+                border:       Border.all(color: AppColors.primaryLight),
               ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          absence.typeIcon,
-                          color: absence.typeIconColor,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              absence.typeDisplayName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF4E5),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'PENDING',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF856404),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              child: Column(children: [
+                Row(children: [
+                  Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(absence.typeIcon,
+                        color: absence.typeIconColor, size: 26),
                   ),
-                  const SizedBox(height: 20),
-                  const Divider(color: Color(0xFF93C5FD)),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        color: Color(0xFF2563EB),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Mon, Oct ${absence.startDate.day} - Thu, Oct ${absence.endDate.day}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E40AF),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(absence.typeLabel,
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w700,
+                                color: cs.onSurface)),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('PENDING',
+                              style: TextStyle(
+                                  fontSize: 11, fontWeight: FontWeight.w700,
+                                  color: Colors.orange, letterSpacing: 0.5)),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Color(0xFF2563EB),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Total: ${absence.workingDays} Days',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E40AF),
-                        ),
-                      ),
-                    ],
+                ]),
+                const SizedBox(height: 16),
+                Divider(color: AppColors.primaryLight),
+                const SizedBox(height: 16),
+                Row(children: [
+                  Icon(Icons.calendar_today_outlined,
+                      color: AppColors.primary, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${_fmt(absence.startDate)} – ${_fmt(absence.endDate)}',
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500,
+                        color: AppColors.primary),
                   ),
-                ],
-              ),
+                ]),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Icon(Icons.access_time_outlined,
+                      color: AppColors.primary, size: 18),
+                  const SizedBox(width: 10),
+                  Text('Total: ${absence.workingDays} days',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500,
+                          color: AppColors.primary)),
+                ]),
+              ]),
             ),
+
             const Spacer(),
 
-            // Action Buttons
+            // ── Action buttons ────────────────────────────────────────────
             SizedBox(
-              width: double.infinity,
+              width:  double.infinity,
+              height: 52,
               child: ElevatedButton(
-                onPressed: () {
-                  // Navigate back to absences screen
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
+                onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation:       0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'View All Requests',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('View My Absences',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
-              width: double.infinity,
+              width:  double.infinity,
+              height: 52,
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
+                onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1A1A1A),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(
-                    color: Color(0xFFE5E7EB),
-                    width: 1.5,
-                  ),
+                  foregroundColor: cs.onSurface,
+                  side: BorderSide(color: cs.outline.withValues(alpha: 0.4)),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Back to Dashboard',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('Done',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 20),
           ],
+        ),
+              ),
+            ),
+          ),
         ),
       ),
     );

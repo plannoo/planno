@@ -1,26 +1,24 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../../models/shift_model.dart';
-import '../../../models/user_model.dart';
-import '../../../repositories/shift_repository.dart';
+import '../core/network/api_exceptions.dart';
+import '../models/shift_model.dart';
+import '../repositories/shift_repository.dart';
 
 enum DashboardLoadState { initial, loading, loaded, error }
 
-/// Provides data consumed by the Dashboard screen:
-///   - Greeting / user info (from AuthProvider via ProxyProvider or direct read)
-///   - Today's shift card
-///   - Weekly hours summary
 class DashboardProvider extends ChangeNotifier {
   DashboardProvider({required ShiftRepository shiftRepository})
       : _repo = shiftRepository;
 
   final ShiftRepository _repo;
+  Timer? _pollTimer;
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  DashboardLoadState _state     = DashboardLoadState.initial;
+  DashboardLoadState _state              = DashboardLoadState.initial;
   ShiftModel?        _todayShift;
-  double             _weeklyHours      = 0.0;
-  double             _targetWeeklyHours = 40.0;
+  double             _weeklyHours        = 0.0;
+  double             _targetWeeklyHours  = 40.0;
   String?            _errorMessage;
+  bool               _lastErrorWasAuth  = false;
 
   DashboardLoadState get state             => _state;
   ShiftModel?        get todayShift        => _todayShift;
@@ -28,33 +26,54 @@ class DashboardProvider extends ChangeNotifier {
   double             get targetWeeklyHours => _targetWeeklyHours;
   String?            get errorMessage      => _errorMessage;
   bool               get isLoading         => _state == DashboardLoadState.loading;
+  bool               get lastErrorWasAuth  => _lastErrorWasAuth;
 
-  // ── Greeting ───────────────────────────────────────────────────────────────
-
-  /// Returns an appropriate greeting based on the current hour.
   String greetingFor(String firstName) {
     final hour = DateTime.now().hour;
     final salutation = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
     return '$salutation, $firstName';
   }
 
-  // ── Load ───────────────────────────────────────────────────────────────────
-
   Future<void> load() async {
     if (_state == DashboardLoadState.loading) return;
     _setState(DashboardLoadState.loading);
     try {
       _todayShift  = await _repo.getTodayShift();
-      // TODO: fetch real weekly hours from a time-tracking repository
-      _weeklyHours = 32.5;
+      _weeklyHours = 32.5; // TODO: fetch from time-tracking repository
+      _lastErrorWasAuth = false;
       _setState(DashboardLoadState.loaded);
+      _startPolling();
     } catch (e) {
+      _lastErrorWasAuth = e is UnauthorizedException;
       _errorMessage = e.toString();
       _setState(DashboardLoadState.error);
     }
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  /// Silent background refresh — does not set loading state so UI doesn't flicker.
+  Future<void> refresh() async {
+    try {
+      final shift = await _repo.getTodayShift();
+      _lastErrorWasAuth = false;
+      if (shift?.id != _todayShift?.id || shift?.startTime != _todayShift?.startTime) {
+        _todayShift = shift;
+        notifyListeners();
+      }
+    } catch (e) {
+      _lastErrorWasAuth = e is UnauthorizedException;
+    }
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) => refresh());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
 
   void _setState(DashboardLoadState s) {
     _state = s;
