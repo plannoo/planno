@@ -33,17 +33,21 @@ class _AdminEntitlementPageState extends State<AdminEntitlementPage> {
           .get('/api/vacation-entitlements/$_userId?year=$_year');
       final wrap = (data is Map<String, dynamic>) ? data : <String, dynamic>{};
       final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
-      if (mounted) setState(() {
-        _entitled  = (body['entitlementDays'] as num?)?.toInt();
-        _requested = (body['requested']       as num?)?.toInt();
-        _accepted  = (body['accepted']        as num?)?.toInt();
-        _serverRemaining = (body['remaining'] as num?)?.toInt();
-        _loading   = false;
-      });
+      if (mounted) {
+        setState(() {
+          _entitled  = (body['entitlementDays'] as num?)?.toInt();
+          _requested = (body['requested']       as num?)?.toInt();
+          _accepted  = (body['accepted']        as num?)?.toInt();
+          _serverRemaining = (body['remaining'] as num?)?.toInt();
+          _loading   = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
-        _entitled = null; _requested = null; _accepted = null; _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _entitled = null; _requested = null; _accepted = null; _loading = false;
+        });
+      }
     }
   }
 

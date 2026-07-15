@@ -93,7 +93,7 @@ class AppProviders extends StatelessWidget {
               tokenRepository: ctx.read<DeviceTokenRepository>(),
             );
             // Restore a stored session on startup so the user profile (name,
-            // role) is loaded — without this, a restart shows "Aplano User"
+            // role) is loaded — without this, a restart shows "Wrenta User"
             // and treats admins as employees.
             auth.tryRestoreSession();
             return auth;
@@ -145,10 +145,14 @@ class AppProviders extends StatelessWidget {
         // ── Dashboard ────────────────────────────────────────────────────────
         ChangeNotifierProxyProvider<ShiftRepository, DashboardProvider>(
           create: (ctx) => DashboardProvider(
-            shiftRepository: ctx.read<ShiftRepository>(),
+            shiftRepository:     ctx.read<ShiftRepository>(),
+            timesheetRepository: ctx.read<TimesheetRepository>(),
           ),
-          update: (_, repo, prev) =>
-              prev ?? DashboardProvider(shiftRepository: repo),
+          update: (ctx, repo, prev) =>
+              prev ?? DashboardProvider(
+                shiftRepository:     repo,
+                timesheetRepository: ctx.read<TimesheetRepository>(),
+              ),
         ),
 
         // ── Clock ────────────────────────────────────────────────────────────

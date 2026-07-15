@@ -251,11 +251,13 @@ class _TrackingCardState extends State<_TrackingCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _TimeRow(
-                  label: 'TRAC\nKED',
-                  labelColor: AppColors.primary,
-                  value: '${e.trackedStart} â€“ ${e.trackedEnd} / ${e.trackedBreak}',
-                  valueColor: AppColors.primary,
+                Expanded(
+                  child: _TimeRow(
+                    label: 'TRAC\nKED',
+                    labelColor: AppColors.primary,
+                    value: '${e.trackedStart} – ${e.trackedEnd} / ${e.trackedBreak}',
+                    valueColor: AppColors.primary,
+                  ),
                 ),
                 Text(
                   e.status,
@@ -339,7 +341,11 @@ class _TimeRow extends StatelessWidget {
         child: Text(label,
             style: TextStyle(fontSize: 9, color: labelColor, height: 1.3)),
       ),
-      Text(value, style: TextStyle(fontSize: 13, color: valueColor)),
+      Expanded(
+        child: Text(value,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13, color: valueColor)),
+      ),
     ],
   );
 }

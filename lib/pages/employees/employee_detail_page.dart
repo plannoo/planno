@@ -35,20 +35,33 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
     super.dispose();
   }
 
+  // _editing toggles swap entire widget subtrees under the button/fields the
+  // user just clicked (OutlinedButton "Edit" -> ElevatedButton "Save" +
+  // GestureDetector "Close"; Text -> TextField). Doing that swap synchronously
+  // inside the tap callback races Flutter web's mouse tracker, which is still
+  // mid-dispatch of the same pointer event over the widget being replaced —
+  // triggering an "Assertion failed" in mouse_tracker.dart. Deferring the
+  // setState to the next frame lets the pointer event finish first.
+  void _setEditing(bool value) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _editing = value);
+    });
+  }
+
   void _enterEdit() {
     for (final f in _masterData) {
       if (f['isLocked'] == true) continue;
       final id = f['fieldId'] as String;
       _ctrls[id] = TextEditingController(text: f['value'] as String? ?? '');
     }
-    setState(() => _editing = true);
+    _setEditing(true);
   }
 
   void _exitEdit({bool save = false}) async {
     if (!save) {
       for (final c in _ctrls.values) { c.dispose(); }
       _ctrls.clear();
-      setState(() => _editing = false);
+      _setEditing(false);
       return;
     }
     setState(() => _saving = true);
@@ -64,10 +77,13 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
           ?.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       for (final c in _ctrls.values) { c.dispose(); }
       _ctrls.clear();
-      if (mounted) setState(() {
-        if (updated != null) _masterData = updated;
-        _editing = false; _saving = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (updated != null) _masterData = updated;
+          _saving = false;
+        });
+        _setEditing(false);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -102,7 +118,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
       case 'admin':                return const Color(0xFF4CAF50);
       case 'geschäftsführer':      return const Color(0xFFE53935);
       case 'manager':              return const Color(0xFFFF9800);
-      case 'sachkunde':            return const Color(0xFF2196F3);
+      case 'sachkunde':            return const Color(0xFF06B6D4);
       case 'schichtleiter':        return const Color(0xFF8BC34A);
       case 'sicherheitspersonal':  return const Color(0xFFE91E63);
       default:                     return AppColors.primary;
@@ -187,9 +203,12 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    Text(widget.name,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
+                    Expanded(
+                      child: Text(widget.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
+                    ),
                   ],
                 ),
               ),
@@ -255,8 +274,11 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                                           ),
                                         ),
                                         const SizedBox(width: 10),
-                                        Text(roleName,
-                                            style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                                        Expanded(
+                                          child: Text(roleName,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                                        ),
                                         const SizedBox(width: 6),
                                         Icon(Icons.edit_outlined,
                                             size: 15, color: cs.onSurfaceVariant),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 enum NotificationCategory {
   shift,
@@ -74,7 +74,7 @@ class NotificationModel {
     );
   }
 
-  // ── Display helpers ─────────────────────────────────────────────────────
+  // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   IconData get icon => switch (category) {
     NotificationCategory.shift    => Icons.calendar_today_outlined,
@@ -87,7 +87,7 @@ class NotificationModel {
   };
 
   Color get iconColor => switch (category) {
-    NotificationCategory.shift   => const Color(0xFF2563EB),
+    NotificationCategory.shift   => const Color(0xFFF43F5E),
     NotificationCategory.absence => const Color(0xFFF59E0B),
     NotificationCategory.message => const Color(0xFF8B5CF6),
     NotificationCategory.task    => const Color(0xFF22C55E),
@@ -97,7 +97,7 @@ class NotificationModel {
   };
 
   Color get iconBackground => switch (category) {
-    NotificationCategory.shift   => const Color(0xFFEFF6FF),
+    NotificationCategory.shift   => const Color(0xFFFFF1F2),
     NotificationCategory.absence => const Color(0xFFFEF3C7),
     NotificationCategory.message => const Color(0xFFEDE9FE),
     NotificationCategory.task    => const Color(0xFFDCFCE7),

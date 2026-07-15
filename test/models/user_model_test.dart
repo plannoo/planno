@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aplano/models/user_model.dart';
+import 'package:wrenta/models/user_model.dart';
 
 void main() {
   group('UserModel.fromJson', () {
     test('parses camelCase fields from API response', () {
       final json = {
         'id': 'u-001',
-        'email': 'sarah@aplano.com',
+        'email': 'sarah@wrenta.com',
         'firstName': 'Sarah',
         'lastName': 'Weber',
         'role': 'EMPLOYEE',
@@ -25,7 +25,7 @@ void main() {
     test('parses snake_case fields as fallback', () {
       final json = {
         'id': 'u-002',
-        'email': 'ralf@aplano.com',
+        'email': 'ralf@wrenta.com',
         'first_name': 'Ralf',
         'last_name': 'Müller',
         'role': 'ADMIN',
@@ -41,7 +41,7 @@ void main() {
     test('extracts location IDs from locations array of objects', () {
       final json = {
         'id': 'u-003',
-        'email': 'ali@aplano.com',
+        'email': 'ali@wrenta.com',
         'firstName': 'Ali',
         'lastName': 'Hassan',
         'role': 'manager',
@@ -57,7 +57,7 @@ void main() {
     test('extracts location IDs from flat assigned_location_ids list', () {
       final json = {
         'id': 'u-004',
-        'email': 'demo@aplano.com',
+        'email': 'demo@wrenta.com',
         'firstName': 'Demo',
         'lastName': 'User',
         'role': 'employee',
@@ -70,7 +70,7 @@ void main() {
     test('returns empty location list when neither field present', () {
       final json = {
         'id': 'u-005',
-        'email': 'empty@aplano.com',
+        'email': 'empty@wrenta.com',
         'firstName': 'Empty',
         'lastName': 'Locs',
         'role': 'employee',
@@ -82,7 +82,7 @@ void main() {
     test('derived properties: fullName, initials', () {
       final json = {
         'id': 'u-006',
-        'email': 'anna@aplano.com',
+        'email': 'anna@wrenta.com',
         'firstName': 'Anna',
         'lastName': 'Schmidt',
         'role': 'employee',
@@ -95,7 +95,7 @@ void main() {
     test('defaults missing role to employee', () {
       final json = {
         'id': 'u-007',
-        'email': 'norole@aplano.com',
+        'email': 'norole@wrenta.com',
         'firstName': 'No',
         'lastName': 'Role',
       };

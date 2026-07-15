@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -128,9 +129,12 @@ class ClockFaceCard extends StatelessWidget {
   }
 
   String _formatTime(DateTime t) {
-    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
     final m = t.minute.toString().padLeft(2, '0');
     final s = t.second.toString().padLeft(2, '0');
+    if ((Intl.defaultLocale ?? 'en').startsWith('de')) {
+      return '${t.hour.toString().padLeft(2, '0')}:$m:$s';
+    }
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
     return '$h:$m:$s';
   }
 
@@ -140,14 +144,8 @@ class ClockFaceCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime d) {
-    const weekdays = [
-      'Monday','Tuesday','Wednesday','Thursday',
-      'Friday','Saturday','Sunday'
-    ];
-    const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec'
-    ];
-    return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
+    final locale  = Intl.defaultLocale ?? 'en';
+    final pattern = locale.startsWith('de') ? 'EEEE, d. MMM' : 'EEEE, MMM d';
+    return DateFormat(pattern, locale).format(d);
   }
 }

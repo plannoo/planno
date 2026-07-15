@@ -192,7 +192,8 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     Widget row(String label, bool val, ValueChanged<bool> cb) => Column(
       mainAxisSize: MainAxisSize.min,
@@ -201,7 +202,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
           title: Text(label, style: TextStyle(fontSize: 15, color: cs.onSurface)),
           value: val,
           onChanged: cb,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -233,10 +234,10 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
                   onTap: () => Navigator.pop(context),
                   child: Icon(Icons.close, size: 22, color: cs.onSurfaceVariant),
                 ),
-                const Expanded(
-                  child: Text('Notification types',
+                Expanded(
+                  child: Text(l10n.notifTypesTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 22),
               ],
@@ -249,12 +250,12 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  row('New shift application',               _newShiftApp,     (v) => setState(() => _newShiftApp     = v)),
-                  row('Shift change requests',               _shiftChange,     (v) => setState(() => _shiftChange     = v)),
-                  row('Shift handover requested',            _shiftHandover,   (v) => setState(() => _shiftHandover   = v)),
-                  row('Absence requested',                   _absenceReq,      (v) => setState(() => _absenceReq      = v)),
-                  row('Employee is late',                    _employeeLate,    (v) => setState(() => _employeeLate    = v)),
-                  row('Reminder to clock in at shift start', _reminderClockIn, (v) => setState(() => _reminderClockIn = v)),
+                  row(l10n.notifTypeNewShift,        _newShiftApp,     (v) => setState(() => _newShiftApp     = v)),
+                  row(l10n.notifTypeShiftChange,     _shiftChange,     (v) => setState(() => _shiftChange     = v)),
+                  row(l10n.notifTypeShiftHandover,   _shiftHandover,   (v) => setState(() => _shiftHandover   = v)),
+                  row(l10n.notifTypeAbsenceReq,      _absenceReq,      (v) => setState(() => _absenceReq      = v)),
+                  row(l10n.notifTypeEmployeeLate,    _employeeLate,    (v) => setState(() => _employeeLate    = v)),
+                  row(l10n.notifTypeClockInReminder, _reminderClockIn, (v) => setState(() => _reminderClockIn = v)),
                 ],
               ),
             ),
@@ -277,8 +278,8 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
                 child: _saving
                     ? const SizedBox(width: 18, height: 18,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Save',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    : Text(l10n.save,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ),

@@ -198,6 +198,8 @@ class _BottomNav extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 
@@ -25,10 +25,10 @@ class LanguageSettingsTile extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: const Color(0xFFFFF1F2),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(Icons.language, color: Color(0xFF2563EB), size: 22),
+        child: const Icon(Icons.language, color: Color(0xFFF43F5E), size: 22),
       ),
       title: Text(
         l10n.settingsLanguage,
@@ -72,7 +72,7 @@ class LanguageSettingsTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _LocaleOption(
-                  flag: '🇬🇧',
+                  flag: 'ðŸ‡¬ðŸ‡§',
                   label: 'English',
                   locale: const Locale('en'),
                   selected: provider.isEnglish,
@@ -83,7 +83,7 @@ class LanguageSettingsTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 _LocaleOption(
-                  flag: '🇩🇪',
+                  flag: 'ðŸ‡©ðŸ‡ª',
                   label: 'Deutsch',
                   locale: const Locale('de'),
                   selected: provider.isGerman,
@@ -125,10 +125,10 @@ class _LocaleOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+          color: selected ? const Color(0xFFFFF1F2) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+            color: selected ? const Color(0xFFF43F5E) : const Color(0xFFE2E8F0),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -143,14 +143,14 @@ class _LocaleOption extends StatelessWidget {
                 fontWeight:
                     selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
-                    ? const Color(0xFF2563EB)
+                    ? const Color(0xFFF43F5E)
                     : const Color(0xFF1E293B),
               ),
             ),
             const Spacer(),
             if (selected)
               const Icon(Icons.check_circle,
-                  color: Color(0xFF2563EB), size: 22),
+                  color: Color(0xFFF43F5E), size: 22),
           ],
         ),
       ),

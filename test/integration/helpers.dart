@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:aplano/main.dart' as app;
+import 'package:wrenta/main.dart' as app;
 
 /// True only when the caller opted into backend-dependent tests.
 const bool backendTests =
@@ -21,9 +21,9 @@ const bool backendTests =
 ///   flutter test --dart-define=BACKEND_TESTS=true
 bool get skipUnlessBackend => !backendTests;
 
-const seedEmail    = String.fromEnvironment('APLANO_TEST_EMAIL',    defaultValue: 'ralf@aplano.com');
-const seedPassword = String.fromEnvironment('APLANO_TEST_PASSWORD', defaultValue: 'password123');
-const seedEmployeeEmail = String.fromEnvironment('APLANO_EMPLOYEE_EMAIL', defaultValue: 'sarah@aplano.com');
+const seedEmail    = String.fromEnvironment('WRENTA_TEST_EMAIL',    defaultValue: 'ralf@wrenta.com');
+const seedPassword = String.fromEnvironment('WRENTA_TEST_PASSWORD', defaultValue: 'password123');
+const seedEmployeeEmail = String.fromEnvironment('WRENTA_EMPLOYEE_EMAIL', defaultValue: 'sarah@wrenta.com');
 
 /// Launches the app already past onboarding and logged out, so it lands
 /// directly on the login screen.

@@ -1,4 +1,4 @@
-# Aplano — Architecture Summary
+# Wrenta — Architecture Summary
 
 Multi-location employee time tracking & scheduling app (Flutter, Provider pattern).
 

@@ -13,15 +13,27 @@ enum AuthStatus { unauthenticated, loading, authenticated, error }
 
 /// Manages authentication state and the currently signed-in [UserModel].
 ///
-/// Consumed anywhere in the tree via:
-///   context.watch<AuthProvider>()
-///   context.read<AuthProvider>()
+/// Consumed anywhere in the tree via `context.watch` or `context.read`.
 class AuthProvider extends ChangeNotifier {
+  // Set to true in main.dart to bypass login for UI testing.
+  static bool bypassForTesting = false;
+
   AuthProvider({
     UserRepository? userRepository,
     DeviceTokenRepository? tokenRepository,
   })  : _userRepository = userRepository ?? ApiUserRepository(),
-      _tokenRepo = tokenRepository;
+      _tokenRepo = tokenRepository {
+    if (bypassForTesting) {
+      _user = const UserModel(
+        id: 'test-employee-001',
+        email: 'employee@wrenta.com',
+        firstName: 'Test',
+        lastName: 'Employee',
+        role: 'employee',
+      );
+      _status = AuthStatus.authenticated;
+    }
+  }
 
   final UserRepository _userRepository;
   final DeviceTokenRepository? _tokenRepo;

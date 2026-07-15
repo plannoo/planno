@@ -1,6 +1,9 @@
 ﻿import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:provider/provider.dart';
 
 import '../../../repositories/document_repository.dart';
@@ -11,6 +14,7 @@ import '../../../core/network/api_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/master_data_labels.dart';
 import '../../pages/absence/absence_page.dart';
 import '../../pages/absence/admin_absences_page.dart';
@@ -64,7 +68,7 @@ class ProfilePage extends StatelessWidget {
                 initials:  auth.user?.initials  ?? 'A',
                 firstName: auth.user?.firstName ?? '',
                 lastName:  auth.user?.lastName  ?? '',
-                fullName:  auth.user?.fullName  ?? 'Aplano User',
+                fullName:  auth.user?.fullName  ?? 'Wrenta User',
                 role:      auth.user?.role      ?? 'employee',
                 email:     auth.user?.email     ?? '',
                 phone:     auth.user?.phone,
@@ -358,15 +362,39 @@ class _EditProfileSheet extends StatefulWidget {
 }
 
 class _EditProfileSheetState extends State<_EditProfileSheet> {
-  late final TextEditingController _firstNameCtrl, _lastNameCtrl, _phoneCtrl;
-  bool _isSaving = false;
+  late final TextEditingController _firstNameCtrl, _lastNameCtrl, _phoneCtrl,
+      _departmentCtrl, _contractCtrl;
+  bool _isSaving  = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _firstNameCtrl = TextEditingController(text: widget.firstName);
-    _lastNameCtrl  = TextEditingController(text: widget.lastName);
-    _phoneCtrl     = TextEditingController(text: widget.phone);
+    _firstNameCtrl  = TextEditingController(text: widget.firstName);
+    _lastNameCtrl   = TextEditingController(text: widget.lastName);
+    _phoneCtrl      = TextEditingController(text: widget.phone);
+    _departmentCtrl = TextEditingController();
+    _contractCtrl   = TextEditingController();
+    _loadExtra();
+  }
+
+  Future<void> _loadExtra() async {
+    try {
+      final res  = await ApiClient.instance.get(ApiConfig.me);
+      final wrap = res is Map<String, dynamic> ? res : <String, dynamic>{};
+      final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
+      if (mounted) {
+        setState(() {
+          _departmentCtrl.text = body['department'] as String?
+                              ?? body['departmentName'] as String? ?? '';
+          _contractCtrl.text   = body['contractType'] as String?
+                              ?? body['contract'] as String? ?? '';
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -374,19 +402,25 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _phoneCtrl.dispose();
+    _departmentCtrl.dispose();
+    _contractCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     setState(() => _isSaving = true);
-    final auth       = context.read<AuthProvider>();
-    final l10nLocal  = AppLocalizations.of(context);
+    final auth      = context.read<AuthProvider>();
+    final l10nLocal = AppLocalizations.of(context);
     try {
       await ApiClient.instance.patch(ApiConfig.updateProfile, data: {
         'firstName': _firstNameCtrl.text.trim(),
         'lastName':  _lastNameCtrl.text.trim(),
         if (_phoneCtrl.text.trim().isNotEmpty)
           'phone': _phoneCtrl.text.trim(),
+        if (_departmentCtrl.text.trim().isNotEmpty)
+          'department': _departmentCtrl.text.trim(),
+        if (_contractCtrl.text.trim().isNotEmpty)
+          'contractType': _contractCtrl.text.trim(),
       });
       await auth.refreshUser();
       if (!mounted) return;
@@ -423,11 +457,23 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           _sheetHandle(),
           Text(l10n.profileEditProfile, style: AppTextStyles.h5),
           const SizedBox(height: 20),
-          _SheetField(label: 'First Name', controller: _firstNameCtrl, keyboard: TextInputType.name),
+          _SheetField(label: l10n.profileFirstName, controller: _firstNameCtrl, keyboard: TextInputType.name),
           const SizedBox(height: 14),
-          _SheetField(label: 'Last Name',  controller: _lastNameCtrl,  keyboard: TextInputType.name),
+          _SheetField(label: l10n.profileLastName,  controller: _lastNameCtrl,  keyboard: TextInputType.name),
           const SizedBox(height: 14),
           _SheetField(label: l10n.profilePhone, controller: _phoneCtrl, keyboard: TextInputType.phone),
+          const SizedBox(height: 14),
+          if (_isLoading) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          ]
+          else ...[
+            _SheetField(label: l10n.profileDepartmentLabel,   controller: _departmentCtrl, keyboard: TextInputType.text),
+            const SizedBox(height: 14),
+            _SheetField(label: l10n.profileContractTypeLabel, controller: _contractCtrl,   keyboard: TextInputType.text),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -625,10 +671,6 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
   String _startDate  = '';
   String _contract   = '';
 
-  static const _monthNames = [
-    'Jan','Feb','Mar','Apr','May','Jun',
-    'Jul','Aug','Sep','Oct','Nov','Dec',
-  ];
 
   @override
   void initState() {
@@ -663,7 +705,7 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
           try {
             final d = DateTime.parse(raw).toLocal();
             _startDate =
-                '${_monthNames[d.month - 1]} ${d.day}, ${d.year}';
+                DateFormatter.formatShortDateWithYear(d);
           } catch (_) {
             _startDate = raw;
           }
@@ -1272,7 +1314,7 @@ class _AppSettingsSectionState extends State<_AppSettingsSection> {
           value: isDark,
           onChanged: (on) => context.read<ThemeProvider>()
               .setThemeMode(on ? ThemeMode.dark : ThemeMode.light),
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ),
     ]);
@@ -1346,43 +1388,265 @@ class _AccountActionsSection extends StatelessWidget {
         const SizedBox(height: 10),
         const _TimeClockPinButton(),
         const SizedBox(height: 10),
-        // Data export is admin-only.
-        Selector<AuthProvider, bool>(
-          selector: (_, auth) => auth.isAdmin,
-          builder: (ctx, isAdmin, _) {
-            if (!isAdmin) return const SizedBox.shrink();
-            return Column(
-              children: [
-                _ActionButton(
-                  icon: Icons.download_outlined,
-                  label: l10n.profileExportData,
-                  iconColor: AppColors.success, iconBg: AppColors.successLight,
-                  onTap: () => ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(
-                      content: Text('Data export is available in the Aplano web app.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            );
-          },
+        _ActionButton(
+          icon: Icons.privacy_tip_outlined,
+          label: l10n.profilePrivacyPolicy,
+          iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
+          onTap: () => Navigator.pushNamed(context, '/privacy-policy'),
         ),
+        const SizedBox(height: 10),
+        _ActionButton(
+          icon: Icons.description_outlined,
+          label: l10n.profileTermsOfService,
+          iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
+          onTap: () => Navigator.pushNamed(context, '/terms-of-service'),
+        ),
+        const SizedBox(height: 10),
+        const _ExportMyDataButton(),
+        const SizedBox(height: 10),
         _ActionButton(
           icon: Icons.logout_rounded,
           label: l10n.profileSignOut,
           iconColor: AppColors.error, iconBg: AppColors.errorLight,
           labelColor: AppColors.error, onTap: onLogout,
         ),
-        // Account deletion is intentionally not exposed in the app â€” employees
-        // cannot delete their own account; that's an admin/web operation.
+        const SizedBox(height: 10),
+        _ActionButton(
+          icon: Icons.delete_forever_outlined,
+          label: l10n.profileDeleteAccount,
+          iconColor: AppColors.error, iconBg: AppColors.errorLight,
+          labelColor: AppColors.error,
+          onTap: () => showModalBottomSheet(
+            context: context, isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const _DeleteAccountSheet(),
+          ),
+        ),
       ]),
     );
   }
 }
 
-// â”€â”€ Time Clock PIN button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Export my data ─────────────────────────────────────────────────────────
+
+class _ExportMyDataButton extends StatefulWidget {
+  const _ExportMyDataButton();
+
+  @override
+  State<_ExportMyDataButton> createState() => _ExportMyDataButtonState();
+}
+
+class _ExportMyDataButtonState extends State<_ExportMyDataButton> {
+  bool _loading = false;
+
+  Future<void> _export() async {
+    setState(() => _loading = true);
+    try {
+      final data = await context.read<UserRepository>().exportMyData();
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => _DataExportViewerPage(data: data),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(_snackBar(
+        context, e.toString().replaceFirst('Exception: ', ''), AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GestureDetector(
+      onTap: _loading ? null : _export,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+                color: AppColors.successLight, borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.download_outlined, size: 18, color: AppColors.success),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(l10n.profileExportMyData,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontSize: 14, fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ))),
+          if (_loading)
+            const SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.slate300),
+        ]),
+      ),
+    );
+  }
+}
+
+class _DataExportViewerPage extends StatelessWidget {
+  const _DataExportViewerPage({required this.data});
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final pretty = const JsonEncoder.withIndent('  ').convert(data);
+    return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 18, color: AppColors.slate700),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(l10n.profileExportMyData, style: AppTextStyles.h5),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppDimensions.pagePaddingH),
+              child: SelectableText(pretty, style: AppTextStyles.monospace.copyWith(fontSize: 12)),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: SizedBox(
+                width: double.infinity,
+                height: AppDimensions.buttonHeightLg,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.copy_all_outlined, size: 18),
+                  label: const Text('Copy to clipboard'),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: pretty));
+                    ScaffoldMessenger.of(context).showSnackBar(_snackBar(
+                      context, 'Copied to clipboard', AppColors.success,
+                    ));
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Delete account ───────────────────────────────────────────────────────────
+
+class _DeleteAccountSheet extends StatefulWidget {
+  const _DeleteAccountSheet();
+
+  @override
+  State<_DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+}
+
+class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
+  final _password = TextEditingController();
+  bool _obscure = true, _deleting = false;
+  String? _error;
+
+  @override
+  void dispose() { _password.dispose(); super.dispose(); }
+
+  Future<void> _confirmDelete() async {
+    final l10n = AppLocalizations.of(context);
+    if (_password.text.isEmpty) {
+      setState(() => _error = l10n.profilePasswordCurrent);
+      return;
+    }
+    setState(() { _deleting = true; _error = null; });
+    try {
+      await context.read<UserRepository>().deleteAccount(_password.text);
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      Navigator.pop(context);
+      await auth.signOut();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _deleting = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n   = AppLocalizations.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottom),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sheetHandle(),
+          Text(l10n.profileDeleteConfirmTitle, style: AppTextStyles.h5),
+          const SizedBox(height: 8),
+          Text(l10n.profileDeleteConfirmBody,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.slate500)),
+          const SizedBox(height: 20),
+          _PasswordField(
+            label: l10n.profilePasswordCurrent,
+            controller: _password,
+            obscure: _obscure,
+            onToggle: () => setState(() => _obscure = !_obscure),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_error!,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error))),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: AppDimensions.buttonHeightLg,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: _deleting ? null : _confirmDelete,
+              child: _deleting ? _spinner() : Text(l10n.profileDelete),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Time Clock PIN button ─────────────────────────────────────────────────────
 
 class _TimeClockPinButton extends StatefulWidget {
   const _TimeClockPinButton();
@@ -1469,13 +1733,12 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon, required this.label,
     required this.iconColor, required this.iconBg, required this.onTap,
-    this.labelColor, this.isDestructive = false,
+    this.labelColor,
   });
   final IconData icon;
   final String label;
   final Color iconColor, iconBg;
   final Color? labelColor;
-  final bool isDestructive;
   final VoidCallback onTap;
 
   @override
@@ -1485,15 +1748,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isDestructive
-              ? AppColors.errorLight.withValues(alpha: 0.5)
-              : Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDestructive
-                ? AppColors.error.withValues(alpha: 0.15)
-                : Theme.of(context).dividerColor,
-          ),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(children: [
           Container(
@@ -1510,9 +1767,7 @@ class _ActionButton extends StatelessWidget {
               ))),
           Icon(Icons.chevron_right,
               size: 18,
-              color: isDestructive
-                  ? AppColors.error.withValues(alpha: 0.4)
-                  : AppColors.slate300),
+              color: AppColors.slate300),
         ]),
       ),
     );
@@ -1601,11 +1856,13 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
       final res = await ApiClient.instance.get('/api/users/me');
       final wrap = (res is Map<String, dynamic>) ? res : <String, dynamic>{};
       final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
-      if (mounted) setState(() {
-        _calendarUrl = body['calendarUrl'] as String? ?? '';
-        _calActive = body['calendarSyncActive'] == true;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _calendarUrl = body['calendarUrl'] as String? ?? '';
+          _calActive = body['calendarSyncActive'] == true;
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -1632,7 +1889,7 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
           context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
           builder: (_) => _CalendarSyncSheet(
             url: _calendarUrl.isEmpty
-                ? 'webcal://storage.googleapis.com/aplano-production.appspot.com/calendar.ics'
+                ? 'webcal://storage.googleapis.com/wrenta-production.appspot.com/calendar.ics'
                 : _calendarUrl,
           ),
         ),
@@ -1705,10 +1962,12 @@ class _MasterDataSectionState extends State<_MasterDataSection> {
           ?.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       for (final c in _ctrls.values) { c.dispose(); }
       _ctrls.clear();
-      if (mounted) setState(() {
-        if (updated != null) _masterData = updated;
-        _editing = false; _saving = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (updated != null) _masterData = updated;
+          _editing = false; _saving = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -1781,9 +2040,9 @@ class _MasterDataSectionState extends State<_MasterDataSection> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: cs.surface,
+                color: cs.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
+                border: Border.all(color: cs.outline.withValues(alpha: 0.35)),
               ),
               padding: const EdgeInsets.all(16),
               child: Text('No master data available.',
@@ -1807,9 +2066,9 @@ class _MasterDataSectionState extends State<_MasterDataSection> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.35)),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
@@ -1818,15 +2077,31 @@ class _MasterDataSectionState extends State<_MasterDataSection> {
           Text(label,
               style: TextStyle(
                   fontSize: 13,
-                  color: editable ? AppColors.primary : cs.onSurfaceVariant,
+                  color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           if (editable)
             TextField(
               controller: _ctrls[id],
+              autofocus: false,
               style: TextStyle(fontSize: 15, color: cs.onSurface),
-              decoration: const InputDecoration(
-                isDense: true, border: InputBorder.none, contentPadding: EdgeInsets.zero,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                filled: true,
+                fillColor: cs.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
               ),
             )
           else
@@ -1880,7 +2155,7 @@ class _CalendarSyncSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Subscribe to your Aplano calendar in any calendar app. New shifts may take a moment to appear â€” you can adjust the update interval in your calendar app settings.',
+                    'Subscribe to your Wrenta calendar in any calendar app. New shifts may take a moment to appear — you can adjust the update interval in your calendar app settings.',
                     style: TextStyle(fontSize: 14, color: cs.onSurface, height: 1.4),
                   ),
                   const SizedBox(height: 16),

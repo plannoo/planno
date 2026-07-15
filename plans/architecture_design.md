@@ -1,4 +1,4 @@
-# Aplano - Multi-Location Time Clock System
+# Wrenta - Multi-Location Time Clock System
 
 ## Architecture Design Document
 
@@ -6,7 +6,7 @@
 
 ## 1. Project Overview
 
-**Project Name:** Aplano  
+**Project Name:** Wrenta  
 **Type:** Flutter Mobile Application (iOS/Android)  
 **Core Functionality:** A multi-location employee time tracking and scheduling system that enables employees to clock in/out, manage schedules, request absences, and facilitates team communication.
 
@@ -340,7 +340,7 @@ dev_dependencies:
 
 ## 10. Summary
 
-The Aplano project has a solid UI foundation with comprehensive screens and components. The main gaps are:
+The Wrenta project has a solid UI foundation with comprehensive screens and components. The main gaps are:
 
 1. **No state management** - UI is static, no real data flow
 2. **No API integration** - All repositories use mock data

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/services/prefs_service.dart';
 
 /// Manages the active app locale and persists the user's choice.
@@ -38,6 +39,7 @@ class LocaleProvider extends ChangeNotifier {
     final code = await PrefsService.getLanguageCode();
     if (code != null) {
       _locale = Locale(code);
+      Intl.defaultLocale = code;
     }
   }
 
@@ -45,6 +47,7 @@ class LocaleProvider extends ChangeNotifier {
   Future<void> setLocale(Locale locale) async {
     if (_locale == locale) return;
     _locale = locale;
+    Intl.defaultLocale = locale.languageCode;
     await PrefsService.saveLanguageCode(locale.languageCode);
     notifyListeners();
   }

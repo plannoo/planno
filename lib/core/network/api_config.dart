@@ -1,7 +1,7 @@
 /// Central configuration for all HTTP communication.
 ///
 /// Swap [baseUrl] per environment by reading a build-time flag:
-///   --dart-define=API_BASE_URL=https://staging.aplano.io
+///   --dart-define=API_BASE_URL=https://staging.wrenta.io
 class ApiConfig {
   ApiConfig._();
 
@@ -33,6 +33,10 @@ class ApiConfig {
   static const String me            = '/api/users/me';
    /// PUT/PATCH: Update current user profile.
   static const String updateProfile = '/api/users/me';
+   /// GET: Full personal data export (DPA/GDPR right of access).
+  static const String meDataExport  = '/api/me/data';
+   /// DELETE: Self-deletion with password confirmation (DPA/GDPR erasure).
+  static const String deleteMe      = '/api/me';
 
   // ── Shift endpoints ────────────────────────────────────────────────────────
 
@@ -86,6 +90,7 @@ class ApiConfig {
   static const String announcementReadAll = '/api/announcements/read-all';
 
   static String markAnnouncementRead(String id) => '/api/announcements/$id/read';
+  static String announcementById(String id)     => '/api/announcements/$id';
 
   // ── Timesheets ──────────────────────────────────────────────────────────────
 

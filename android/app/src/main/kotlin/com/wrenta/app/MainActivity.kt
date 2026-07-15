@@ -1,4 +1,4 @@
-package com.example.aplano
+package com.wrenta.app
 
 import io.flutter.embedding.android.FlutterActivity
 

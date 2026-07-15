@@ -59,19 +59,23 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
       // Week response: { entries, summary: { totalQuotaMinutes, totalCreditedMinutes,
       //   totalOvertimeMinutes, totalBreakMinutes }, week, year }
       final summary = (wrap['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
-      if (mounted) setState(() {
-        _credited = (summary['totalCreditedMinutes'] as num?)?.toInt() ?? 0;
-        _absences = 0; // absences are not part of the timesheet credited total
-        _quota    = (summary['totalQuotaMinutes'] as num?)?.toInt() ?? 40 * 60;
-        _overtime = (summary['totalOvertimeMinutes'] as num?)?.toInt()
-            ?? (_credited - _quota);
-        _loading  = false;
-      });
+      if (mounted) {
+        setState(() {
+          _credited = (summary['totalCreditedMinutes'] as num?)?.toInt() ?? 0;
+          _absences = 0;
+          _quota    = (summary['totalQuotaMinutes'] as num?)?.toInt() ?? 40 * 60;
+          _overtime = (summary['totalOvertimeMinutes'] as num?)?.toInt()
+              ?? (_credited - _quota);
+          _loading  = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
-        _credited = 0; _absences = 0; _quota = 40 * 60;
-        _overtime = -_quota; _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _credited = 0; _absences = 0; _quota = 40 * 60;
+          _overtime = -_quota; _loading = false;
+        });
+      }
     }
   }
 
@@ -163,8 +167,11 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
                         size: 22,
                         color: _userName.isEmpty ? cs.onSurfaceVariant : AppColors.primary),
                     const SizedBox(width: 12),
-                    Text(_userName.isEmpty ? 'Select member' : _userName,
-                        style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                    Expanded(
+                      child: Text(_userName.isEmpty ? 'Select member' : _userName,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                    ),
                   ],
                 ),
               ),

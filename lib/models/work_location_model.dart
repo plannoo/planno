@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 enum LocationType { office, warehouse, constructionSite, retail, remote }
@@ -60,7 +60,7 @@ class WorkLocationModel {
     LocationType.constructionSite => const Color(0xFFEF4444),
     LocationType.retail           => const Color(0xFF8B5CF6),
     LocationType.remote           => const Color(0xFF22C55E),
-    LocationType.office           => const Color(0xFF2563EB),
+    LocationType.office           => const Color(0xFFF43F5E),
   };
 
   factory WorkLocationModel.fromJson(Map<String, dynamic> json) => WorkLocationModel(

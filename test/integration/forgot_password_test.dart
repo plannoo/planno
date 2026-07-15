@@ -38,7 +38,7 @@ void main() {
         (tester) async {
       await openForgotPassword(tester);
 
-      await tester.enterText(find.byType(TextField).first, 'someone@aplano.com');
+      await tester.enterText(find.byType(TextField).first, 'someone@wrenta.com');
       await tester.pump();
 
       await tester.tap(find.text('Send Reset Link'));

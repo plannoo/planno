@@ -111,14 +111,6 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
     }
   }
 
-  Color _statusColor(String? status) {
-    switch ((status ?? '').toUpperCase()) {
-      case 'APPROVED': return AppColors.success;
-      case 'REJECTED': return AppColors.error;
-      default:         return Colors.orange;
-    }
-  }
-
   IconData _absenceIcon(String? type) {
     switch ((type ?? '').toUpperCase()) {
       case 'VACATION':     return Icons.beach_access;
@@ -211,8 +203,8 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _Tab('Absences', 0)),
-                  Expanded(child: _Tab('Shift Changes', 1)),
+                  Expanded(child: _tab('Absences', 0)),
+                  Expanded(child: _tab('Shift Changes', 1)),
                 ],
               ),
             ),
@@ -230,7 +222,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
     );
   }
 
-  Widget _Tab(String label, int index) {
+  Widget _tab(String label, int index) {
     final cs         = Theme.of(context).colorScheme;
     final isSelected = _selectedTab == index;
     return GestureDetector(

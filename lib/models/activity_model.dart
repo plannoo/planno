@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Model representing a single activity entry in the time tracking system
 /// Used to display clock in/out events, breaks, and other work-related activities
@@ -34,30 +35,15 @@ class ActivityModel {
     required this.type,
   });
 
-  /// Format the date in a user-friendly format (e.g., "Monday, Oct 23")
+  /// e.g. "Monday, Oct 23" (en) / "Montag, 23. Okt." (de)
   String get formattedDate {
-    final weekday = _getWeekdayName(date.weekday);
-    final month = _getMonthName(date.month);
-    return '$weekday, $month ${date.day}';
+    final locale  = Intl.defaultLocale ?? 'en';
+    final pattern = locale.startsWith('de') ? 'EEEE, d. MMM' : 'EEEE, MMM d';
+    return DateFormat(pattern, locale).format(date);
   }
 
-  /// Format the time in 12-hour format with AM/PM
-  String get formattedTime {
-    final hour = time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour);
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
-
-  String _getWeekdayName(int weekday) {
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return weekdays[weekday - 1];
-  }
-
-  String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[month - 1];
-  }
+  /// e.g. "9:05 AM" (en) / "09:05" (de)
+  String get formattedTime => DateFormat.jm(Intl.defaultLocale).format(time);
 
   /// Factory constructor to create ActivityModel from JSON
   factory ActivityModel.fromJson(Map<String, dynamic> json) {
@@ -83,7 +69,7 @@ class ActivityModel {
       'title': title,
       'date': date.toIso8601String(),
       'time': time.toIso8601String(),
-      'color': color.value,
+      'color': color.toARGB32(),
       'type': type.toString().split('.').last,
     };
   }

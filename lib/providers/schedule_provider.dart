@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/shift_model.dart';
 import '../repositories/schedule_repository.dart';
 
@@ -60,13 +61,9 @@ class ScheduleProvider extends ChangeNotifier {
   String get weekRangeLabel {
     final start = _mondayOf(_selectedDate);
     final end   = start.add(const Duration(days: 6));
-    const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec'
-    ];
-    final s = '${months[start.month - 1]} ${start.day}';
-    final e = '${months[end.month - 1]} ${end.day}';
-    return '$s – $e';
+    final locale = Intl.defaultLocale ?? 'en';
+    final fmt    = DateFormat('MMM d', locale);
+    return '${fmt.format(start)} – ${fmt.format(end)}';
   }
    /// The Monday of the ISO week containing [selectedDate].
   DateTime get weekStart => _mondayOf(_selectedDate);

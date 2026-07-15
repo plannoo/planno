@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
@@ -146,7 +147,8 @@ class _ClockPageState extends State<ClockPage> {
       }
     }
 
-    // Gate 3 â€” require the employee's clock PIN.
+    // Gate 3 — require the employee's clock PIN.
+    if (!context.mounted) return;
     final pinOk = await _verifyClockPin(context);
     if (!context.mounted || !pinOk) return;
 
@@ -530,12 +532,9 @@ class _PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec',
-    ];
     final now       = DateTime.now();
-    final dateLabel = '${months[now.month - 1]} ${now.day}';
+    final locale    = Intl.defaultLocale ?? 'en';
+    final dateLabel = DateFormat(locale.startsWith('de') ? 'd. MMM' : 'MMM d', locale).format(now);
 
     // No back button â€” the clock-in screen is a root navigation tab.
     return Column(

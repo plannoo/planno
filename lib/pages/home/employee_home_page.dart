@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -347,7 +348,6 @@ class _Card extends StatelessWidget {
 
 // ── Open shift model ────────────────────────────────────────────────────────────
 
-const _deMonths = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
 class _OpenShift {
   final String id;
@@ -381,7 +381,7 @@ class _OpenShift {
       role:         j['role'] as String? ?? '',
       roleColor:    _parseColor(j['roleColor'] as String?),
       locationName: loc?['name'] as String? ?? '',
-      dateLabel:    date == null ? '' : '${date.day}. ${_deMonths[date.month - 1]}',
+      dateLabel:    date == null ? '' : DateFormat((Intl.defaultLocale ?? 'en').startsWith('de') ? 'd. MMM' : 'MMM d', Intl.defaultLocale ?? 'en').format(date),
       timeRange:    '${hhmm(start)} – ${hhmm(end)}',
     );
   }

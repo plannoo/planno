@@ -71,6 +71,20 @@ class AnnouncementProvider extends ChangeNotifier {
     }
   }
 
+  Future<AnnouncementModel> update(String id, {String? title, String? message}) async {
+    final updated = await _repo.update(id, title: title, message: message);
+    final idx = _items.indexWhere((a) => a.id == id);
+    if (idx >= 0) {
+      _items = [
+        ..._items.sublist(0, idx),
+        updated,
+        ..._items.sublist(idx + 1),
+      ];
+      notifyListeners();
+    }
+    return updated;
+  }
+
   Future<void> markAllRead() async {
     await _repo.markAllRead();
     _items = _items.map((a) => a.copyWith(isRead: true)).toList();

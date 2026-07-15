@@ -1,47 +1,75 @@
+import 'dart:ui';
+
 import 'package:firebase_core/firebase_core.dart';
-import 'package:aplano/firebase_options.dart';
-import 'package:aplano/pages/auth/login_page.dart';
-import 'package:aplano/pages/navigation_shell.dart';
-import 'package:aplano/pages/onboarding/onboarding.dart';
-import 'package:aplano/pages/absence/absence_page.dart';
-import 'package:aplano/pages/auth/signup_page.dart';
-import 'package:aplano/pages/notification/notification_page.dart';
-import 'package:aplano/providers/app_provider.dart';
-import 'package:aplano/core/services/prefs_service.dart';
-import 'package:aplano/core/l10n/app_localizations.dart';
-import 'package:aplano/core/theme/app_theme.dart';
-import 'package:aplano/providers/locale_provider.dart';
-import 'package:aplano/providers/theme_provider.dart';
-import 'package:aplano/core/services/notification_service.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:wrenta/firebase_options.dart';
+import 'package:wrenta/pages/auth/login_page.dart';
+import 'package:wrenta/pages/navigation_shell.dart';
+import 'package:wrenta/pages/onboarding/onboarding.dart';
+import 'package:wrenta/pages/absence/absence_page.dart';
+import 'package:wrenta/pages/auth/signup_page.dart';
+import 'package:wrenta/pages/notification/notification_page.dart';
+import 'package:wrenta/pages/legal/privacy_policy_page.dart';
+import 'package:wrenta/pages/legal/terms_of_service_page.dart';
+import 'package:wrenta/providers/app_provider.dart';
+import 'package:wrenta/providers/auth_provider.dart';
+import 'package:wrenta/core/services/prefs_service.dart';
+import 'package:wrenta/core/l10n/app_localizations.dart';
+import 'package:wrenta/core/theme/app_theme.dart';
+import 'package:wrenta/providers/locale_provider.dart';
+import 'package:wrenta/providers/theme_provider.dart';
+import 'package:wrenta/core/services/notification_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+// ── DEV BYPASS ───────────────────────────────────────────────────────────────
+// Set to true to skip login and load the employee shell directly.
+// Flip back to false before building a release APK.
+const bool _kBypassAuth = false;
+// ─────────────────────────────────────────────────────────────────────────────
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (_kBypassAuth) AuthProvider.bypassForTesting = true;
 
   // Firebase is only available on Android, iOS, and Web.
   // On desktop it gracefully degrades — notifications are skipped.
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    // Crashlytics doesn't support Flutter Web — mobile only. Also skip
+    // collection in debug builds so local dev crashes don't pollute the
+    // dashboard.
+    if (!kIsWeb) {
+      await FirebaseCrashlytics.instance
+          .setCrashlyticsCollectionEnabled(kReleaseMode);
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    }
   } catch (_) {
     debugPrint('[main] Firebase not available — push notifications disabled');
   }
 
   final initialRoute = await _resolveInitialRoute();
-  runApp(AplanoApp(initialRoute: initialRoute));
+  runApp(WrentaApp(initialRoute: initialRoute));
 }
 
 Future<String> _resolveInitialRoute() async {
+  if (_kBypassAuth) return '/home';
   final seenOnboarding = await PrefsService.hasSeenOnboarding();
   if (!seenOnboarding) return '/onboarding';
   final loggedIn = await PrefsService.isLoggedIn();
   return loggedIn ? '/home' : '/login';
 }
 
-class AplanoApp extends StatelessWidget {
+class WrentaApp extends StatelessWidget {
   final String initialRoute;
-  const AplanoApp({super.key, required this.initialRoute});
+  const WrentaApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +88,7 @@ class AplanoApp extends StatelessWidget {
               child: child!,
             );
           },
-          title: 'Aplano',
+          title: 'Wrenta',
           debugShowCheckedModeBanner: false,
           initialRoute: initialRoute,
 
@@ -81,6 +109,8 @@ class AplanoApp extends StatelessWidget {
             '/shifts':         (_) => const NavigationShell(),
             '/absences':       (_) => const AbsencePage(),
             '/notifications':  (_) => NotificationsPage(),
+            '/privacy-policy':    (_) => const PrivacyPolicyPage(),
+            '/terms-of-service':  (_) => const TermsOfServicePage(),
           },
           onGenerateRoute: (settings) {
             // Notification deep-links land on the shell; the shell selects the

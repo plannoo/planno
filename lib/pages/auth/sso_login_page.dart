@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
+
 class SsoLoginPage extends StatefulWidget {
   const SsoLoginPage({super.key});
 
@@ -41,9 +43,9 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
     return Scaffold(
       body: Column(
         children: [
-          // ── Blue header ──────────────────────────────────────────────────
+          // ── Header ───────────────────────────────────────────────────────
           Container(
-            color: const Color(0xFF2196F3),
+            color: AppColors.primary,
             width: double.infinity,
             child: SafeArea(
               bottom: false,
@@ -51,7 +53,7 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
                 height: 200,
                 child: Center(
                   child: Text(
-                    'Aplano',
+                    'Wrenta',
                     style: TextStyle(
                       fontSize: 52,
                       fontWeight: FontWeight.bold,
@@ -111,8 +113,8 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
                     child: OutlinedButton(
                       onPressed: _loading ? null : _submit,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF2196F3),
-                        side: const BorderSide(color: Color(0xFF2196F3), width: 1.5),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6)),
                       ),
@@ -121,14 +123,14 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Color(0xFF2196F3)),
+                                  strokeWidth: 2, color: AppColors.primary),
                             )
                           : const Text(
                               'SSO Login',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.primary,
                               ),
                             ),
                     ),
@@ -142,7 +144,7 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
                       child: const Text(
                         'Zurück zum Login mit Email & Passwort',
                         style: TextStyle(
-                          color: Color(0xFF2196F3),
+                          color: AppColors.primary,
                           fontSize: 14,
                         ),
                       ),
@@ -171,7 +173,7 @@ class _SsoLoginPageState extends State<SsoLoginPage> {
                         const Text(
                           'Imprint & Contact',
                           style: TextStyle(
-                            color: Color(0xFF2196F3),
+                            color: AppColors.primary,
                             fontSize: 13,
                           ),
                         ),

@@ -26,6 +26,15 @@ abstract interface class UserRepository {
 
   /// Generates and returns a new 4-digit clock-in PIN.
   Future<String> regenerateClockPin();
+
+  /// Full personal data export — required by data-protection law (DPA/GDPR
+  /// right of access). Returns everything the system holds about the caller.
+  Future<Map<String, dynamic>> exportMyData();
+
+  /// Permanently deletes the current user's own account, with password
+  /// confirmation. Throws [ApiException] on failure (wrong password, or the
+  /// server blocking deletion of the org's last remaining admin).
+  Future<void> deleteAccount(String password);
 }
 
 // ── Real implementation ───────────────────────────────────────────────────────
@@ -98,6 +107,23 @@ class ApiUserRepository implements UserRepository {
     } on ApiException { rethrow; }
     catch (e) { throw UnknownException('Failed to regenerate clock PIN: $e'); }
   }
+
+  @override
+  Future<Map<String, dynamic>> exportMyData() async {
+    try {
+      final res  = await _client.get(ApiConfig.meDataExport) as Map<String, dynamic>;
+      return (res['data'] ?? res) as Map<String, dynamic>;
+    } on ApiException { rethrow; }
+    catch (e) { throw ParseException('Failed to parse data export: $e'); }
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    try {
+      await _client.delete(ApiConfig.deleteMe, data: {'password': password});
+    } on ApiException { rethrow; }
+    catch (e) { throw UnknownException('Failed to delete account: $e'); }
+  }
 }
 
 // ── Stub implementation (used until the real API is ready) ────────────────────
@@ -108,7 +134,7 @@ class StubUserRepository implements UserRepository {
     await Future.delayed(const Duration(milliseconds: 400));
     return const UserModel(
       id: 'u-001',
-      email: 'alex.johnson@aplano.io',
+      email: 'alex.johnson@wrenta.io',
       firstName: 'Alex',
       lastName: 'Johnson',
       role: 'employee',
@@ -143,5 +169,16 @@ class StubUserRepository implements UserRepository {
     return String.fromCharCodes(
       List.generate(4, (_) => 48 + (DateTime.now().millisecondsSinceEpoch % 9) + 1),
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportMyData() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return {};
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

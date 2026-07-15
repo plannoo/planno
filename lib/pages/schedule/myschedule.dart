@@ -1,13 +1,9 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-
-// â”€â”€ German locale helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-const _de       = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const _months   = ['Jan','Feb','MÃ¤r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
 DateTime _monday(DateTime d) {
   final diff = d.weekday - 1;
@@ -427,7 +423,7 @@ class _MyScheduleTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _de[d.weekday - 1].toUpperCase(),
+                        DateFormat('EEE', Intl.defaultLocale ?? 'en').format(d).replaceAll('.', '').toUpperCase(),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -437,7 +433,7 @@ class _MyScheduleTab extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${d.day}. ${_months[d.month - 1]}',
+                        DateFormat((Intl.defaultLocale ?? 'en').startsWith('de') ? 'd. MMM' : 'MMM d', Intl.defaultLocale ?? 'en').format(d),
                         style: TextStyle(
                             fontSize: 11, color: cs.onSurfaceVariant),
                       ),
@@ -594,23 +590,23 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           SwitchListTile(
             value: _showMonth,
             onChanged: (v) {
-              setState(() => _showMonth = v);
               widget.onShowMonth(v);
+              Navigator.pop(context);
             },
             title: Text('Show entire month',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           Divider(height: 1, indent: 16, color: cs.outline.withValues(alpha: 0.2)),
           SwitchListTile(
             value: _minimizeEmpty,
             onChanged: (v) {
-              setState(() => _minimizeEmpty = v);
               widget.onMinimize(v);
+              Navigator.pop(context);
             },
             title: Text('Minimize empty days',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
         ],

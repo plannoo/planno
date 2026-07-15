@@ -129,12 +129,12 @@ class _LocationMapPreviewState extends State<LocationMapPreview>
                 width:  24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color:  const Color(0xFF2563EB),
+                  color:  const Color(0xFFF43F5E),
                   shape:  BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
                     BoxShadow(
-                      color:      const Color(0xFF2563EB)
+                      color:      const Color(0xFFF43F5E)
                           .withValues(alpha: 0.5),
                       blurRadius: 12,
                     ),
@@ -167,11 +167,11 @@ class _LocationMapPreviewState extends State<LocationMapPreview>
                         child:  CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              Color(0xFF2563EB)),
+                              Color(0xFFF43F5E)),
                         ),
                       )
                     : const Icon(Icons.my_location,
-                        color: Color(0xFF2563EB), size: 24),
+                        color: Color(0xFFF43F5E), size: 24),
               ),
             ),
           ),
@@ -181,6 +181,6 @@ class _LocationMapPreviewState extends State<LocationMapPreview>
   }
 
   Color get _geofenceColor => widget.isWithinWorkZone
-      ? const Color(0xFF2563EB)
+      ? const Color(0xFFF43F5E)
       : const Color(0xFFF59E0B);
 }

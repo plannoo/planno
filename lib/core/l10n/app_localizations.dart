@@ -223,6 +223,7 @@ abstract class AppLocalizations {
   String get scheduleMyShiftsTab;  // short "MY SHIFTS" label in segment
   String get scheduleCreateShift;
   String get scheduleExportTooltip;
+  String get scheduleAllLocations;
   String get scheduleWeeklyProgress;
   String get scheduleMorningShift;
   String get scheduleEveningBackup;
@@ -286,6 +287,31 @@ abstract class AppLocalizations {
   String get newAbsenceSuccess;
   String newAbsenceError(String message);
 
+  // ── Availability ─────────────────────────────────────────────────────────
+  String get availabilityTitle;
+  String get availabilitySubtitle;
+  String get availabilityMonday;
+  String get availabilityTuesday;
+  String get availabilityWednesday;
+  String get availabilityThursday;
+  String get availabilityFriday;
+  String get availabilitySaturday;
+  String get availabilitySunday;
+  String get availabilityAllDay;
+  String get availabilityAddSlot;
+  String get availabilitySaveRoutine;
+  String get availabilityUnavailable;
+  String get availabilitySaved;
+
+  // ── Notification types sheet ──────────────────────────────────────────────
+  String get notifTypesTitle;
+  String get notifTypeNewShift;
+  String get notifTypeShiftChange;
+  String get notifTypeShiftHandover;
+  String get notifTypeAbsenceReq;
+  String get notifTypeEmployeeLate;
+  String get notifTypeClockInReminder;
+
   // ── Profile ───────────────────────────────────────────────────────────────
   String get profileTitle;
   String get profileComingSoon;
@@ -293,6 +319,9 @@ abstract class AppLocalizations {
   String get profileSignOut;
   String get profileSignOutConfirmTitle;
   String get profileSignOutConfirmBody;
+  String get profilePrivacyPolicy;
+  String get profileTermsOfService;
+  String get profileExportMyData;
   String get profileSectionWorkDetails;
   String get profileSectionEmployment;
   String get profileSectionDocuments;
@@ -335,6 +364,10 @@ abstract class AppLocalizations {
   String get profileUpdated;
   String get profilePhone;
   String get profileSelectLanguage;
+  String get profileFirstName;
+  String get profileLastName;
+  String get profileDepartmentLabel;
+  String get profileContractTypeLabel;
   String get teamScheduleTitle;
   String get teamScheduleComingSoon;
 
@@ -378,7 +411,7 @@ class _AppLocalizationsDelegate
 class _AppLocalizationsEn extends AppLocalizations {
   const _AppLocalizationsEn();
 
-  @override String get appName => 'Aplano';
+  @override String get appName => 'Wrenta';
   @override String get appTagline => 'Simplify your work schedule';
   @override String get ok => 'OK';
   @override String get cancel => 'Cancel';
@@ -425,7 +458,7 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get loginWrongCredentials => 'Incorrect email or password.';
 
   @override String get signUpTitle => 'Join your team';
-  @override String get signUpSubtitle => 'Create your Aplano account to manage your schedule and track your work hours.';
+  @override String get signUpSubtitle => 'Create your Wrenta account to manage your schedule and track your work hours.';
   @override String signUpStep(int step, int total, String label) => 'Step $step of $total: $label';
   @override String get signUpStepPersonalDetails => 'Personal Details';
   @override String get signUpFullName => 'Full Name';
@@ -539,6 +572,7 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get scheduleMyShiftsTab => 'MY SHIFTS';
   @override String get scheduleCreateShift => 'Create Shift';
   @override String get scheduleExportTooltip => 'Export schedule';
+  @override String get scheduleAllLocations => 'All Locations';
   @override String get scheduleWeeklyProgress => 'Weekly Progress';
   @override String get scheduleMorningShift => 'MORNING SHIFT';
   @override String get scheduleEveningBackup => 'EVENING BACKUP';
@@ -635,6 +669,9 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get profileDarkMode => 'Dark Mode';
   @override String get profileChangePassword => 'Change Password';
   @override String get profileExportData => 'Export My Data';
+  @override String get profilePrivacyPolicy => 'Privacy Policy';
+  @override String get profileTermsOfService => 'Terms of Service';
+  @override String get profileExportMyData => 'Export My Data';
   @override String get profileDeleteAccount => 'Delete Account';
   @override String get profileDeleteConfirmTitle => 'Delete Account';
   @override String get profileDeleteConfirmBody => 'This action is permanent and cannot be undone. All your data will be deleted.';
@@ -667,6 +704,34 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get dutyStatusOffDuty    => 'OFF DUTY';
   @override String get dutyStatusOnBreak    => 'ON BREAK';
   @override String get recentActivityTitle  => 'Recent Activity';
+
+  @override String get availabilityTitle      => 'Weekly Availability';
+  @override String get availabilitySubtitle   => 'Set your standard weekly routine. This will be used as your default availability for scheduling.';
+  @override String get availabilityMonday     => 'Monday';
+  @override String get availabilityTuesday    => 'Tuesday';
+  @override String get availabilityWednesday  => 'Wednesday';
+  @override String get availabilityThursday   => 'Thursday';
+  @override String get availabilityFriday     => 'Friday';
+  @override String get availabilitySaturday   => 'Saturday';
+  @override String get availabilitySunday     => 'Sunday';
+  @override String get availabilityAllDay     => 'All Day';
+  @override String get availabilityAddSlot    => 'Add slot';
+  @override String get availabilitySaveRoutine => 'Save Routine';
+  @override String get availabilityUnavailable => 'Unavailable';
+  @override String get availabilitySaved      => 'Availability saved';
+
+  @override String get notifTypesTitle          => 'Notification types';
+  @override String get notifTypeNewShift        => 'New shift application';
+  @override String get notifTypeShiftChange     => 'Shift change requests';
+  @override String get notifTypeShiftHandover   => 'Shift handover requested';
+  @override String get notifTypeAbsenceReq      => 'Absence requested';
+  @override String get notifTypeEmployeeLate    => 'Employee is late';
+  @override String get notifTypeClockInReminder => 'Reminder to clock in at shift start';
+
+  @override String get profileFirstName        => 'First Name';
+  @override String get profileLastName         => 'Last Name';
+  @override String get profileDepartmentLabel  => 'Department';
+  @override String get profileContractTypeLabel => 'Contract Type';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -676,7 +741,7 @@ class _AppLocalizationsEn extends AppLocalizations {
 class _AppLocalizationsDe extends AppLocalizations {
   const _AppLocalizationsDe();
 
-  @override String get appName => 'Aplano';
+  @override String get appName => 'Wrenta';
   @override String get appTagline => 'Einfacher Schichtplan für dein Team';
   @override String get ok => 'OK';
   @override String get cancel => 'Abbrechen';
@@ -723,7 +788,7 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get loginWrongCredentials => 'E-Mail oder Passwort ist falsch.';
 
   @override String get signUpTitle => 'Deinem Team beitreten';
-  @override String get signUpSubtitle => 'Erstelle dein Aplano-Konto, um deinen Schichtplan zu verwalten.';
+  @override String get signUpSubtitle => 'Erstelle dein Wrenta-Konto, um deinen Schichtplan zu verwalten.';
   @override String signUpStep(int s, int t, String l) => 'Schritt $s von $t: $l';
   @override String get signUpStepPersonalDetails => 'Persönliche Daten';
   @override String get signUpFullName => 'Vollständiger Name';
@@ -763,7 +828,7 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get navHome => 'Start';
   @override String get navClock => 'Stempeln';
   @override String get navChat => 'Chat';
-  @override String get navNotifications => 'Benachrichtigungen';
+  @override String get navNotifications => 'Meldungen';
   @override String get navMenu => 'Menü';
 
   @override String get dashboardAnnouncements => 'Ankündigungen';
@@ -837,6 +902,7 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get scheduleMyShiftsTab => 'MEINE SCHICHTEN';
   @override String get scheduleCreateShift => 'Schicht erstellen';
   @override String get scheduleExportTooltip => 'Schichtplan exportieren';
+  @override String get scheduleAllLocations => 'Alle Standorte';
   @override String get scheduleWeeklyProgress => 'Wochenfortschritt';
   @override String get scheduleMorningShift => 'FRÜHSCHICHT';
   @override String get scheduleEveningBackup => 'ABENDBEREITSCHAFT';
@@ -933,6 +999,9 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get profileDarkMode => 'Dunkelmodus';
   @override String get profileChangePassword => 'Passwort ändern';
   @override String get profileExportData => 'Daten exportieren';
+  @override String get profilePrivacyPolicy => 'Datenschutzerklärung';
+  @override String get profileTermsOfService => 'Nutzungsbedingungen';
+  @override String get profileExportMyData => 'Meine Daten exportieren';
   @override String get profileDeleteAccount => 'Konto löschen';
   @override String get profileDeleteConfirmTitle => 'Konto löschen';
   @override String get profileDeleteConfirmBody => 'Diese Aktion ist endgültig. Alle deine Daten werden gelöscht.';
@@ -956,11 +1025,39 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get validatorPasswordLength => 'Passwort muss mindestens 8 Zeichen lang sein';
   @override String validatorMinLength(String label, int min) => '$label muss mindestens $min Zeichen lang sein';
   // widget level
-   @override String get locationWithinZone   => 'In der Arbeitszone';
+  @override String get locationWithinZone   => 'In der Arbeitszone';
   @override String get locationOutsideZone  => 'Außerhalb der Arbeitszone';
   @override String get locationAway         => 'entfernt';
   @override String get dutyStatusOnDuty     => 'IM DIENST';
   @override String get dutyStatusOffDuty    => 'NICHT IM DIENST';
   @override String get dutyStatusOnBreak    => 'IN DER PAUSE';
   @override String get recentActivityTitle  => 'Letzte Aktivitäten';
+
+  @override String get availabilityTitle      => 'Wöchentliche Verfügbarkeit';
+  @override String get availabilitySubtitle   => 'Lege deine wöchentliche Routine fest. Diese wird als Standard-Verfügbarkeit für die Planung verwendet.';
+  @override String get availabilityMonday     => 'Montag';
+  @override String get availabilityTuesday    => 'Dienstag';
+  @override String get availabilityWednesday  => 'Mittwoch';
+  @override String get availabilityThursday   => 'Donnerstag';
+  @override String get availabilityFriday     => 'Freitag';
+  @override String get availabilitySaturday   => 'Samstag';
+  @override String get availabilitySunday     => 'Sonntag';
+  @override String get availabilityAllDay     => 'Ganztägig';
+  @override String get availabilityAddSlot    => 'Zeitraum hinzufügen';
+  @override String get availabilitySaveRoutine => 'Routine speichern';
+  @override String get availabilityUnavailable => 'Nicht verfügbar';
+  @override String get availabilitySaved      => 'Verfügbarkeit gespeichert';
+
+  @override String get notifTypesTitle          => 'Benachrichtigungstypen';
+  @override String get notifTypeNewShift        => 'Neue Schichtbewerbung';
+  @override String get notifTypeShiftChange     => 'Schichttausch-Anfragen';
+  @override String get notifTypeShiftHandover   => 'Schichtübergabe angefragt';
+  @override String get notifTypeAbsenceReq      => 'Abwesenheit beantragt';
+  @override String get notifTypeEmployeeLate    => 'Mitarbeiter zu spät';
+  @override String get notifTypeClockInReminder => 'Erinnerung zum Einstempeln';
+
+  @override String get profileFirstName        => 'Vorname';
+  @override String get profileLastName         => 'Nachname';
+  @override String get profileDepartmentLabel  => 'Abteilung';
+  @override String get profileContractTypeLabel => 'Vertragsart';
 }

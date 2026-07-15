@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "Aplano",
+  "appName": "Zifto",
   "@appName": { "description": "Application name" },
 
   "appTagline": "Simplify your work schedule",
@@ -90,7 +90,7 @@
   "signUpTitle": "Join your team",
   "@signUpTitle": {},
 
-  "signUpSubtitle": "Create your Aplano account to manage your schedule and track your work hours.",
+  "signUpSubtitle": "Create your Zifto account to manage your schedule and track your work hours.",
   "@signUpSubtitle": {},
 
   "signUpStep": "Step {step} of {total}: {label}",

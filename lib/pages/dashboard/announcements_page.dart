@@ -52,10 +52,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           if (canCreate)
             IconButton(
               icon: const Icon(Icons.add, color: Colors.white, size: 26),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NewAnnouncementPage()),
-              ).then((_) => context.read<AnnouncementProvider>().load()),
+              onPressed: () {
+                final prov = context.read<AnnouncementProvider>();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NewAnnouncementPage()),
+                ).then((_) => prov.load());
+              },
             ),
         ],
       ),
@@ -78,11 +81,13 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   }
                   // Footer — create row (admins only)
                   return GestureDetector(
-                    onTap: () => Navigator.push(
-                      ctx,
-                      MaterialPageRoute(
-                          builder: (_) => const NewAnnouncementPage()),
-                    ).then((_) => ctx.read<AnnouncementProvider>().load()),
+                    onTap: () {
+                      final prov = ctx.read<AnnouncementProvider>();
+                      Navigator.push(
+                        ctx,
+                        MaterialPageRoute(builder: (_) => const NewAnnouncementPage()),
+                      ).then((_) => prov.load());
+                    },
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       color: cs.surfaceContainerHighest,
@@ -126,7 +131,17 @@ class _AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
+    return InkWell(
+      onTap: () {
+        final prov = context.read<AnnouncementProvider>();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AnnouncementDetailPage(announcement: announcement),
+          ),
+        ).then((_) => prov.load());
+      },
+      child: Container(
       margin: const EdgeInsets.symmetric(vertical: 1),
       color: cs.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -188,6 +203,7 @@ class _AnnouncementCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -404,14 +420,186 @@ class _NewAnnouncementPageState extends State<NewAnnouncementPage> {
                     const Icon(Icons.upload_file_outlined,
                         size: 22, color: AppColors.primary),
                     const SizedBox(width: 10),
-                    Text(
-                      _fileName ?? 'Upload file',
-                      style: const TextStyle(fontSize: 14, color: AppColors.primary),
+                    Expanded(
+                      child: Text(
+                        _fileName ?? 'Upload file',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14, color: AppColors.primary),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Announcement Detail / Edit Page ────────────────────────────────────────────
+
+class AnnouncementDetailPage extends StatefulWidget {
+  const AnnouncementDetailPage({super.key, required this.announcement});
+  final AnnouncementModel announcement;
+
+  @override
+  State<AnnouncementDetailPage> createState() => _AnnouncementDetailPageState();
+}
+
+class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
+  late AnnouncementModel _announcement = widget.announcement;
+  late final _titleCtrl   = TextEditingController(text: _announcement.title);
+  late final _messageCtrl = TextEditingController(text: _announcement.message);
+  bool _editing = false;
+  bool _saving  = false;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _messageCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_messageCtrl.text.trim().isEmpty || _saving) return;
+    setState(() => _saving = true);
+    try {
+      final updated = await context.read<AnnouncementProvider>().update(
+        _announcement.id,
+        title:   _titleCtrl.text.trim().isEmpty ? 'Untitled' : _titleCtrl.text.trim(),
+        message: _messageCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _announcement = updated;
+        _editing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs      = Theme.of(context).colorScheme;
+    final canEdit = context.select<AuthProvider, bool>((a) => a.isAdmin);
+
+    return Scaffold(
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+      appBar: AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(_editing ? Icons.close : Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            if (_editing) {
+              setState(() {
+                _editing = false;
+                _titleCtrl.text   = _announcement.title;
+                _messageCtrl.text = _announcement.message;
+              });
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
+        title: Text(
+          _editing ? 'Edit Announcement' : 'Announcement',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+        ),
+        actions: [
+          if (canEdit && !_editing)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              onPressed: () => setState(() => _editing = true),
+            ),
+          if (_editing)
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Save',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _announcement.author,
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  ),
+                ),
+                Text(
+                  _announcement.createdAt,
+                  style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_editing) ...[
+              Text('Title',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              Container(
+                color: cs.surface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
+                  controller: _titleCtrl,
+                  style: TextStyle(color: cs.onSurface),
+                  decoration: const InputDecoration(hintText: 'Title', border: InputBorder.none),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Message',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+                      color: cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              Container(
+                color: cs.surface,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: TextField(
+                  controller: _messageCtrl,
+                  minLines: 6,
+                  maxLines: 12,
+                  style: TextStyle(color: cs.onSurface),
+                  decoration: const InputDecoration(hintText: 'Message', border: InputBorder.none),
+                ),
+              ),
+            ] else ...[
+              Text(
+                _announcement.title,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _announcement.message,
+                style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant, height: 1.5),
+              ),
+            ],
           ],
         ),
       ),

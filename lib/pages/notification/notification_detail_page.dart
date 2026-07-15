@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../models/notification_model.dart';
@@ -31,11 +32,13 @@ class NotificationDetailPage extends StatelessWidget {
   }
 
   String _fullTimestamp(DateTime dt) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    final local = dt.toLocal();
+    final local   = dt.toLocal();
+    final locale  = Intl.defaultLocale ?? 'en';
+    final isDE    = locale.startsWith('de');
+    final datePart = DateFormat(isDE ? 'd. MMM yyyy' : 'MMM d, yyyy', locale).format(local);
     final h = local.hour.toString().padLeft(2, '0');
     final m = local.minute.toString().padLeft(2, '0');
-    return '${local.day} ${months[local.month - 1]} ${local.year}, $h:$m';
+    return '$datePart, $h:$m';
   }
 
   @override

@@ -45,10 +45,10 @@ void main() {
     testWidgets('typing in email field updates the text', (tester) async {
       await launchLoggedOut(tester);
 
-      await tester.enterText(find.byType(TextField).first, 'test@aplano.com');
+      await tester.enterText(find.byType(TextField).first, 'test@wrenta.com');
       await tester.pump();
 
-      expect(find.text('test@aplano.com'), findsOneWidget);
+      expect(find.text('test@wrenta.com'), findsOneWidget);
     });
 
     testWidgets('Sign up button navigates to signup screen', (tester) async {
@@ -73,7 +73,7 @@ void main() {
     testWidgets('invalid credentials keep the user on login', (tester) async {
       await launchLoggedOut(tester);
 
-      await tester.enterText(find.byType(TextField).first, 'nobody@aplano.com');
+      await tester.enterText(find.byType(TextField).first, 'nobody@wrenta.com');
       await tester.enterText(find.byType(TextField).last, 'wrongpassword');
       await tester.pump();
 

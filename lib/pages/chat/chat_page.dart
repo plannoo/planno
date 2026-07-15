@@ -327,9 +327,12 @@ class _ThreadPageState extends State<_ThreadPage> {
         iconTheme:        const IconThemeData(color: Colors.white),
         title: Row(
           children: [
-            Text(conv.title,
-                style: AppTextStyles.bodyBold.copyWith(
-                    fontSize: 17, color: Colors.white)),
+            Flexible(
+              child: Text(conv.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyBold.copyWith(
+                      fontSize: 17, color: Colors.white)),
+            ),
             if (conv.isGroup) ...[
               const SizedBox(width: 6),
               Text(

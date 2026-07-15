@@ -107,7 +107,7 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
       final data = await ApiClient.instance.get('/api/users');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final users = List<Map<String, dynamic>>.from(raw as List);
+      final users = List<Map<String, dynamic>>.from(raw);
       if (!mounted) return;
       showModalBottomSheet(
         context: context,
@@ -329,9 +329,12 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                               size: 22,
                               color: _name.isEmpty ? cs.onSurfaceVariant : AppColors.primary),
                           const SizedBox(width: 14),
-                          Text(_name.isEmpty ? (_isEdit ? '' : 'Employees') : _name,
-                              style: TextStyle(fontSize: 16,
-                                  color: _name.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          Expanded(
+                            child: Text(_name.isEmpty ? (_isEdit ? '' : 'Employees') : _name,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16,
+                                    color: _name.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -349,9 +352,12 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                               size: 22,
                               color: _type == null ? cs.onSurfaceVariant : AppColors.primary),
                           const SizedBox(width: 14),
-                          Text(_type == null ? 'Type' : (_typeLabels[_type!] ?? _type!),
-                              style: TextStyle(fontSize: 16,
-                                  color: _type == null ? cs.onSurfaceVariant : cs.onSurface)),
+                          Expanded(
+                            child: Text(_type == null ? 'Type' : (_typeLabels[_type!] ?? _type!),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16,
+                                    color: _type == null ? cs.onSurfaceVariant : cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -461,8 +467,11 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                           Icon(Icons.insert_drive_file_outlined,
                               size: 22, color: cs.onSurfaceVariant),
                           const SizedBox(width: 14),
-                          Text(_fileName ?? 'Upload file',
-                              style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                          Expanded(
+                            child: Text(_fileName ?? 'Upload file',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),

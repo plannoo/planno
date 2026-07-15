@@ -1,13 +1,11 @@
 ﻿import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
-const _deFull = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
-const _deMon  = ['Januar','Februar','MÃ¤rz','April','Mai','Juni','Juli','August',
-                  'September','Oktober','November','Dezember'];
 
 // â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -142,8 +140,9 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
       '${h.toString().padLeft(2,'0')}:${m.toString().padLeft(2,'0')}';
 
   String get _dateLabel {
-    final d = _deFull[_date.weekday - 1];
-    return '$d ${_date.day}. ${_deMon[_date.month - 1]}';
+    final locale = Intl.defaultLocale ?? 'en';
+    final isDE = locale.startsWith('de');
+    return DateFormat(isDE ? 'EEEE d. MMMM' : 'EEEE, MMMM d', locale).format(_date);
   }
 
   void _toggleDatePicker() {
@@ -639,7 +638,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
                   Switch(
                     value: _openShift,
                     onChanged: (v) => setState(() => _openShift = v),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   const SizedBox(width: 8),
                   Text('open shift',
@@ -845,27 +844,6 @@ class _BreakColumn extends StatelessWidget {
 }
 
 // â”€â”€ Row helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _MutedRow extends StatelessWidget {
-  const _MutedRow({required this.icon, required this.label,
-      required this.cs, required this.color});
-  final IconData icon;
-  final String   label;
-  final ColorScheme cs;
-  final Color    color;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    child: Row(
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: 12),
-        Text(label, style: TextStyle(fontSize: 15, color: color)),
-      ],
-    ),
-  );
-}
 
 class _TextRow extends StatelessWidget {
   const _TextRow({required this.icon, required this.hint, required this.value,
@@ -1087,7 +1065,7 @@ class _RoleSheet extends StatelessWidget {
               Color(0xFF4CAF50), // Admin â€” green
               Color(0xFFE53935), // GeschÃ¤ftsfÃ¼hrer â€” red
               Color(0xFFFF9800), // Manager â€” orange
-              Color(0xFF2196F3), // Sachkunde â€” blue
+              Color(0xFF06B6D4), // Sachkunde â€” cyan
               Color(0xFF8BC34A), // Schichtleiter â€” light green
               Color(0xFFE91E63), // Sicherheitspersonal â€” pink
             ];
@@ -1153,12 +1131,14 @@ class _AddressSheetState extends State<_AddressSheet> {
       final data = await ApiClient.instance.get('/api/locations');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      if (mounted) setState(() {
-        _locations = List<Map<String, dynamic>>.from(raw as List);
-        _loading   = false;
-      });
+      if (mounted) {
+        setState(() {
+          _locations = List<Map<String, dynamic>>.from(raw);
+          _loading   = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _locations = []; _loading = false; });
+      if (mounted) { setState(() { _locations = []; _loading = false; }); }
     }
   }
 
@@ -1368,7 +1348,7 @@ class _MembersSheetState extends State<_MembersSheet> {
       final data = await ApiClient.instance.get('/api/users');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final members = (raw as List<dynamic>)
+      final members = raw
           .map((u) {
             final m = u as Map<String, dynamic>;
             final f = m['firstName'] as String? ?? '';

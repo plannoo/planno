@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../repositories/clock_repository.dart';
 
 /// Scans a QR code displayed on a Time Clock Terminal kiosk.
@@ -40,10 +41,11 @@ class _QrScanPageState extends State<QrScanPage> {
     }
 
     setState(() { _processing = true; _error = null; });
+    final repo = context.read<ClockRepository>();
     await _controller.stop();
 
     try {
-      final result = await context.read<ClockRepository>().clockViaQr(
+      final result = await repo.clockViaQr(
         terminalToken: token,
         action: 'in',
       );
@@ -89,7 +91,7 @@ class _QrScanPageState extends State<QrScanPage> {
               width: 240,
               height: 240,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF2196F3), width: 2.5),
+                border: Border.all(color: AppColors.primary, width: 2.5),
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -126,7 +128,7 @@ class _QrScanPageState extends State<QrScanPage> {
                     ),
                   )
                 else if (_processing)
-                  const CircularProgressIndicator(color: Color(0xFF2196F3))
+                  CircularProgressIndicator(color: AppColors.primary)
                 else
                   const Text(
                     'Point your camera at the\nTime Clock Terminal QR code',
@@ -146,7 +148,7 @@ class _CornerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF2196F3)
+      ..color = AppColors.primary
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

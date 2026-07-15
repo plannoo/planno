@@ -61,12 +61,14 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
       final data = await ApiClient.instance.get('/api/locations');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      if (mounted) setState(() {
-        _locations = List<Map<String, dynamic>>.from(raw as List);
-        _loading   = false;
-      });
+      if (mounted) {
+        setState(() {
+          _locations = List<Map<String, dynamic>>.from(raw);
+          _loading   = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _locations = []; _loading = false; });
+      if (mounted) { setState(() { _locations = []; _loading = false; }); }
     }
   }
 
@@ -161,7 +163,7 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
                             _selected.remove(id);
                           }
                         }),
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                       );
                     },
                   ),
@@ -204,7 +206,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
       );
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final users = List<Map<String, dynamic>>.from(raw as List)
+      final users = List<Map<String, dynamic>>.from(raw)
         ..sort((a, b) {
           // online users first
           final ao = a['isClocked'] == true ? 0 : 1;
@@ -321,11 +323,14 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
                                   ],
                                 ),
                                 const SizedBox(width: 14),
-                                Text(name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600)),
+                                Expanded(
+                                  child: Text(name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600)),
+                                ),
                               ],
                             ),
                           ),

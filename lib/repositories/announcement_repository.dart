@@ -13,6 +13,7 @@ abstract interface class AnnouncementRepository {
   Future<int>  getUnreadCount();
   Future<void> markRead(String id);
   Future<void> markAllRead();
+  Future<AnnouncementModel> update(String id, {String? title, String? message});
 }
 
 class ApiAnnouncementRepository implements AnnouncementRepository {
@@ -71,6 +72,21 @@ class ApiAnnouncementRepository implements AnnouncementRepository {
   Future<void> markAllRead() async {
     await _client.post(ApiConfig.announcementReadAll);
   }
+
+  @override
+  Future<AnnouncementModel> update(String id, {String? title, String? message}) async {
+    try {
+      final data = await _client.put(
+        ApiConfig.announcementById(id),
+        data: {
+          if (title   != null) 'title':   title,
+          if (message != null) 'message': message,
+        },
+      ) as Map<String, dynamic>;
+      return AnnouncementModel.fromJson(data['data'] as Map<String, dynamic>);
+    } on ApiException { rethrow; }
+    catch (e) { throw ParseException('Failed to update announcement: $e'); }
+  }
 }
 
 class MockAnnouncementRepository implements AnnouncementRepository {
@@ -97,4 +113,8 @@ class MockAnnouncementRepository implements AnnouncementRepository {
   @override Future<int>  getUnreadCount() async => 1;
   @override Future<void> markRead(String id) async {}
   @override Future<void> markAllRead() async {}
+  @override
+  Future<AnnouncementModel> update(String id, {String? title, String? message}) async {
+    throw UnimplementedError();
+  }
 }

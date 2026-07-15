@@ -306,7 +306,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                 value: _stats?.late ?? 0,
                                 label: 'Late',
                                 color: AppColors.error,
-                                onTap: (_stats?.late ?? 0) > 0 ? _showLateSheet : null,
+                                onTap:     _showLateSheet,
                               ),
                             ),
                           ],
@@ -347,7 +347,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       const Divider(height: 1, indent: 56),
                       _DashRow(
                         icon: Icons.access_time_filled_rounded,
-                        iconBg: const Color(0xFF2196F3),
+                        iconBg: AppColors.primary,
                         label: 'Time trackings',
                         trailing: _stats != null
                             ? Text(
@@ -381,7 +381,10 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                           child: const Text('View', style: TextStyle(fontSize: 13)),
                         ),
-                        onTap: null,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TeamSchedulePage()),
+                        ),
                       ),
                       const Divider(height: 1, indent: 56),
                       _DashRow(
