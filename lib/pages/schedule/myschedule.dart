@@ -202,6 +202,52 @@ class _MySchedulePageState extends State<MySchedulePage> {
     }
   }
 
+  static String _two(int n) => n.toString().padLeft(2, '0');
+  static TimeOfDay? _parseTime(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length < 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return TimeOfDay(hour: h, minute: m);
+  }
+
+  /// Employee proposes new start/end times for their own shift; a manager
+  /// approves via the change-request review flow.
+  Future<void> _requestChange(_Shift s) async {
+    final newStart = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(s.start) ?? const TimeOfDay(hour: 9, minute: 0),
+      helpText: 'New start time',
+    );
+    if (newStart == null || !mounted) return;
+    final newEnd = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(s.end) ?? const TimeOfDay(hour: 17, minute: 0),
+      helpText: 'New end time',
+    );
+    if (newEnd == null || !mounted) return;
+    try {
+      await ApiClient.instance.post('/api/shifts/${s.id}/change-request', data: {
+        'proposedStartTime': '${s.dateIso}T${_two(newStart.hour)}:${_two(newStart.minute)}:00.000Z',
+        'proposedEndTime':   '${s.dateIso}T${_two(newEnd.hour)}:${_two(newEnd.minute)}:00.000Z',
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Change request sent to your manager'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
   void _prevWeek() {
     setState(() {
       _weekStart   = _weekStart.subtract(const Duration(days: 7));
@@ -248,6 +294,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
               loading:     _loading,
               onSelectDay: (d) => setState(() => _selectedDay = d),
               onRequestSwap: _requestSwap,
+              onRequestChange: _requestChange,
             ),
           ),
         ],
@@ -354,6 +401,7 @@ class _MyScheduleTab extends StatelessWidget {
     required this.loading,
     required this.onSelectDay,
     required this.onRequestSwap,
+    required this.onRequestChange,
   });
 
   final List<DateTime>     weekDays;
@@ -363,6 +411,30 @@ class _MyScheduleTab extends StatelessWidget {
   final bool               loading;
   final ValueChanged<DateTime> onSelectDay;
   final ValueChanged<_Shift>   onRequestSwap;
+  final ValueChanged<_Shift>   onRequestChange;
+
+  void _showShiftActions(BuildContext context, _Shift s) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: const Text('Request swap'),
+              onTap: () { Navigator.pop(ctx); onRequestSwap(s); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_calendar),
+              title: const Text('Request change'),
+              onTap: () { Navigator.pop(ctx); onRequestChange(s); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +522,7 @@ class _MyScheduleTab extends StatelessWidget {
                           spacing: 6,
                           runSpacing: 4,
                           children: dayShifts.map((s) => GestureDetector(
-                            onTap: () => onRequestSwap(s), // tap to request a swap
+                            onTap: () => _showShiftActions(context, s), // tap for swap/change actions
                             child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
