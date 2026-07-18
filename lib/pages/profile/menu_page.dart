@@ -1980,7 +1980,7 @@ class _AdminSectionState extends State<_AdminSection> {
     final tiles = <(IconData, String, Widget)>[
       (Icons.people_outline,           'Employees',           const EmployeesPage()),
       (Icons.place_outlined,           'Locations',           const AdminLocationsPage()),
-      (Icons.swap_horiz,               'Swap requests',       const SwapRequestsPage()),
+      (Icons.swap_horiz,               'Requests',            const SwapRequestsPage()),
       (Icons.event_busy_outlined,      'Absences',            const AdminAbsencesPage()),
       if (isSuperAdmin)
         (Icons.beach_access_outlined,  'Entitlement',         const AdminEntitlementPage()),
