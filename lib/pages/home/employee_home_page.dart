@@ -58,11 +58,15 @@ class _EmployeeHomePageState extends State<EmployeeHomePage> {
 
   Future<void> _claimShift(_OpenShift s) async {
     try {
-      await ApiClient.instance.post('/api/shifts/${s.id}/claim', data: {});
+      final res = await ApiClient.instance.post('/api/shifts/${s.id}/claim', data: {});
       await _loadOpenShifts();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Shift claimed — added to your schedule'),
+      final data = res is Map ? res['data'] : null;
+      final pending = data is Map && data['pending'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(pending
+            ? 'Claim submitted for manager approval'
+            : 'Shift claimed — added to your schedule'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
       ));

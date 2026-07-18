@@ -210,7 +210,11 @@ class ApiClient {
       case 401:
         return const UnauthorizedException();
       case 403:
-        return const ForbiddenException();
+        // Surface the server's reason (e.g. "Requesting shift swaps is disabled
+        // by your organization.") instead of a generic message.
+        return ForbiddenException(
+          message.isNotEmpty ? message : 'You do not have permission to perform this action.',
+        );
       case 404:
         return NotFoundException(message);
       case 422:
