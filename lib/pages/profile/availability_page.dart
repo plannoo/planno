@@ -26,6 +26,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
 
   bool _isSaving  = false;
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -67,8 +68,13 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
           }
         }
       });
-    } catch (_) {
-      // keep defaults on error
+    } catch (e) {
+      // Keep the default week, but say why it is empty — silently showing a
+      // blank schedule made a failed load look like "you have no availability".
+      if (mounted) {
+        setState(() => _loadError =
+            e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -174,6 +180,19 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_loadError != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(_loadError!, style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.error)),
+                  ),
+                  const SizedBox(height: AppDimensions.spacingMd),
+                ],
                 // Subtitle
                 Container(
                   padding: const EdgeInsets.all(14),
