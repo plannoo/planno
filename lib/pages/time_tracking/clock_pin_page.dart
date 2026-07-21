@@ -73,6 +73,21 @@ class _ClockPinPageState extends State<ClockPinPage> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
+      // The kiosk can now be refused for reasons that have nothing to do with the
+      // PIN — no shift scheduled, already clocked in, QR disabled by the org.
+      // Counting those as wrong-PIN attempts locked people out of the terminal
+      // while showing them an explanation that was simply untrue.
+      final isPinFailure = message.toLowerCase().contains('pin');
+      if (!isPinFailure) {
+        setState(() { _submitting = false; _pin = ''; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message),
+              backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+        );
+        return;
+      }
+
       _failedAttempts++;
       // Client-side lockout — defense in depth. Backend MUST also rate-limit.
       if (_failedAttempts >= _maxAttempts) {
