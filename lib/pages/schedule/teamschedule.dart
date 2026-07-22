@@ -51,11 +51,15 @@ class TeamSchedulePage extends StatefulWidget {
 class _TeamSchedulePageState extends State<TeamSchedulePage> {
   int _tab = 0; // 0=My Schedule, 1=Day plan, 2=Week plan
 
-  static const _tabs = ['My Schedule', 'Day plan', 'Week plan'];
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final tabs = <String>[
+      l10n.scheduleMySchedule,
+      l10n.scheduleDayPlan,
+      l10n.scheduleWeekPlan,
+    ];
 
     // This page doubles as a root bottom-nav tab (navigation_shell.dart) and
     // as a pushed sub-page (e.g. from the dashboard's "Open shifts" row) â€” it
@@ -106,7 +110,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(_tabs.length, (i) {
+                    children: List.generate(tabs.length, (i) {
                       final active = i == _tab;
                       return GestureDetector(
                         onTap: () => setState(() => _tab = i),
@@ -114,7 +118,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           child: Text(
-                            _tabs[i],
+                            tabs[i],
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: active ? FontWeight.w600 : FontWeight.w400,
