@@ -179,5 +179,8 @@ class NotificationModel {
         category:  category,
         isRead:    isRead ?? this.isRead,
         data:      data,
+        // Must carry `type` — filterKind reads it, so dropping it here would
+        // reclassify the item as "other" (always shown) after mark-read.
+        type:      type,
       );
 }

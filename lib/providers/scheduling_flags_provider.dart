@@ -74,8 +74,10 @@ class SchedulingFlagsProvider extends ChangeNotifier {
       }
       return;
     }
-    // Already synced (or actively syncing) for this session; nothing to do.
-    if ((_loaded || _loading) && _isManager == isManager) return;
+    // Already synced, syncing, or finished a (possibly failed) attempt for this
+    // session; nothing to do. Including `_ready` stops a failed fetch from
+    // retrying on every subsequent auth notification.
+    if ((_loaded || _loading || _ready) && _isManager == isManager) return;
 
     // Always fetch, managers included: the manager bypass only applies to the
     // employee action gates (`allowed`). Raw org-capability flags such as
