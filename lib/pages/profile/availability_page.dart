@@ -157,13 +157,18 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
     // an unavailability row for every disabled one, and the backend gates those
     // two separately. Mirror that here: Save is only offered when the current
     // week's selection is actually permitted, so the button can't be a dead end.
+    // Until the flags have loaded we can't know, so Save stays disabled (briefly)
+    // rather than defaulting to enabled and letting the first tap 403.
     final hasAvailable   = _days.any((d) => d.isEnabled);
     final hasUnavailable = _days.any((d) => !d.isEnabled);
-    final saveBlockedReason = (hasAvailable && !flags.canEnterAvailability)
-        ? AppLocalizations.of(context).availabilityEntryDisabled
-        : (hasUnavailable && !flags.canEnterUnavailability)
-            ? AppLocalizations.of(context).unavailabilityEntryDisabled
-            : null;
+    final saveBlockedReason = !flags.ready
+        ? null
+        : (hasAvailable && !flags.canEnterAvailability)
+            ? AppLocalizations.of(context).availabilityEntryDisabled
+            : (hasUnavailable && !flags.canEnterUnavailability)
+                ? AppLocalizations.of(context).unavailabilityEntryDisabled
+                : null;
+    final saveEnabled = flags.ready && saveBlockedReason == null;
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -297,7 +302,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                     width: double.infinity,
                     height: AppDimensions.buttonHeightLg,
                     child: ElevatedButton(
-                      onPressed: (_isSaving || saveBlockedReason != null) ? null : _save,
+                      onPressed: (_isSaving || !saveEnabled) ? null : _save,
                       child: _isSaving
                           ? const SizedBox(
                               width: 20,

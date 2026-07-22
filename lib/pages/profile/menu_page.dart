@@ -1577,6 +1577,19 @@ String _formatValue(dynamic v) {
   return v.toString();
 }
 
+/// Flattens a nested object one level into "Label: value · Label: value",
+/// keeping each sub-field's label so e.g. a shift's location reads
+/// "Name: HQ · Address: 5th St" rather than an opaque {…}. Returns an em dash
+/// when the object has no scalar fields to show.
+String _flattenMap(Map<dynamic, dynamic> m) {
+  final parts = <String>[];
+  for (final e in m.entries) {
+    if (e.value == null || e.value is Map || e.value is List) continue;
+    parts.add('${_humanizeKey(e.key.toString())}: ${_formatValue(e.value)}');
+  }
+  return parts.isEmpty ? '—' : parts.join(' · ');
+}
+
 /// One top-level section of the export (Profile, Shifts, …). A list becomes a
 /// count header with each entry as a card; a map becomes label/value rows.
 class _ExportSection extends StatelessWidget {
@@ -1689,12 +1702,9 @@ class _KeyValueRows extends StatelessWidget {
                   child: Text(
                     e.value is Map
                         // Flatten one level so meaningful nested objects (e.g. a
-                        // shift's location {name, address}) are readable rather
-                        // than an opaque {…}.
-                        ? (e.value as Map).values
-                            .where((v) => v != null && v is! Map && v is! List)
-                            .map(_formatValue)
-                            .join(' · ')
+                        // shift's location {name, address}) are readable, keeping
+                        // each sub-field's label so the values aren't ambiguous.
+                        ? _flattenMap(e.value as Map)
                         : e.value is List
                             ? '${(e.value as List).length} item(s)'
                             : _formatValue(e.value),

@@ -18,7 +18,11 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  Set<NotificationCategory> _hiddenCategories = {};
+  // Which notification kinds the user has switched off. Each toggle maps to
+  // exactly one NotificationFilterKind, so a single toggle now takes effect on
+  // its own (previously several collapsed into one display category and only hid
+  // when all of them were off).
+  Set<NotificationFilterKind> _hiddenKinds = {};
 
   @override
   void initState() {
@@ -33,17 +37,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final results = await Future.wait([
       PrefsService.getViewBool('notif_new_shift_app',  fallback: true),
       PrefsService.getViewBool('notif_shift_change',   fallback: true),
-      PrefsService.getViewBool('notif_shift_handover', fallback: true),
       PrefsService.getViewBool('notif_absence_req',    fallback: true),
       PrefsService.getViewBool('notif_employee_late',  fallback: true),
       PrefsService.getViewBool('notif_reminder_clock', fallback: true),
     ]);
     if (!mounted) return;
     setState(() {
-      _hiddenCategories = {
-        if (!(results[0] || results[1] || results[2])) NotificationCategory.shift,
-        if (!results[3]) NotificationCategory.absence,
-        if (!(results[4] || results[5])) NotificationCategory.clockIn,
+      _hiddenKinds = {
+        if (!results[0]) NotificationFilterKind.newShift,
+        if (!results[1]) NotificationFilterKind.shiftChange,
+        if (!results[2]) NotificationFilterKind.absence,
+        if (!results[3]) NotificationFilterKind.lateAlert,
+        if (!results[4]) NotificationFilterKind.clockReminder,
       };
     });
   }
@@ -61,7 +66,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             return _ErrorState(onRetry: provider.load);
           }
           final visible = provider.items
-              .where((n) => !_hiddenCategories.contains(n.category))
+              .where((n) => !_hiddenKinds.contains(n.filterKind))
               .toList();
           if (visible.isEmpty) {
             return const _EmptyState();
@@ -145,7 +150,6 @@ class _NotificationTypesSheet extends StatefulWidget {
 class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
   bool _newShiftApp     = true;
   bool _shiftChange     = true;
-  bool _shiftHandover   = true;
   bool _absenceReq      = true;
   bool _employeeLate    = true;
   bool _reminderClockIn = true;
@@ -161,7 +165,6 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     final results = await Future.wait([
       PrefsService.getViewBool('notif_new_shift_app',  fallback: true),
       PrefsService.getViewBool('notif_shift_change',   fallback: true),
-      PrefsService.getViewBool('notif_shift_handover', fallback: true),
       PrefsService.getViewBool('notif_absence_req',    fallback: true),
       PrefsService.getViewBool('notif_employee_late',  fallback: true),
       PrefsService.getViewBool('notif_reminder_clock', fallback: true),
@@ -170,10 +173,9 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     setState(() {
       _newShiftApp     = results[0];
       _shiftChange     = results[1];
-      _shiftHandover   = results[2];
-      _absenceReq      = results[3];
-      _employeeLate    = results[4];
-      _reminderClockIn = results[5];
+      _absenceReq      = results[2];
+      _employeeLate    = results[3];
+      _reminderClockIn = results[4];
     });
   }
 
@@ -182,7 +184,6 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     await Future.wait([
       PrefsService.setViewBool('notif_new_shift_app',  _newShiftApp),
       PrefsService.setViewBool('notif_shift_change',   _shiftChange),
-      PrefsService.setViewBool('notif_shift_handover', _shiftHandover),
       PrefsService.setViewBool('notif_absence_req',    _absenceReq),
       PrefsService.setViewBool('notif_employee_late',  _employeeLate),
       PrefsService.setViewBool('notif_reminder_clock', _reminderClockIn),
@@ -250,9 +251,10 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // No "Shift handover" toggle: the backend has no handover
+                  // notification event, so it could never filter anything.
                   row(l10n.notifTypeNewShift,        _newShiftApp,     (v) => setState(() => _newShiftApp     = v)),
                   row(l10n.notifTypeShiftChange,     _shiftChange,     (v) => setState(() => _shiftChange     = v)),
-                  row(l10n.notifTypeShiftHandover,   _shiftHandover,   (v) => setState(() => _shiftHandover   = v)),
                   row(l10n.notifTypeAbsenceReq,      _absenceReq,      (v) => setState(() => _absenceReq      = v)),
                   row(l10n.notifTypeEmployeeLate,    _employeeLate,    (v) => setState(() => _employeeLate    = v)),
                   row(l10n.notifTypeClockInReminder, _reminderClockIn, (v) => setState(() => _reminderClockIn = v)),

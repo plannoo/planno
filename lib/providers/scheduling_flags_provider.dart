@@ -19,13 +19,20 @@ class SchedulingFlagsProvider extends ChangeNotifier {
   bool _isManager = false;
   bool _loaded = false;
   bool _loading = false;
+  bool _ready = false;
   // Bumped on every logout/session change. A _load() started under one epoch
   // must not apply its result under a newer one — otherwise a fetch still in
   // flight when the user logs out could restore the previous org's flags.
   int _epoch = 0;
 
-  /// True once a fetch has completed (or was skipped for a manager / logout).
+  /// True once the flags have loaded successfully.
   bool get loaded => _loaded;
+
+  /// True once the first fetch of the current session has finished — whether it
+  /// succeeded or failed. Consumers that must not offer an action before the org
+  /// config is known (e.g. an availability Save that would 403) gate on this;
+  /// it still flips true on failure, so a fetch error never blocks forever.
+  bool get ready => _ready;
 
   /// Whether an employee-facing action is permitted. Managers bypass; an
   /// unknown/unloaded flag defaults to allowed.
@@ -57,11 +64,12 @@ class SchedulingFlagsProvider extends ChangeNotifier {
       // epoch invalidates any fetch still in flight so it can't restore stale
       // flags after this reset.
       _epoch++;
-      if (_loaded || _loading || _flags.isNotEmpty) {
+      if (_loaded || _loading || _ready || _flags.isNotEmpty) {
         _flags = const {};
         _isManager = false;
         _loaded = false;
         _loading = false;
+        _ready = false;
         notifyListeners();
       }
       return;
@@ -69,13 +77,11 @@ class SchedulingFlagsProvider extends ChangeNotifier {
     // Already synced (or actively syncing) for this session; nothing to do.
     if ((_loaded || _loading) && _isManager == isManager) return;
 
+    // Always fetch, managers included: the manager bypass only applies to the
+    // employee action gates (`allowed`). Raw org-capability flags such as
+    // `hasQrStation` come straight from the response, so skipping the fetch for
+    // managers would leave those silently false.
     _isManager = isManager;
-    if (isManager) {
-      // Managers bypass every gate — no need to fetch.
-      _loaded = true;
-      notifyListeners();
-      return;
-    }
     await _load();
   }
 
@@ -94,13 +100,17 @@ class SchedulingFlagsProvider extends ChangeNotifier {
           if (e.value is bool) e.key.toString(): e.value as bool,
       };
       _loaded = true;
-      notifyListeners();
     } catch (_) {
       // Leave flags empty → everything allowed. The backend still enforces, so a
       // failed fetch degrades to "show the action, let the server decide" rather
       // than hiding controls the user may actually be allowed to use.
     } finally {
-      if (epoch == _epoch) _loading = false;
+      // Ignore a superseded load (logout/relogin happened mid-flight).
+      if (epoch == _epoch) {
+        _loading = false;
+        _ready = true;
+        notifyListeners();
+      }
     }
   }
 }

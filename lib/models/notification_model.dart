@@ -10,6 +10,21 @@ enum NotificationCategory {
   system,
 }
 
+/// The notification-settings toggle that governs whether a notification is
+/// shown. Distinct from [NotificationCategory] (which only drives icons and
+/// colours): the settings sheet is finer-grained than the display categories,
+/// so each notification maps to exactly one toggle here. `other` covers
+/// notifications with no dedicated toggle (chat, announcements, tasks, …), which
+/// are always shown.
+enum NotificationFilterKind {
+  newShift,
+  shiftChange,
+  absence,
+  clockReminder,
+  lateAlert,
+  other,
+}
+
 /// A single in-app notification entry.
 class NotificationModel {
   final String               id;
@@ -19,6 +34,10 @@ class NotificationModel {
   final NotificationCategory category;
   final bool                 isRead;
   final Map<String, dynamic> data;
+  /// Raw backend `NotificationType` (or the FCM `data.type`). Kept so the
+  /// settings filter can distinguish e.g. SHIFT_ASSIGNED from SHIFT_UPDATED,
+  /// which collapse to the same display [category].
+  final String?              type;
 
   const NotificationModel({
     required this.id,
@@ -28,7 +47,26 @@ class NotificationModel {
     required this.category,
     this.isRead = false,
     this.data   = const {},
+    this.type,
   });
+
+  /// Which settings toggle governs this notification (see [NotificationFilterKind]).
+  NotificationFilterKind get filterKind {
+    if (data.containsKey('clockInReminderShiftId')) {
+      return NotificationFilterKind.clockReminder;
+    }
+    if (data.containsKey('lateAlertShiftId')) {
+      return NotificationFilterKind.lateAlert;
+    }
+    return switch (type) {
+      'SHIFT_ASSIGNED'   => NotificationFilterKind.newShift,
+      'SHIFT_UPDATED' ||
+      'SHIFT_CANCELLED'  => NotificationFilterKind.shiftChange,
+      'ABSENCE_APPROVED' ||
+      'ABSENCE_REJECTED' => NotificationFilterKind.absence,
+      _                  => NotificationFilterKind.other,
+    };
+  }
 
   /// Maps a notification to our local category.
   ///
@@ -57,21 +95,20 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     final data = (json['data'] as Map<String, dynamic>?) ?? {};
+    // The list endpoint returns `type` as a top-level field; older/FCM shapes
+    // nest it under `data`. Read the top level first — reading only data.type
+    // made every notification fall through to "system", so no category toggle
+    // ever matched and the settings appeared to do nothing.
+    final type = (json['type'] ?? data['type']) as String?;
     return NotificationModel(
       id:        json['id'] as String,
       title:     json['title'] as String,
       body:      json['body'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       isRead:    json['readAt'] != null,
-      // The list endpoint returns `type` as a top-level field; older/FCM shapes
-      // nest it under `data`. Read the top level first — reading only data.type
-      // made every notification fall through to "system", so no category toggle
-      // ever matched and the settings appeared to do nothing.
-      category:  _category(
-        (json['type'] ?? data['type']) as String?,
-        data,
-      ),
-      data: data,
+      category:  _category(type, data),
+      type:      type,
+      data:      data,
     );
   }
 
@@ -87,6 +124,7 @@ class NotificationModel {
       body:      body,
       createdAt: DateTime.now(),
       category:  _category(data['type'] as String?, data),
+      type:      data['type'] as String?,
       isRead:    false,
       data:      data,
     );
