@@ -360,7 +360,6 @@ abstract class AppLocalizations {
   String get notifTypesTitle;
   String get notifTypeNewShift;
   String get notifTypeShiftChange;
-  String get notifTypeShiftHandover;
   String get notifTypeAbsenceReq;
   String get notifTypeEmployeeLate;
   String get notifTypeClockInReminder;
@@ -882,7 +881,6 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get notifTypesTitle          => 'Notification types';
   @override String get notifTypeNewShift        => 'New shift application';
   @override String get notifTypeShiftChange     => 'Shift change requests';
-  @override String get notifTypeShiftHandover   => 'Shift handover requested';
   @override String get notifTypeAbsenceReq      => 'Absence requested';
   @override String get notifTypeEmployeeLate    => 'Employee is late';
   @override String get notifTypeClockInReminder => 'Reminder to clock in at shift start';
@@ -1289,7 +1287,6 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get notifTypesTitle          => 'Benachrichtigungstypen';
   @override String get notifTypeNewShift        => 'Neue Schichtbewerbung';
   @override String get notifTypeShiftChange     => 'Schichttausch-Anfragen';
-  @override String get notifTypeShiftHandover   => 'Schichtübergabe angefragt';
   @override String get notifTypeAbsenceReq      => 'Abwesenheit beantragt';
   @override String get notifTypeEmployeeLate    => 'Mitarbeiter zu spät';
   @override String get notifTypeClockInReminder => 'Erinnerung zum Einstempeln';
