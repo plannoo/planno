@@ -18,6 +18,11 @@ class SchedulingFlagsProvider extends ChangeNotifier {
   Map<String, bool> _flags = const {};
   bool _isManager = false;
   bool _loaded = false;
+  bool _loading = false;
+  // Bumped on every logout/session change. A _load() started under one epoch
+  // must not apply its result under a newer one — otherwise a fetch still in
+  // flight when the user logs out could restore the previous org's flags.
+  int _epoch = 0;
 
   /// True once a fetch has completed (or was skipped for a manager / logout).
   bool get loaded => _loaded;
@@ -43,17 +48,21 @@ class SchedulingFlagsProvider extends ChangeNotifier {
   /// hits the network on the transition into a fresh logged-in employee session.
   Future<void> sync({required bool isLoggedIn, required bool isManager}) async {
     if (!isLoggedIn) {
-      // Clear on logout — the next login may be a different org.
-      if (_loaded || _flags.isNotEmpty) {
+      // Clear on logout — the next login may be a different org. Bumping the
+      // epoch invalidates any fetch still in flight so it can't restore stale
+      // flags after this reset.
+      _epoch++;
+      if (_loaded || _loading || _flags.isNotEmpty) {
         _flags = const {};
         _isManager = false;
         _loaded = false;
+        _loading = false;
         notifyListeners();
       }
       return;
     }
-    // Already synced for this session; nothing to do.
-    if (_loaded && _isManager == isManager) return;
+    // Already synced (or actively syncing) for this session; nothing to do.
+    if ((_loaded || _loading) && _isManager == isManager) return;
 
     _isManager = isManager;
     if (isManager) {
@@ -66,8 +75,13 @@ class SchedulingFlagsProvider extends ChangeNotifier {
   }
 
   Future<void> _load() async {
+    final epoch = _epoch;
+    _loading = true;
     try {
       final res = await ApiClient.instance.get('/api/settings/scheduling/me');
+      // A logout (or another sync) happened while this was in flight — drop the
+      // result rather than overwrite the newer session's state.
+      if (epoch != _epoch) return;
       final raw = res is Map<String, dynamic> ? res : <String, dynamic>{};
       final data = raw['data'] is Map ? raw['data'] as Map : raw;
       _flags = {
@@ -80,6 +94,8 @@ class SchedulingFlagsProvider extends ChangeNotifier {
       // Leave flags empty → everything allowed. The backend still enforces, so a
       // failed fetch degrades to "show the action, let the server decide" rather
       // than hiding controls the user may actually be allowed to use.
+    } finally {
+      if (epoch == _epoch) _loading = false;
     }
   }
 }
