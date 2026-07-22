@@ -1688,7 +1688,13 @@ class _KeyValueRows extends StatelessWidget {
                 Expanded(
                   child: Text(
                     e.value is Map
-                        ? '{…}'
+                        // Flatten one level so meaningful nested objects (e.g. a
+                        // shift's location {name, address}) are readable rather
+                        // than an opaque {…}.
+                        ? (e.value as Map).values
+                            .where((v) => v != null && v is! Map && v is! List)
+                            .map(_formatValue)
+                            .join(' · ')
                         : e.value is List
                             ? '${(e.value as List).length} item(s)'
                             : _formatValue(e.value),

@@ -15,6 +15,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/clock_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/scheduling_flags_provider.dart';
 import '../../models/shift_model.dart';
 import '../../widgets/clockIn/clock_face_card.dart';
 import '../../widgets/clockIn/location_card.dart';
@@ -52,6 +53,10 @@ class _ClockPageState extends State<ClockPage> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      // Present above everything (incl. the bottom nav) and respect the safe
+      // area, so the sheet can't sit under or collide with the bottom nav bar.
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
@@ -504,6 +509,7 @@ class _ClockPageState extends State<ClockPage> {
                         onClockOut:  () => _handleClockOut(ctx),
                         onBreak:     () => _handleBreak(ctx),
                         onScanQr:    () => _handleScanQr(ctx),
+                        showScanQr:  ctx.watch<SchedulingFlagsProvider>().hasQrStation,
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingXxl),
@@ -594,6 +600,7 @@ class _ActionButtons extends StatelessWidget {
     required this.onClockOut,
     required this.onBreak,
     required this.onScanQr,
+    required this.showScanQr,
   });
 
   final ClockStatus  clockStatus;
@@ -604,6 +611,8 @@ class _ActionButtons extends StatelessWidget {
   final VoidCallback onClockOut;
   final VoidCallback onBreak;
   final VoidCallback onScanQr;
+  /// Only shown when the org actually runs a QR time-station.
+  final bool         showScanQr;
 
   bool get _isIdle    => clockStatus == ClockStatus.idle;
   bool get _isOnBreak => clockStatus == ClockStatus.onBreak;
@@ -656,23 +665,25 @@ class _ActionButtons extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AppDimensions.spacingSm),
-        // QR scan button â€” always visible on idle screen
-        SizedBox(
-          width: double.infinity,
-          height: AppDimensions.buttonHeightMd,
-          child: OutlinedButton.icon(
-            onPressed: _buttonsDisabled ? null : onScanQr,
-            icon:  const Icon(Icons.qr_code_scanner, size: 18),
-            label: const Text('Scan Terminal QR'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+        // QR scan button — only shown when the org runs a QR time-station.
+        if (showScanQr) ...[
+          const SizedBox(height: AppDimensions.spacingSm),
+          SizedBox(
+            width: double.infinity,
+            height: AppDimensions.buttonHeightMd,
+            child: OutlinedButton.icon(
+              onPressed: _buttonsDisabled ? null : onScanQr,
+              icon:  const Icon(Icons.qr_code_scanner, size: 18),
+              label: const Text('Scan Terminal QR'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+              ),
             ),
           ),
-        ),
+        ],
         // Outside the geofence: inform the user instead of offering a bypass.
         // Clock-in is geofenced (and re-checked server-side), so there is no
         // override â€” the employee must be physically within the work zone.

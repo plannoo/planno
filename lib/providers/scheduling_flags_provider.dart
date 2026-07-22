@@ -44,6 +44,11 @@ class SchedulingFlagsProvider extends ChangeNotifier {
   bool get canAttachToShifts      => allowed('allowShiftAttachments');
   bool get canEditOwnShifts       => allowed('allowSelfShiftEditing');
 
+  /// Whether the org actually runs a QR time-station (raw org capability, no
+  /// manager bypass). Defaults false until loaded, so the "Scan Terminal QR"
+  /// clock-in only appears once we know the org uses stations.
+  bool get hasQrStation           => _flags['hasQrStation'] == true;
+
   /// Called by the proxy provider whenever auth changes. Idempotent: it only
   /// hits the network on the transition into a fresh logged-in employee session.
   Future<void> sync({required bool isLoggedIn, required bool isManager}) async {
