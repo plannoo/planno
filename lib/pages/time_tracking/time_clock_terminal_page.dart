@@ -216,7 +216,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
           return ('${a['firstName']} ${a['lastName']}')
               .compareTo('${b['firstName']} ${b['lastName']}');
         });
-      if (mounted) setState(() { _users = users; _loading = false; });
+      if (mounted) setState(() { _users = users; _error = null; _loading = false; });
     } catch (e) {
       // A wall-mounted kiosk showing a blank list is unactionable — nobody can
       // clock in and nobody can tell whether it is broken or simply empty.

@@ -46,6 +46,7 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
       if (mounted) {
         setState(() {
           _docs    = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _error   = null;
           _loading = false;
         });
       }
