@@ -1488,6 +1488,15 @@ class _DataExportViewerPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final pretty = const JsonEncoder.withIndent('  ').convert(data);
+
+    // Render the known export sections in a sensible order; anything else the
+    // backend adds later still shows up (the fallback loop at the end).
+    const order = ['profile', 'shifts', 'activities', 'absences', 'exportedAt'];
+    final keys = [
+      ...order.where(data.containsKey),
+      ...data.keys.where((k) => !order.contains(k)),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -1504,9 +1513,11 @@ class _DataExportViewerPage extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
+            child: ListView(
               padding: const EdgeInsets.all(AppDimensions.pagePaddingH),
-              child: SelectableText(pretty, style: AppTextStyles.monospace.copyWith(fontSize: 12)),
+              children: [
+                for (final k in keys) _ExportSection(keyName: k, value: data[k]),
+              ],
             ),
           ),
           SafeArea(
@@ -1518,7 +1529,10 @@ class _DataExportViewerPage extends StatelessWidget {
                 height: AppDimensions.buttonHeightLg,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.copy_all_outlined, size: 18),
-                  label: const Text('Copy to clipboard'),
+                  // The DPA use-case wants the portable machine copy, so the
+                  // button still copies the raw JSON even though the screen now
+                  // shows it in a readable form.
+                  label: const Text('Copy raw data (JSON)'),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: pretty));
                     ScaffoldMessenger.of(context).showSnackBar(_snackBar(
@@ -1531,6 +1545,160 @@ class _DataExportViewerPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Turns a camelCase / snake_case field key into a human label, e.g.
+/// `firstName` → "First name", `exportedAt` → "Exported at".
+String _humanizeKey(String key) {
+  final spaced = key
+      .replaceAll('_', ' ')
+      .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}');
+  if (spaced.isEmpty) return spaced;
+  final lower = spaced.toLowerCase();
+  return lower[0].toUpperCase() + lower.substring(1);
+}
+
+/// Formats a leaf value for display — ISO datetimes become readable, nulls and
+/// empties become an em dash.
+String _formatValue(dynamic v) {
+  if (v == null || (v is String && v.isEmpty)) return '—';
+  if (v is bool) return v ? 'Yes' : 'No';
+  if (v is String) {
+    final dt = DateTime.tryParse(v);
+    if (dt != null && RegExp(r'^\d{4}-\d{2}-\d{2}T').hasMatch(v)) {
+      final local = dt.toLocal();
+      return '${DateFormatter.formatShortDateWithYear(local)} '
+          '${DateFormatter.formatTime(local)}';
+    }
+    return v;
+  }
+  return v.toString();
+}
+
+/// One top-level section of the export (Profile, Shifts, …). A list becomes a
+/// count header with each entry as a card; a map becomes label/value rows.
+class _ExportSection extends StatelessWidget {
+  const _ExportSection({required this.keyName, required this.value});
+  final String keyName;
+  final dynamic value;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final title = _humanizeKey(keyName);
+
+    Widget header(String text) => Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 8),
+          child: Text(text,
+              style: AppTextStyles.labelSmall.copyWith(
+                  color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+        );
+
+    if (value is List) {
+      final items = value as List;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header('${title.toUpperCase()} · ${items.length}'),
+          if (items.isEmpty)
+            Text('—', style: TextStyle(color: cs.onSurfaceVariant))
+          else
+            ...items.map((e) => _ExportCard(
+                  child: e is Map<String, dynamic>
+                      ? _KeyValueRows(map: e)
+                      : Text(_formatValue(e))),
+                ),
+        ],
+      );
+    }
+
+    if (value is Map<String, dynamic>) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header(title.toUpperCase()),
+          _ExportCard(child: _KeyValueRows(map: value)),
+        ],
+      );
+    }
+
+    // Scalar (e.g. exportedAt)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header(title.toUpperCase()),
+        _ExportCard(child: Text(_formatValue(value))),
+      ],
+    );
+  }
+}
+
+class _ExportCard extends StatelessWidget {
+  const _ExportCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Renders a map's scalar fields as label/value rows. Nested maps/lists are
+/// summarized compactly rather than dumped, to keep the card readable.
+class _KeyValueRows extends StatelessWidget {
+  const _KeyValueRows({required this.map});
+  final Map<String, dynamic> map;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final entries = map.entries.where((e) => e.value != null).toList();
+    if (entries.isEmpty) {
+      return Text('—', style: TextStyle(color: cs.onSurfaceVariant));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final e in entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(_humanizeKey(e.key),
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: cs.onSurfaceVariant)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.value is Map
+                        ? '{…}'
+                        : e.value is List
+                            ? '${(e.value as List).length} item(s)'
+                            : _formatValue(e.value),
+                    style: AppTextStyles.bodySmall.copyWith(color: cs.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

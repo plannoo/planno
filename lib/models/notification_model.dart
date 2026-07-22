@@ -30,30 +30,48 @@ class NotificationModel {
     this.data   = const {},
   });
 
-  // Maps backend NotificationType enum to our local category
-  static NotificationCategory _categoryFromType(String? type) => switch (type) {
-    'SHIFT_ASSIGNED'  ||
-    'SHIFT_UPDATED'   ||
-    'SHIFT_CANCELLED' => NotificationCategory.shift,
-    'ABSENCE_APPROVED'||
-    'ABSENCE_REJECTED'=> NotificationCategory.absence,
-    'TASK_ASSIGNED'   => NotificationCategory.task,
-    'ANNOUNCEMENT'    => NotificationCategory.announcement,
-    'CHAT_MESSAGE'    => NotificationCategory.message,
-    _                 => NotificationCategory.system,
-  };
+  /// Maps a notification to our local category.
+  ///
+  /// [type] is the backend `NotificationType`. The backend has no dedicated
+  /// clock-reminder type — it sends "time to clock in" / "employee is late" as
+  /// SHIFT_UPDATED and tags them in [data] instead, so those are detected by
+  /// their data markers first; otherwise they'd be lumped in with shift changes
+  /// and the clock-in notification toggles would do nothing.
+  static NotificationCategory _category(String? type, Map<String, dynamic> data) {
+    if (data.containsKey('clockInReminderShiftId') ||
+        data.containsKey('lateAlertShiftId')) {
+      return NotificationCategory.clockIn;
+    }
+    return switch (type) {
+      'SHIFT_ASSIGNED'  ||
+      'SHIFT_UPDATED'   ||
+      'SHIFT_CANCELLED' => NotificationCategory.shift,
+      'ABSENCE_APPROVED'||
+      'ABSENCE_REJECTED'=> NotificationCategory.absence,
+      'TASK_ASSIGNED'   => NotificationCategory.task,
+      'ANNOUNCEMENT'    => NotificationCategory.announcement,
+      'CHAT_MESSAGE'    => NotificationCategory.message,
+      _                 => NotificationCategory.system,
+    };
+  }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final data = (json['data'] as Map<String, dynamic>?) ?? {};
     return NotificationModel(
       id:        json['id'] as String,
       title:     json['title'] as String,
       body:      json['body'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       isRead:    json['readAt'] != null,
-      category:  _categoryFromType(
-        (json['data'] as Map<String, dynamic>?)?['type'] as String?,
+      // The list endpoint returns `type` as a top-level field; older/FCM shapes
+      // nest it under `data`. Read the top level first — reading only data.type
+      // made every notification fall through to "system", so no category toggle
+      // ever matched and the settings appeared to do nothing.
+      category:  _category(
+        (json['type'] ?? data['type']) as String?,
+        data,
       ),
-      data: (json['data'] as Map<String, dynamic>?) ?? {},
+      data: data,
     );
   }
 
@@ -68,7 +86,7 @@ class NotificationModel {
       title:     title,
       body:      body,
       createdAt: DateTime.now(),
-      category:  _categoryFromType(data['type'] as String?),
+      category:  _category(data['type'] as String?, data),
       isRead:    false,
       data:      data,
     );
