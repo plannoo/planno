@@ -112,8 +112,15 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
+      // The optimistic flip is rolled back correctly, but doing it silently made
+      // the button read "Accepted" and then snap back with no explanation, so
+      // the obvious response was to tap it again.
       if (!mounted) return;
       setState(() => _accepted = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+      );
     }
   }
 

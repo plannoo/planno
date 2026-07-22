@@ -192,6 +192,7 @@ class TimeClockTerminalActivePage extends StatefulWidget {
 class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePage> {
   List<Map<String, dynamic>> _users = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -216,8 +217,16 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
               .compareTo('${b['firstName']} ${b['lastName']}');
         });
       if (mounted) setState(() { _users = users; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() { _users = []; _loading = false; });
+    } catch (e) {
+      // A wall-mounted kiosk showing a blank list is unactionable — nobody can
+      // clock in and nobody can tell whether it is broken or simply empty.
+      if (mounted) {
+        setState(() {
+          _users = [];
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -269,6 +278,17 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                  : (_error != null || _users.isEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Center(
+                        child: Text(
+                          _error ?? 'No employees to show.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 15),
+                        ),
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _users.length,
                       itemBuilder: (_, i) {

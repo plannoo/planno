@@ -221,7 +221,16 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
       await ApiClient.instance.delete('/api/absences/$_id');
       if (!mounted) return;
       Navigator.pop(context, true);
-    } catch (_) {}
+    } catch (e) {
+      // A MANAGER can now be refused here ("Managers can manage absences" off).
+      // Swallowing it left the page open with a dead button, which reads as a
+      // frozen app rather than a policy decision.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   @override

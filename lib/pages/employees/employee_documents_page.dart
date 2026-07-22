@@ -27,6 +27,7 @@ class EmployeeDocumentsPage extends StatefulWidget {
 class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
   List<Map<String, dynamic>> _docs = [];
   bool _loading = true;
+  String? _error;
 
   // Endpoint bases differ for self vs admin.
   String get _listPath => widget.self ? '/api/documents/me' : '/api/documents/${widget.userId}';
@@ -48,9 +49,27 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
           _loading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() { _docs = []; _loading = false; });
+    } catch (e) {
+      // An empty list here is indistinguishable from "no documents" — and the
+      // org can now disable document viewing outright, so say why.
+      if (mounted) {
+        setState(() {
+          _docs = [];
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
+  }
+
+  /// Every mutation on this page reports failures the same way; renaming and
+  /// deleting used to swallow them, so the row simply never changed.
+  void _showError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _upload(bool image) async {
@@ -156,7 +175,7 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
       await ApiClient.instance.patch(
           _itemPath(doc['id'] as String), data: {'description': result.comment});
       _load();
-    } catch (_) {}
+    } catch (e) { _showError(e); }
   }
 
   Future<void> _confirmDelete(Map<String, dynamic> doc) async {
@@ -181,7 +200,7 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
     try {
       await ApiClient.instance.delete(_itemPath(doc['id'] as String));
       _load();
-    } catch (_) {}
+    } catch (e) { _showError(e); }
   }
 
   String _fmtSize(int? bytes) {
@@ -259,7 +278,10 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
                                 Icon(Icons.insert_drive_file_outlined,
                                     size: 56, color: cs.onSurfaceVariant),
                                 const SizedBox(height: 12),
-                                Text('No documents have been uploaded yet',
+                                Text(
+                                    _error ??
+                                        'No documents have been uploaded yet',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
                                         fontSize: 15, color: cs.onSurface)),
                               ],

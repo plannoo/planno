@@ -19,6 +19,7 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
 
   int _credited = 0, _absences = 0, _quota = 0, _overtime = 0; // minutes
   bool _loading = false;
+  String? _error;
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
 
   Future<void> _load() async {
     if (_userId.isEmpty) return;
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final week = _isoWeek(_weekStart);
       final year = _weekStart.year;
@@ -69,11 +70,14 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
           _loading  = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      // Do NOT synthesise a balance here. The old fallback (quota 40h, overtime
+      // -40h) presented a full week's deficit that no endpoint ever returned, so
+      // a failed request looked like a genuinely absent employee.
       if (mounted) {
         setState(() {
-          _credited = 0; _absences = 0; _quota = 40 * 60;
-          _overtime = -_quota; _loading = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
         });
       }
     }
@@ -181,6 +185,14 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(_error!, textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+                    ),
+                  )
                 : Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                     child: Column(

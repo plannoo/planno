@@ -43,6 +43,7 @@ class _RequestListState extends State<_RequestList> with AutomaticKeepAliveClien
   List<Map<String, dynamic>> _requests = [];
   bool _loading = true;
   String? _busyId;
+  String? _error;
 
   @override
   bool get wantKeepAlive => true;
@@ -57,7 +58,7 @@ class _RequestListState extends State<_RequestList> with AutomaticKeepAliveClien
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final res = await ApiClient.instance.get('/api/shifts/$_basePath');
       final data = res is Map<String, dynamic>
@@ -68,8 +69,16 @@ class _RequestListState extends State<_RequestList> with AutomaticKeepAliveClien
         _requests = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
       });
-    } catch (_) {
-      if (mounted) setState(() { _requests = []; _loading = false; });
+    } catch (e) {
+      // "No pending requests" while requests actually exist is the worst thing
+      // this screen can say — a manager would simply never review them.
+      if (mounted) {
+        setState(() {
+          _requests = [];
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -129,7 +138,11 @@ class _RequestListState extends State<_RequestList> with AutomaticKeepAliveClien
         onRefresh: _load,
         child: ListView(children: [
           const SizedBox(height: 120),
-          Center(child: Text('No requests', style: TextStyle(color: cs.onSurfaceVariant))),
+          Center(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(_error ?? 'No requests', textAlign: TextAlign.center,
+                style: TextStyle(color: cs.onSurfaceVariant)),
+          )),
         ]),
       );
     }

@@ -17,6 +17,7 @@ class _TimeAccountPageState extends State<TimeAccountPage> {
   final Set<int> _expanded = {0};
 
   bool   _loading      = true;
+  String? _error;
   String _totalBalance = '00:00h';
   List<_MonthRecord> _months = [];
   List<({String label, double hours})> _barData = [];
@@ -83,8 +84,13 @@ class _TimeAccountPageState extends State<TimeAccountPage> {
           hours: (bm['hours'] as num? ?? 0).toDouble(),
         );
       }).toList();
-    } catch (_) {
-      // keep empty state on error
+    } catch (e) {
+      // Never fall through to the initial '00:00h'. The org can now disable the
+      // time account entirely, and a rendered "+00:00h" would tell the employee
+      // they have no overtime — a wrong number is worse than no number.
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,6 +121,15 @@ class _TimeAccountPageState extends State<TimeAccountPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Padding(
+              padding: const EdgeInsets.all(AppDimensions.pagePaddingH),
+              child: Center(
+                child: Text(_error!, textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: AppColors.slate600)),
+              ),
+            )
           : SingleChildScrollView(
         physics: Theme.of(context).platform == TargetPlatform.iOS
             ? const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics())
