@@ -98,6 +98,19 @@ class _ClockPageState extends State<ClockPage> {
   // â”€â”€ Action handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<void> _handleClockIn(BuildContext context) async {
+    // Any uncaught throw in here (a failing refresh, a plugin error) would abort
+    // the tap with an unhandled async error and NOTHING on screen — the button
+    // would just look dead. Wrap the whole flow so every failure is at least
+    // visible instead of silent.
+    try {
+      await _runClockIn(context);
+    } catch (e) {
+      if (!context.mounted) return;
+      _snack(context, e.toString().replaceFirst('Exception: ', ''), AppColors.error);
+    }
+  }
+
+  Future<void> _runClockIn(BuildContext context) async {
     final l10n  = AppLocalizations.of(context);
     final clock = context.read<ClockProvider>();
 
@@ -106,8 +119,11 @@ class _ClockPageState extends State<ClockPage> {
     if (dashboard.todayShift == null) {
       // The shift fetch may have failed due to a token race (load() was
       // fire-and-forget while a concurrent 401 was being resolved). Retry
-      // silently before concluding there's no shift.
-      await dashboard.refresh();
+      // silently before concluding there's no shift. A failure here must not
+      // abort the whole handler — fall through to the null-shift check below.
+      try {
+        await dashboard.refresh();
+      } catch (_) {/* handled by the todayShift == null branch below */}
       if (!context.mounted) return;
       dashboard = context.read<DashboardProvider>();
     }
@@ -140,10 +156,13 @@ class _ClockPageState extends State<ClockPage> {
             return;
           }
         }
-      } on MissingPluginException {
-        // No biometric plugin on this platform â€” proceed without it.
-      } on PlatformException {
-        // Biometrics unavailable/not enrolled â€” proceed without it.
+      } catch (_) {
+        // Probing biometrics can throw for many reasons besides the two obvious
+        // plugin exceptions (no FragmentActivity, hardware lockout, OEM plugin
+        // quirks). Treat ANY probe failure as "not available" and proceed —
+        // biometric is a soft gate and the backend still enforces the clock-in.
+        // Without this catch-all, an unexpected type escaped to the caller and
+        // aborted the tap with nothing on screen.
       }
     }
 
