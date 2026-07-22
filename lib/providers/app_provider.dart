@@ -23,6 +23,7 @@ import '../providers/clock_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../providers/scheduling_flags_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/schedule_provider.dart';
 
@@ -103,6 +104,18 @@ class AppProviders extends StatelessWidget {
                 userRepository:  repo,
                 tokenRepository: tokenRepo,
               ),
+        ),
+        // ── Scheduling flags (tied to auth) ──────────────────────────────────
+        // Fetches the employee-facing Scheduling toggles on login so the UI can
+        // hide actions the org has disabled instead of offering a control that
+        // can only 403. Managers bypass (no fetch); cleared on logout.
+        ChangeNotifierProxyProvider<AuthProvider, SchedulingFlagsProvider>(
+          create: (_) => SchedulingFlagsProvider(),
+          update: (_, auth, prev) {
+            final p = prev ?? SchedulingFlagsProvider();
+            p.sync(isLoggedIn: auth.isLoggedIn, isManager: auth.isAdmin);
+            return p;
+          },
         ),
         ChangeNotifierProvider<LocaleProvider>.value(
               value: snapshot.data!.locale,

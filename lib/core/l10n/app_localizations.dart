@@ -353,6 +353,8 @@ abstract class AppLocalizations {
   String get availabilitySaveRoutine;
   String get availabilityUnavailable;
   String get availabilitySaved;
+  String get availabilityEntryDisabled;
+  String get unavailabilityEntryDisabled;
 
   // ── Notification types sheet ──────────────────────────────────────────────
   String get notifTypesTitle;
@@ -874,6 +876,8 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get availabilitySaveRoutine => 'Save Routine';
   @override String get availabilityUnavailable => 'Unavailable';
   @override String get availabilitySaved      => 'Availability saved';
+  @override String get availabilityEntryDisabled   => 'Your organization has turned off entering availabilities.';
+  @override String get unavailabilityEntryDisabled => 'Your organization has turned off entering unavailabilities.';
 
   @override String get notifTypesTitle          => 'Notification types';
   @override String get notifTypeNewShift        => 'New shift application';
@@ -1279,6 +1283,8 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get availabilitySaveRoutine => 'Routine speichern';
   @override String get availabilityUnavailable => 'Nicht verfügbar';
   @override String get availabilitySaved      => 'Verfügbarkeit gespeichert';
+  @override String get availabilityEntryDisabled   => 'Deine Organisation hat das Eintragen von Verfügbarkeiten deaktiviert.';
+  @override String get unavailabilityEntryDisabled => 'Deine Organisation hat das Eintragen von Nichtverfügbarkeiten deaktiviert.';
 
   @override String get notifTypesTitle          => 'Benachrichtigungstypen';
   @override String get notifTypeNewShift        => 'Neue Schichtbewerbung';

@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../providers/announcement_provider.dart';
+import '../../../providers/scheduling_flags_provider.dart';
 import '../dashboard/announcements_page.dart';
 import '../notification/notification_page.dart';
 
@@ -221,6 +222,10 @@ class _EmployeeHomePageState extends State<EmployeeHomePage> {
 
   // ── Open shifts ─────────────────────────────────────────────────────────────
   Widget _openShiftsSection(ColorScheme cs, AppLocalizations l10n) {
+    // When the org has disabled open-shift claims, the list is still worth
+    // showing (it's informational) but the Claim button would only ever 403 —
+    // so drop it rather than offer a dead control.
+    final canClaim = context.watch<SchedulingFlagsProvider>().canClaimOpenShifts;
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,15 +284,16 @@ class _EmployeeHomePageState extends State<EmployeeHomePage> {
                           ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => _claimShift(s),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                      if (canClaim)
+                        TextButton(
+                          onPressed: () => _claimShift(s),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          child: const Text('Claim',
+                              style: TextStyle(fontWeight: FontWeight.w700)),
                         ),
-                        child: const Text('Claim',
-                            style: TextStyle(fontWeight: FontWeight.w700)),
-                      ),
                     ],
                   ),
                 )),

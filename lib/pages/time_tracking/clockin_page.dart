@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
+import '../../../core/network/api_exceptions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -204,9 +205,21 @@ class _ClockPageState extends State<ClockPage> {
       final raw = res is Map<String, dynamic> ? res : <String, dynamic>{};
       final data = raw['data'] is Map ? raw['data'] as Map : raw;
       pin = data['pin']?.toString();
-    } catch (_) {
-      // If the PIN can't be loaded, don't hard-block clock-in.
-      return true;
+    } on NotFoundException {
+      return true;   // no PIN set for this employee — nothing to verify
+    } on ForbiddenException {
+      return true;   // org has this gate disabled — it doesn't apply
+    } catch (e) {
+      // A genuine failure (network, timeout, server, parse) must NOT silently
+      // wave the clock-in through — that turned the PIN gate off whenever the
+      // request hiccuped. Fail closed with a retryable message instead.
+      if (context.mounted) {
+        _snack(context,
+            'Could not verify your clock PIN — please try again. '
+            '(${e.toString().replaceFirst('Exception: ', '')})',
+            AppColors.error);
+      }
+      return false;
     }
     if (pin == null || pin.isEmpty) return true; // no PIN configured
     if (!context.mounted) return false;

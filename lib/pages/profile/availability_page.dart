@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../providers/scheduling_flags_provider.dart';
 
 class AvailabilityPage extends StatefulWidget {
   const AvailabilityPage({super.key});
@@ -150,6 +152,18 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final flags = context.watch<SchedulingFlagsProvider>();
+    // The weekly template writes an availability row for every enabled day and
+    // an unavailability row for every disabled one, and the backend gates those
+    // two separately. Mirror that here: Save is only offered when the current
+    // week's selection is actually permitted, so the button can't be a dead end.
+    final hasAvailable   = _days.any((d) => d.isEnabled);
+    final hasUnavailable = _days.any((d) => !d.isEnabled);
+    final saveBlockedReason = (hasAvailable && !flags.canEnterAvailability)
+        ? AppLocalizations.of(context).availabilityEntryDisabled
+        : (hasUnavailable && !flags.canEnterUnavailability)
+            ? AppLocalizations.of(context).unavailabilityEntryDisabled
+            : null;
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -269,20 +283,32 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: AppDimensions.buttonHeightLg,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(AppLocalizations.of(context).availabilitySaveRoutine),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (saveBlockedReason != null) ...[
+                    Text(saveBlockedReason,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.error)),
+                    const SizedBox(height: AppDimensions.spacingSm),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    height: AppDimensions.buttonHeightLg,
+                    child: ElevatedButton(
+                      onPressed: (_isSaving || saveBlockedReason != null) ? null : _save,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(AppLocalizations.of(context).availabilitySaveRoutine),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
