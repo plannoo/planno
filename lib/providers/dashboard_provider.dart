@@ -3,14 +3,19 @@ import 'package:flutter/foundation.dart';
 import '../core/network/api_exceptions.dart';
 import '../models/shift_model.dart';
 import '../repositories/shift_repository.dart';
+import '../repositories/timesheet_repository.dart';
 
 enum DashboardLoadState { initial, loading, loaded, error }
 
 class DashboardProvider extends ChangeNotifier {
-  DashboardProvider({required ShiftRepository shiftRepository})
-      : _repo = shiftRepository;
+  DashboardProvider({
+    required ShiftRepository shiftRepository,
+    required TimesheetRepository timesheetRepository,
+  })  : _repo = shiftRepository,
+        _timesheetRepo = timesheetRepository;
 
-  final ShiftRepository _repo;
+  final ShiftRepository     _repo;
+  final TimesheetRepository _timesheetRepo;
   Timer? _pollTimer;
 
   DashboardLoadState _state              = DashboardLoadState.initial;
@@ -39,7 +44,7 @@ class DashboardProvider extends ChangeNotifier {
     _setState(DashboardLoadState.loading);
     try {
       _todayShift  = await _repo.getTodayShift();
-      _weeklyHours = 32.5; // TODO: fetch from time-tracking repository
+      await _loadWeeklyHours();
       _lastErrorWasAuth = false;
       _setState(DashboardLoadState.loaded);
       _startPolling();
@@ -47,6 +52,22 @@ class DashboardProvider extends ChangeNotifier {
       _lastErrorWasAuth = e is UnauthorizedException;
       _errorMessage = e.toString();
       _setState(DashboardLoadState.error);
+    }
+  }
+
+  /// Pulls this week's credited/quota minutes from the timesheet endpoint.
+  /// Failure here shouldn't block the rest of the dashboard, so it's caught
+  /// separately and just leaves the previous (or zeroed) values in place.
+  Future<void> _loadWeeklyHours() async {
+    try {
+      final week    = await _timesheetRepo.getWeekly();
+      final summary = (week['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final creditedMinutes = (summary['totalCreditedMinutes'] as num?)?.toInt() ?? 0;
+      final quotaMinutes    = (summary['totalQuotaMinutes']    as num?)?.toInt() ?? 40 * 60;
+      _weeklyHours       = creditedMinutes / 60;
+      _targetWeeklyHours = quotaMinutes / 60;
+    } catch (_) {
+      // Keep prior values; a timesheet hiccup shouldn't fail the whole dashboard.
     }
   }
 

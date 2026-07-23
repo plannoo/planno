@@ -123,6 +123,8 @@ class _CardContent extends StatelessWidget {
             ),
             child: Text(
               absence.statusLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize:   11,
                 fontWeight: FontWeight.w700,

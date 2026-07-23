@@ -10,7 +10,7 @@ import '../services/prefs_service.dart';
 import 'api_config.dart';
 import 'api_exceptions.dart';
 
-/// Singleton Dio-based HTTP client for the Aplano API.
+/// Singleton Dio-based HTTP client for the Wrenta API.
 ///
 /// Features:
 ///  • Attaches `Authorization: Bearer <token>` to every request.
@@ -85,7 +85,7 @@ class ApiClient {
   ///
   /// Generate with:
   /// ```bash
-  /// openssl s_client -connect api.aplano.io:443 -showcerts </dev/null 2>/dev/null |
+  /// openssl s_client -connect api.wrenta.io:443 -showcerts </dev/null 2>/dev/null |
   ///   openssl x509 -pubkey -noout |
   ///   openssl pkey -pubin -outform DER |
   ///   openssl dgst -sha256
@@ -210,7 +210,11 @@ class ApiClient {
       case 401:
         return const UnauthorizedException();
       case 403:
-        return const ForbiddenException();
+        // Surface the server's reason (e.g. "Requesting shift swaps is disabled
+        // by your organization.") instead of a generic message.
+        return ForbiddenException(
+          message.isNotEmpty ? message : 'You do not have permission to perform this action.',
+        );
       case 404:
         return NotFoundException(message);
       case 422:

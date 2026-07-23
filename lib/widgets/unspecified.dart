@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 
 class AppColors {
-  static const Color primary = Color(0xFF2563EB);
-  static const Color primaryLight = Color(0xFFEFF6FF);
-  static const Color primaryLighter = Color(0xFFDBEAFE);
+  static const Color primary = Color(0xFFF43F5E);
+  static const Color primaryLight = Color(0xFFFFF1F2);
+  static const Color primaryLighter = Color(0xFFFFE4E6);
   static const Color slate900 = Color(0xFF0F172A);
   static const Color slate600 = Color(0xFF475569);
   static const Color slate500 = Color(0xFF64748B);

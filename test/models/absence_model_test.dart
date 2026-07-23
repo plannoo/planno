@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aplano/models/absence.dart';
+import 'package:wrenta/models/absence.dart';
 
 void main() {
   group('AbsenceModel.fromJson', () {

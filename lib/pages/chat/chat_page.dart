@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +48,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
-// â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App bar ───────────────────────────────────────────────────────────────────
 
 class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
@@ -99,7 +99,7 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// â”€â”€ Conversation list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Conversation list ─────────────────────────────────────────────────────────
 
 class _ConversationList extends StatelessWidget {
   const _ConversationList({required this.conversations});
@@ -256,7 +256,7 @@ class _ConversationAvatar extends StatelessWidget {
   }
 }
 
-// â”€â”€ Thread page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Thread page ───────────────────────────────────────────────────────────────
 
 class _ThreadPage extends StatefulWidget {
   const _ThreadPage({required this.conversationId});
@@ -327,9 +327,12 @@ class _ThreadPageState extends State<_ThreadPage> {
         iconTheme:        const IconThemeData(color: Colors.white),
         title: Row(
           children: [
-            Text(conv.title,
-                style: AppTextStyles.bodyBold.copyWith(
-                    fontSize: 17, color: Colors.white)),
+            Flexible(
+              child: Text(conv.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyBold.copyWith(
+                      fontSize: 17, color: Colors.white)),
+            ),
             if (conv.isGroup) ...[
               const SizedBox(width: 6),
               Text(
@@ -393,7 +396,7 @@ class _ThreadPageState extends State<_ThreadPage> {
   }
 }
 
-// â”€â”€ Load older messages button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Load older messages button ─────────────────────────────────────────────────
 
 class _LoadOlderButton extends StatelessWidget {
   const _LoadOlderButton({required this.isLoading, required this.onTap});
@@ -421,7 +424,7 @@ class _LoadOlderButton extends StatelessWidget {
       );
 }
 
-// â”€â”€ Message bubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Message bubble ────────────────────────────────────────────────────────────
 
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble(
@@ -523,7 +526,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-// â”€â”€ Input bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Input bar ─────────────────────────────────────────────────────────────────
 
 class _InputBar extends StatelessWidget {
   const _InputBar({
@@ -599,7 +602,7 @@ class _InputBar extends StatelessWidget {
   }
 }
 
-// â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Empty state ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();
@@ -629,7 +632,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// â”€â”€ Thread settings dialog (Cupertino) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Thread settings dialog (Cupertino) ────────────────────────────────────────
 
 void _showThreadSettings(BuildContext context, String conversationId) {
   showCupertinoDialog<void>(
@@ -660,7 +663,7 @@ void _showThreadSettings(BuildContext context, String conversationId) {
   );
 }
 
-// â”€â”€ New chat page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── New chat page ─────────────────────────────────────────────────────────────
 
 class _NewChatPage extends StatefulWidget {
   const _NewChatPage();

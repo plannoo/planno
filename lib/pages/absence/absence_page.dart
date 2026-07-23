@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../models/absence.dart';
 import '../../../models/absence_summary.dart';
@@ -57,13 +58,14 @@ class _AbsencePageState extends State<AbsencePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Absences',
+        title: l10n.absencesTitle,
         actions: [
           IconButton(
             icon: const Icon(Icons.history_rounded, size: 22),
-            tooltip: 'Request History',
+            tooltip: l10n.requestHistoryTitle,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const RequestHistoryPage()),
@@ -73,7 +75,7 @@ class _AbsencePageState extends State<AbsencePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'New absence request',
+        tooltip: l10n.newAbsenceTitle,
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const NewAbsenceScreen()),
@@ -89,9 +91,9 @@ class _AbsencePageState extends State<AbsencePage> {
                     children: [
                       const Icon(Icons.cloud_off_outlined, size: 48, color: Colors.grey),
                       const SizedBox(height: 12),
-                      const Text('Could not load absences'),
+                      Text(l10n.absenceLoadError),
                       const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
+                      ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
                     ],
                   ),
                 )
@@ -100,6 +102,7 @@ class _AbsencePageState extends State<AbsencePage> {
   }
 
   Widget _buildContent() {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.spacingLg),
       child: Column(
@@ -107,11 +110,11 @@ class _AbsencePageState extends State<AbsencePage> {
         children: [
           if (_summary != null) AbsenceSummaryCard(summary: _summary!),
           const SizedBox(height: AppDimensions.spacing4xl),
-          SectionHeader(title: 'Upcoming Absences'),
+          SectionHeader(title: l10n.absencesUpcoming),
           const SizedBox(height: AppDimensions.spacingMd),
           ..._upcoming.map((a) => AbsenceListCard(absence: a, showWorkingDays: true)),
           const SizedBox(height: AppDimensions.spacingXl),
-          SectionHeader(title: 'Past Requests'),
+          SectionHeader(title: l10n.absencesPast),
           const SizedBox(height: AppDimensions.spacingMd),
           ..._past.map((a) => AbsenceListCard(absence: a, isExpandable: true)),
         ],

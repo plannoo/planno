@@ -13,7 +13,7 @@ notifications + polling keep working, only OS-level push is disabled.
 3. Restart the server. On boot you should see
    `Firebase Admin initialized from service account file`.
 
-## Flutter app (Aplano)
+## Flutter app (Wrenta)
 1. Install the FlutterFire CLI: `dart pub global activate flutterfire_cli`.
 2. From the app root run `flutterfire configure` and pick the same Firebase
    project. This **regenerates** `lib/firebase_options.dart` (currently a

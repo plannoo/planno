@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -18,7 +18,11 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  Set<NotificationCategory> _hiddenCategories = {};
+  // Which notification kinds the user has switched off. Each toggle maps to
+  // exactly one NotificationFilterKind, so a single toggle now takes effect on
+  // its own (previously several collapsed into one display category and only hid
+  // when all of them were off).
+  Set<NotificationFilterKind> _hiddenKinds = {};
 
   @override
   void initState() {
@@ -33,17 +37,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final results = await Future.wait([
       PrefsService.getViewBool('notif_new_shift_app',  fallback: true),
       PrefsService.getViewBool('notif_shift_change',   fallback: true),
-      PrefsService.getViewBool('notif_shift_handover', fallback: true),
       PrefsService.getViewBool('notif_absence_req',    fallback: true),
       PrefsService.getViewBool('notif_employee_late',  fallback: true),
       PrefsService.getViewBool('notif_reminder_clock', fallback: true),
     ]);
     if (!mounted) return;
     setState(() {
-      _hiddenCategories = {
-        if (!(results[0] || results[1] || results[2])) NotificationCategory.shift,
-        if (!results[3]) NotificationCategory.absence,
-        if (!(results[4] || results[5])) NotificationCategory.clockIn,
+      _hiddenKinds = {
+        if (!results[0]) NotificationFilterKind.newShift,
+        if (!results[1]) NotificationFilterKind.shiftChange,
+        if (!results[2]) NotificationFilterKind.absence,
+        if (!results[3]) NotificationFilterKind.lateAlert,
+        if (!results[4]) NotificationFilterKind.clockReminder,
       };
     });
   }
@@ -61,7 +66,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             return _ErrorState(onRetry: provider.load);
           }
           final visible = provider.items
-              .where((n) => !_hiddenCategories.contains(n.category))
+              .where((n) => !_hiddenKinds.contains(n.filterKind))
               .toList();
           if (visible.isEmpty) {
             return const _EmptyState();
@@ -73,7 +78,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 }
 
-// â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App bar ───────────────────────────────────────────────────────────────────
 
 class _NotificationsAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -133,7 +138,7 @@ class _NotificationsAppBar extends StatelessWidget
   }
 }
 
-// â”€â”€ Notification types sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Notification types sheet ─────────────────────────────────────────────────
 
 class _NotificationTypesSheet extends StatefulWidget {
   const _NotificationTypesSheet();
@@ -145,7 +150,6 @@ class _NotificationTypesSheet extends StatefulWidget {
 class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
   bool _newShiftApp     = true;
   bool _shiftChange     = true;
-  bool _shiftHandover   = true;
   bool _absenceReq      = true;
   bool _employeeLate    = true;
   bool _reminderClockIn = true;
@@ -161,7 +165,6 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     final results = await Future.wait([
       PrefsService.getViewBool('notif_new_shift_app',  fallback: true),
       PrefsService.getViewBool('notif_shift_change',   fallback: true),
-      PrefsService.getViewBool('notif_shift_handover', fallback: true),
       PrefsService.getViewBool('notif_absence_req',    fallback: true),
       PrefsService.getViewBool('notif_employee_late',  fallback: true),
       PrefsService.getViewBool('notif_reminder_clock', fallback: true),
@@ -170,10 +173,9 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     setState(() {
       _newShiftApp     = results[0];
       _shiftChange     = results[1];
-      _shiftHandover   = results[2];
-      _absenceReq      = results[3];
-      _employeeLate    = results[4];
-      _reminderClockIn = results[5];
+      _absenceReq      = results[2];
+      _employeeLate    = results[3];
+      _reminderClockIn = results[4];
     });
   }
 
@@ -182,7 +184,6 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
     await Future.wait([
       PrefsService.setViewBool('notif_new_shift_app',  _newShiftApp),
       PrefsService.setViewBool('notif_shift_change',   _shiftChange),
-      PrefsService.setViewBool('notif_shift_handover', _shiftHandover),
       PrefsService.setViewBool('notif_absence_req',    _absenceReq),
       PrefsService.setViewBool('notif_employee_late',  _employeeLate),
       PrefsService.setViewBool('notif_reminder_clock', _reminderClockIn),
@@ -192,7 +193,8 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     Widget row(String label, bool val, ValueChanged<bool> cb) => Column(
       mainAxisSize: MainAxisSize.min,
@@ -201,7 +203,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
           title: Text(label, style: TextStyle(fontSize: 15, color: cs.onSurface)),
           value: val,
           onChanged: cb,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ],
     );
@@ -215,7 +217,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // â”€â”€ Handle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Handle ────────────────────────────────────────────────────
           Container(
             margin: const EdgeInsets.only(top: 10),
             width: 36, height: 4,
@@ -224,7 +226,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // â”€â”€ Title row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Title row ─────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -233,33 +235,34 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
                   onTap: () => Navigator.pop(context),
                   child: Icon(Icons.close, size: 22, color: cs.onSurfaceVariant),
                 ),
-                const Expanded(
-                  child: Text('Notification types',
+                Expanded(
+                  child: Text(l10n.notifTypesTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 22),
               ],
             ),
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
-          // â”€â”€ Scrollable toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Scrollable toggles ────────────────────────────────────────
           Flexible(
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  row('New shift application',               _newShiftApp,     (v) => setState(() => _newShiftApp     = v)),
-                  row('Shift change requests',               _shiftChange,     (v) => setState(() => _shiftChange     = v)),
-                  row('Shift handover requested',            _shiftHandover,   (v) => setState(() => _shiftHandover   = v)),
-                  row('Absence requested',                   _absenceReq,      (v) => setState(() => _absenceReq      = v)),
-                  row('Employee is late',                    _employeeLate,    (v) => setState(() => _employeeLate    = v)),
-                  row('Reminder to clock in at shift start', _reminderClockIn, (v) => setState(() => _reminderClockIn = v)),
+                  // No "Shift handover" toggle: the backend has no handover
+                  // notification event, so it could never filter anything.
+                  row(l10n.notifTypeNewShift,        _newShiftApp,     (v) => setState(() => _newShiftApp     = v)),
+                  row(l10n.notifTypeShiftChange,     _shiftChange,     (v) => setState(() => _shiftChange     = v)),
+                  row(l10n.notifTypeAbsenceReq,      _absenceReq,      (v) => setState(() => _absenceReq      = v)),
+                  row(l10n.notifTypeEmployeeLate,    _employeeLate,    (v) => setState(() => _employeeLate    = v)),
+                  row(l10n.notifTypeClockInReminder, _reminderClockIn, (v) => setState(() => _reminderClockIn = v)),
                 ],
               ),
             ),
           ),
-          // â”€â”€ Save button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Save button ───────────────────────────────────────────────
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
           Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottom),
@@ -277,8 +280,8 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
                 child: _saving
                     ? const SizedBox(width: 18, height: 18,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Save',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    : Text(l10n.save,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ),
@@ -288,7 +291,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
   }
 }
 
-// â”€â”€ Grouped list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Grouped list ──────────────────────────────────────────────────────────────
 
 // Flat list item types for lazy ListView.builder
 class _NHeader { const _NHeader(this.label); final String label; }
@@ -366,7 +369,7 @@ class _GroupHeader extends StatelessWidget {
       );
 }
 
-// â”€â”€ Empty / error states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Empty / error states ──────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();

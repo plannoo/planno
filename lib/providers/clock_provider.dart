@@ -171,21 +171,31 @@ class ClockProvider extends ChangeNotifier {
     _locationError = null;
     notifyListeners();
 
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      return _setLocationError('Location services are disabled.');
-    }
-
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return _setLocationError('Location permission denied.');
+    // The Geolocator permission calls can throw (OEM plugin quirks, a
+    // permission request already in progress, a platform error). If any of them
+    // did, this method used to exit with _isLoadingLocation stuck true forever —
+    // which keeps the clock-in button permanently disabled (it's gated on
+    // isLoadingLocation), so a tap does nothing. Convert any such throw into a
+    // normal location error so the button re-enables and the reason is shown.
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return _setLocationError('Location services are disabled.');
       }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return _setLocationError(
-        'Location permanently denied. Please enable it in your device settings.',
-      );
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return _setLocationError('Location permission denied.');
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        return _setLocationError(
+          'Location permanently denied. Please enable it in your device settings.',
+        );
+      }
+    } catch (e) {
+      return _setLocationError('Could not check location permission: $e');
     }
 
     await fetchCurrentLocation();
@@ -198,8 +208,10 @@ class ClockProvider extends ChangeNotifier {
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
       );
       _currentPosition = position;
 
@@ -399,7 +411,7 @@ class ClockProvider extends ChangeNotifier {
 
       _clockStatus = ClockStatus.clockedIn;
       _startSessionTimer();
-      _addActivity('Break Ended', ActivityType.breakEnd, const Color(0xFF3B82F6));
+      _addActivity('Break Ended', ActivityType.breakEnd, const Color(0xFFFB7185));
       _lastError = null;
     } catch (e) {
       // Rollback — resume break timer

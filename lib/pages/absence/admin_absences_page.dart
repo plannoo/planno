@@ -1,14 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/auth/require_admin.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import 'admin_absence_edit_page.dart';
-
-const _months = [
-  'Januar','Februar','MÃ¤rz','April','Mai','Juni',
-  'Juli','August','September','Oktober','November','Dezember',
-];
 
 class AdminAbsencesPage extends StatefulWidget {
   const AdminAbsencesPage({super.key});
@@ -41,20 +37,22 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       final to   = _yearView
           ? DateTime(_month.year, 12, 31)
           : DateTime(_month.year, _month.month + 1, 0);
-      final iso  = (DateTime d) => d.toIso8601String().split('T')[0];
+      String iso(DateTime d) => d.toIso8601String().split('T')[0];
       final data = await ApiClient.instance.get(
           '/api/absences?from=${iso(from)}&to=${iso(to)}&scope=org');
       final list = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      if (mounted) setState(() {
-        _entries = List<Map<String, dynamic>>.from(list as List)
-            .map(_Entry.fromJson)
-            .where((e) =>
-                (_employeeFilter == null || e.name == _employeeFilter) &&
-                (_typeFilter     == null || e.type == _typeFilter))
-            .toList();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _entries = List<Map<String, dynamic>>.from(list)
+              .map(_Entry.fromJson)
+              .where((e) =>
+                  (_employeeFilter == null || e.name == _employeeFilter) &&
+                  (_typeFilter     == null || e.type == _typeFilter))
+              .toList();
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() { _entries = []; _loading = false; });
     }
@@ -78,7 +76,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       final data = await ApiClient.instance.get('/api/users');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final names = (raw as List<dynamic>)
+      final names = raw
           .map((u) {
             final m = u as Map<String, dynamic>;
             return ('${m['firstName'] ?? ''} ${m['lastName'] ?? ''}').trim();
@@ -110,9 +108,9 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       _SwitchItem(label: 'Krankheit',                value: 'SICK',     dot: Color(0xFF4CAF50)),
       _SwitchItem(label: 'Qualifikation',            value: 'TRAINING', dot: Color(0xFF8BC34A)),
       _SwitchItem(label: 'Stand by/ frei',           value: 'STANDBY',  dot: Color(0xFFFFC107)),
-      _SwitchItem(label: 'Ãœberstundenausgleich',     value: 'OVERTIME', dot: Color(0xFFE91E63)),
+      _SwitchItem(label: 'Überstundenausgleich',     value: 'OVERTIME', dot: Color(0xFFE91E63)),
       _SwitchItem(label: 'Unentschuldigte Abwesenheit', value: 'UNEXCUSED', dot: Color(0xFFE53935)),
-      _SwitchItem(label: 'Urlaub',                   value: 'VACATION', dot: Color(0xFF2196F3)),
+      _SwitchItem(label: 'Urlaub',                   value: 'VACATION', dot: Color(0xFF0EA5E9)),
       _SwitchItem(label: 'Wunschfrei',               value: 'PREFERRED_OFF', dot: Color(0xFFE91E63)),
     ];
     showModalBottomSheet(
@@ -171,7 +169,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       ),
       body: Column(
         children: [
-          // â”€â”€ Blue header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Blue header ─────────────────────────────────────────────────
           Container(
             color: AppColors.primary,
             child: SafeArea(
@@ -222,7 +220,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
                         const SizedBox(width: 12),
                         Text.rich(TextSpan(children: [
                           if (!_yearView)
-                            TextSpan(text: _months[_month.month - 1],
+                            TextSpan(text: DateFormat('MMMM', Intl.defaultLocale ?? 'en').format(_month),
                                 style: const TextStyle(
                                     color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
                           TextSpan(text: _yearView ? '${_month.year}' : ' ${_month.year}',
@@ -284,7 +282,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
             ),
           ),
 
-          // â”€â”€ List â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── List ────────────────────────────────────────────────────────
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -366,7 +364,7 @@ class _Entry {
   };
 }
 
-// â”€â”€ Switch sheet (filter picker) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Switch sheet (filter picker) ──────────────────────────────────────────────
 
 class _SwitchItem {
   _SwitchItem({required this.label, this.value, this.dot});
@@ -530,7 +528,7 @@ class _AbsenceRow extends StatelessWidget {
   }
 
   String _dateLabel() {
-    final ds = (DateTime d) =>
+    String ds(DateTime d) =>
         '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}';
     final sameDay = entry.start.year == entry.end.year &&
                     entry.start.month == entry.end.month &&

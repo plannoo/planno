@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/require_admin.dart';
@@ -61,12 +61,14 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
       final data = await ApiClient.instance.get('/api/locations');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      if (mounted) setState(() {
-        _locations = List<Map<String, dynamic>>.from(raw as List);
-        _loading   = false;
-      });
+      if (mounted) {
+        setState(() {
+          _locations = List<Map<String, dynamic>>.from(raw);
+          _loading   = false;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() { _locations = []; _loading = false; });
+      if (mounted) { setState(() { _locations = []; _loading = false; }); }
     }
   }
 
@@ -161,7 +163,7 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
                             _selected.remove(id);
                           }
                         }),
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                       );
                     },
                   ),
@@ -172,7 +174,7 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
   }
 }
 
-// â”€â”€ Active terminal view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Active terminal view ──────────────────────────────────────────────────────
 
 class TimeClockTerminalActivePage extends StatefulWidget {
   const TimeClockTerminalActivePage({
@@ -190,6 +192,7 @@ class TimeClockTerminalActivePage extends StatefulWidget {
 class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePage> {
   List<Map<String, dynamic>> _users = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -197,14 +200,14 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
   Future<void> _load() async {
     try {
       // Use the terminal-scoped employee list (requires terminalToken header),
-      // not the global /api/users â€” terminal sessions don't have a JWT user.
+      // not the global /api/users — terminal sessions don't have a JWT user.
       final data = await ApiClient.instance.get(
         '/api/terminal/employees',
         options: Options(headers: { 'x-terminal-token': widget.terminalToken }),
       );
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final users = List<Map<String, dynamic>>.from(raw as List)
+      final users = List<Map<String, dynamic>>.from(raw)
         ..sort((a, b) {
           // online users first
           final ao = a['isClocked'] == true ? 0 : 1;
@@ -213,9 +216,17 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
           return ('${a['firstName']} ${a['lastName']}')
               .compareTo('${b['firstName']} ${b['lastName']}');
         });
-      if (mounted) setState(() { _users = users; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() { _users = []; _loading = false; });
+      if (mounted) setState(() { _users = users; _error = null; _loading = false; });
+    } catch (e) {
+      // A wall-mounted kiosk showing a blank list is unactionable — nobody can
+      // clock in and nobody can tell whether it is broken or simply empty.
+      if (mounted) {
+        setState(() {
+          _users = [];
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -267,6 +278,17 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                  : (_error != null || _users.isEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Center(
+                        child: Text(
+                          _error ?? 'No employees to show.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 15),
+                        ),
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _users.length,
                       itemBuilder: (_, i) {
@@ -278,7 +300,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
                           onTap: () {
                             final id = u['id'] as String? ?? '';
                             if (id.isEmpty) return;
-                            // Toggle clock action based on current status â€” if
+                            // Toggle clock action based on current status — if
                             // they're already clocked in, the next tap clocks out.
                             final action = u['isClocked'] == true ? 'out' : 'in';
                             Navigator.push(context, MaterialPageRoute(
@@ -321,11 +343,14 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
                                   ],
                                 ),
                                 const SizedBox(width: 14),
-                                Text(name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600)),
+                                Expanded(
+                                  child: Text(name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600)),
+                                ),
                               ],
                             ),
                           ),
@@ -340,7 +365,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
   }
 }
 
-// â”€â”€ Exit terminal bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Exit terminal bottom sheet ────────────────────────────────────────────────
 
 class _ExitTerminalSheet extends StatefulWidget {
   const _ExitTerminalSheet({required this.terminalToken});
@@ -365,7 +390,7 @@ class _ExitTerminalSheetState extends State<_ExitTerminalSheet> {
     if (!_canSubmit) return;
     setState(() => _submitting = true);
     try {
-      // The right endpoint is `DELETE /api/terminal/session` â€” it verifies the
+      // The right endpoint is `DELETE /api/terminal/session` — it verifies the
       // manager's credentials AND tears down the terminal session so the kiosk
       // token can no longer be used. Using `/auth/login` would create a logged-in
       // user session instead, which is the wrong outcome.

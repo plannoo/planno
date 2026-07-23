@@ -1,17 +1,13 @@
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/file_saver.dart';
 
-const _deMonths = [
-  'Januar','Februar','März','April','Mai','Juni',
-  'Juli','August','September','Oktober','November','Dezember',
-];
 
 class EmployeeDocumentsPage extends StatefulWidget {
   const EmployeeDocumentsPage({
@@ -31,6 +27,7 @@ class EmployeeDocumentsPage extends StatefulWidget {
 class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
   List<Map<String, dynamic>> _docs = [];
   bool _loading = true;
+  String? _error;
 
   // Endpoint bases differ for self vs admin.
   String get _listPath => widget.self ? '/api/documents/me' : '/api/documents/${widget.userId}';
@@ -46,13 +43,34 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
       final wrap = (data is Map<String, dynamic>) ? data : <String, dynamic>{};
       // Backend returns { documents: [...], owner, nextCursor? }
       final raw = (wrap['documents'] ?? wrap['data'] ?? []) as List? ?? [];
-      if (mounted) setState(() {
-        _docs    = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() { _docs = []; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _docs    = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _error   = null;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      // An empty list here is indistinguishable from "no documents" — and the
+      // org can now disable document viewing outright, so say why.
+      if (mounted) {
+        setState(() {
+          _docs = [];
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
+  }
+
+  /// Every mutation on this page reports failures the same way; renaming and
+  /// deleting used to swallow them, so the row simply never changed.
+  void _showError(Object e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _upload(bool image) async {
@@ -158,7 +176,7 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
       await ApiClient.instance.patch(
           _itemPath(doc['id'] as String), data: {'description': result.comment});
       _load();
-    } catch (_) {}
+    } catch (e) { _showError(e); }
   }
 
   Future<void> _confirmDelete(Map<String, dynamic> doc) async {
@@ -183,7 +201,7 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
     try {
       await ApiClient.instance.delete(_itemPath(doc['id'] as String));
       _load();
-    } catch (_) {}
+    } catch (e) { _showError(e); }
   }
 
   String _fmtSize(int? bytes) {
@@ -196,8 +214,11 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
     if (iso == null || iso.isEmpty) return '';
     try {
       final d = DateTime.parse(iso);
-      return 'Uploaded on ${d.day}. ${_deMonths[d.month - 1]} ${d.year} '
-          '${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+      final locale = Intl.defaultLocale ?? 'en';
+      final isDE = locale.startsWith('de');
+      final datePart = DateFormat(isDE ? 'd. MMMM yyyy' : 'MMMM d, yyyy', locale).format(d);
+      final time = '${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+      return 'Uploaded on $datePart, $time';
     } catch (_) { return iso; }
   }
 
@@ -258,7 +279,10 @@ class _EmployeeDocumentsPageState extends State<EmployeeDocumentsPage> {
                                 Icon(Icons.insert_drive_file_outlined,
                                     size: 56, color: cs.onSurfaceVariant),
                                 const SizedBox(height: 12),
-                                Text('No documents have been uploaded yet',
+                                Text(
+                                    _error ??
+                                        'No documents have been uploaded yet',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
                                         fontSize: 15, color: cs.onSurface)),
                               ],

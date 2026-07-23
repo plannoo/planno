@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aplano/models/shift_model.dart';
+import 'package:wrenta/models/shift_model.dart';
 
 void main() {
   group('ShiftModel.fromJson', () {

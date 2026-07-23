@@ -43,11 +43,11 @@ class LocationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color:        const Color(0xFFDBEAFE),
+              color:        const Color(0xFFFFE4E6),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.apartment,
-                color: Color(0xFF2563EB), size: 28),
+                color: Color(0xFFF43F5E), size: 28),
           ),
           const SizedBox(width: 16),
 

@@ -43,7 +43,7 @@ class _NavigationShellState extends State<NavigationShell> {
       ];
     }
     return [
-      _TabDef(const EmployeeHomePage(),  Icons.home_outlined,           'Home',                _Badge.announcements),
+      _TabDef(const EmployeeHomePage(),  Icons.home_outlined,           l10n.navHome,          _Badge.announcements),
       _TabDef(const ClockPage(),         Icons.access_time_outlined,    l10n.navClock),
       _TabDef(const MySchedulePage(),    Icons.calendar_month_outlined, l10n.navSchedule),
       _TabDef(const ChatPage(),          Icons.chat_bubble_outline,     l10n.navMessages),
@@ -198,6 +198,8 @@ class _BottomNav extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,

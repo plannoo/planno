@@ -1,11 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/prefs_service.dart';
 import '../auth/login_page.dart';
-import '../navigation_shell.dart';
 
-// â”€â”€ Onboarding shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Onboarding shell ──────────────────────────────────────────────────────────
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -33,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await PrefsService.markOnboardingSeen();
       if (!mounted) return;
       Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (_) => const NavigationShell()));
+          MaterialPageRoute(builder: (_) => const LoginPage()));
     }
   }
 
@@ -68,14 +67,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   if (_currentPage > 0)
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios,
-                          color: Color(0xFF2563EB)),
+                          color: Color(0xFFF43F5E)),
                       onPressed: _onBack,
                     )
                   else
                     const SizedBox(width: 48),
                   Expanded(
                     child: Text(
-                      'Aplano',
+                      'Wrenta',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize:   18,
@@ -102,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     width: i == _currentPage ? 32 : 8,
                     decoration: BoxDecoration(
                       color: i == _currentPage
-                          ? const Color(0xFF2563EB)
+                          ? const Color(0xFFF43F5E)
                           : const Color(0xFFD1D5DB),
                       borderRadius: BorderRadius.circular(3),
                     ),
@@ -131,7 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// â”€â”€ Page 1: Track Your Time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 1: Track Your Time ───────────────────────────────────────────────────
 
 class TrackTimePage extends StatelessWidget {
   const TrackTimePage(
@@ -154,7 +153,7 @@ class TrackTimePage extends StatelessWidget {
                 onPressed: onSkip,
                 child: Text(l10n.onboardingSkip,
                     style: const TextStyle(
-                        color:      Color(0xFF2563EB),
+                        color:      Color(0xFFF43F5E),
                         fontWeight: FontWeight.w600)),
               ),
             ),
@@ -191,7 +190,7 @@ class TrackTimePage extends StatelessWidget {
         width:  double.infinity,
         height: 50,
         decoration: BoxDecoration(
-            color:        const Color(0xFF2563EB),
+            color:        const Color(0xFFF43F5E),
             borderRadius: BorderRadius.circular(12)),
         child: Center(
           child: Text(l10n.next,
@@ -208,7 +207,7 @@ class TrackTimePage extends StatelessWidget {
     return Container(
       width: 280, height: 280,
       decoration: BoxDecoration(
-          color:        const Color(0xFFEFF6FF),
+          color:        const Color(0xFFFFF1F2),
           borderRadius: BorderRadius.circular(32)),
       child: Stack(
         alignment: Alignment.center,
@@ -238,7 +237,7 @@ class TrackTimePage extends StatelessWidget {
                 Container(
                   width: 64, height: 64,
                   decoration: const BoxDecoration(
-                      color: Color(0xFF2563EB), shape: BoxShape.circle),
+                      color: Color(0xFFF43F5E), shape: BoxShape.circle),
                   child: const Icon(Icons.access_time_filled,
                       size: 32, color: Colors.white),
                 ),
@@ -246,7 +245,7 @@ class TrackTimePage extends StatelessWidget {
                 Container(
                     width: 100, height: 24,
                     decoration: BoxDecoration(
-                        color:        const Color(0xFF2563EB),
+                        color:        const Color(0xFFF43F5E),
                         borderRadius: BorderRadius.circular(12))),
               ],
             ),
@@ -288,7 +287,7 @@ class TrackTimePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page 2: Manage Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 2: Manage Schedule ───────────────────────────────────────────────────
 
 class ManageSchedulePage extends StatelessWidget {
   const ManageSchedulePage(
@@ -339,7 +338,7 @@ class ManageSchedulePage extends StatelessWidget {
                                   color:         Color(0xFF64748B),
                                   letterSpacing: 0.8)),
                           const Icon(Icons.calendar_month_outlined,
-                              size: 20, color: Color(0xFF2563EB)),
+                              size: 20, color: Color(0xFFF43F5E)),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -357,25 +356,25 @@ class ManageSchedulePage extends StatelessWidget {
                       Container(
                         width: double.infinity, height: 54,
                         decoration: BoxDecoration(
-                          color:  const Color(0xFFEFF6FF),
+                          color:  const Color(0xFFFFF1F2),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: const Color(0xFF93C5FD), width: 1.5),
+                              color: const Color(0xFFFDA4AF), width: 1.5),
                         ),
                         child: Row(
                           children: [
                             const SizedBox(width: 16),
                             const Icon(Icons.swap_horiz,
-                                color: Color(0xFF2563EB), size: 22),
+                                color: Color(0xFFF43F5E), size: 22),
                             const SizedBox(width: 12),
                             Text(l10n.onboardingTapToSwap,
                                 style: const TextStyle(
-                                    color:      Color(0xFF2563EB),
+                                    color:      Color(0xFFF43F5E),
                                     fontWeight: FontWeight.w700,
                                     fontSize:   15)),
                             const Spacer(),
                             Icon(Icons.touch_app,
-                                color: const Color(0xFF2563EB)
+                                color: const Color(0xFFF43F5E)
                                     .withValues(alpha: 0.4),
                                 size: 20),
                             const SizedBox(width: 16),
@@ -437,11 +436,11 @@ class ManageSchedulePage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: onNext,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 60),
                     elevation:   10,
-                    shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.5),
+                    shadowColor: const Color(0xFFF43F5E).withValues(alpha: 0.5),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),
@@ -481,7 +480,7 @@ class ManageSchedulePage extends StatelessWidget {
           width: 54, height: 68,
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFFDBEAFE)
+                ? const Color(0xFFFFE4E6)
                 : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(14),
           ),
@@ -493,14 +492,14 @@ class ManageSchedulePage extends StatelessWidget {
                       fontSize:   11,
                       fontWeight: FontWeight.w800,
                       color: isSelected
-                          ? const Color(0xFF2563EB)
+                          ? const Color(0xFFF43F5E)
                           : const Color(0xFF94A3B8))),
               Text(date,
                   style: TextStyle(
                       fontSize:   24,
                       fontWeight: FontWeight.w800,
                       color: isSelected
-                          ? const Color(0xFF2563EB)
+                          ? const Color(0xFFF43F5E)
                           : const Color(0xFF475569))),
             ],
           ),
@@ -512,7 +511,7 @@ class ManageSchedulePage extends StatelessWidget {
                 horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF2563EB)
+                  ? const Color(0xFFF43F5E)
                   : Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: isSelected
@@ -536,7 +535,7 @@ class ManageSchedulePage extends StatelessWidget {
                           style: const TextStyle(
                               fontSize:   10,
                               fontWeight: FontWeight.w800,
-                              color:      Color(0xFFBFDBFE))),
+                              color:      Color(0xFFFECDD3))),
                     Text(title,
                         style: TextStyle(
                             fontSize:   17,
@@ -582,9 +581,9 @@ class ManageSchedulePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color:        const Color(0xFFDBEAFE),
+              color:        const Color(0xFFFFE4E6),
               borderRadius: BorderRadius.circular(12)),
-          child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
+          child: Icon(icon, color: const Color(0xFFF43F5E), size: 22),
         ),
         const SizedBox(width: 16),
         Text(label,
@@ -597,7 +596,7 @@ class ManageSchedulePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page 3: Stay Connected â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 3: Stay Connected ────────────────────────────────────────────────────
 
 class StayConnectedPage extends StatelessWidget {
   const StayConnectedPage({super.key, required this.onGetStarted});
@@ -632,7 +631,7 @@ class StayConnectedPage extends StatelessWidget {
             ElevatedButton(
               onPressed: onGetStarted,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: const Color(0xFFF43F5E),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(
@@ -691,9 +690,9 @@ class StayConnectedPage extends StatelessWidget {
           _chatBubble(
             isLeft:   true,
             avatar:   const Icon(Icons.smart_toy_outlined,
-                size: 20, color: Color(0xFF2563EB)),
-            avatarBg: const Color(0xFFDBEAFE),
-            sender:   'Aplano Bot',
+                size: 20, color: Color(0xFFF43F5E)),
+            avatarBg: const Color(0xFFFFE4E6),
+            sender:   'Wrenta Bot',
             text:
                 'New shift update: Monday Morning Shift has been published.',
           ),
@@ -719,7 +718,7 @@ class StayConnectedPage extends StatelessWidget {
             child: Container(
               padding:     const EdgeInsets.all(12),
               decoration:  const BoxDecoration(
-                color: Color(0xFF2563EB),
+                color: Color(0xFFF43F5E),
                 borderRadius: BorderRadius.only(
                   topLeft:     Radius.circular(16),
                   topRight:    Radius.circular(4),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../providers/scheduling_flags_provider.dart';
 
 class AvailabilityPage extends StatefulWidget {
   const AvailabilityPage({super.key});
@@ -14,17 +17,18 @@ class AvailabilityPage extends StatefulWidget {
 
 class _AvailabilityPageState extends State<AvailabilityPage> {
   final List<_DaySettings> _days = [
-    _DaySettings(day: 'Monday'),
-    _DaySettings(day: 'Tuesday'),
-    _DaySettings(day: 'Wednesday'),
-    _DaySettings(day: 'Thursday'),
-    _DaySettings(day: 'Friday'),
-    _DaySettings(day: 'Saturday'),
-    _DaySettings(day: 'Sunday'),
+    _DaySettings(day: 'Monday',    slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Tuesday',   slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Wednesday', slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Thursday',  slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Friday',    slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Saturday',  slots: [_TimeSlot('09:00', '17:00')]),
+    _DaySettings(day: 'Sunday',    slots: [_TimeSlot('09:00', '17:00')]),
   ];
 
   bool _isSaving  = false;
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -58,10 +62,21 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
               sm['end']   as String? ?? '17:00',
             );
           }).toList();
+          // A day marked enabled (and not all-day) needs at least one slot,
+          // or the backend has nothing to persist for it and it silently
+          // reverts to "unavailable" on the next save — backfill a default.
+          if (_days[idx].isEnabled && !_days[idx].isAllDay && _days[idx].slots.isEmpty) {
+            _days[idx].slots.add(_TimeSlot('09:00', '17:00'));
+          }
         }
       });
-    } catch (_) {
-      // keep defaults on error
+    } catch (e) {
+      // Keep the default week, but say why it is empty — silently showing a
+      // blank schedule made a failed load look like "you have no availability".
+      if (mounted) {
+        setState(() => _loadError =
+            e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -114,7 +129,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Availability saved'),
+          content: Text(AppLocalizations.of(context).availabilitySaved),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -137,6 +152,23 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final flags = context.watch<SchedulingFlagsProvider>();
+    // The weekly template writes an availability row for every enabled day and
+    // an unavailability row for every disabled one, and the backend gates those
+    // two separately. Mirror that here: Save is only offered when the current
+    // week's selection is actually permitted, so the button can't be a dead end.
+    // Until the flags have loaded we can't know, so Save stays disabled (briefly)
+    // rather than defaulting to enabled and letting the first tap 403.
+    final hasAvailable   = _days.any((d) => d.isEnabled);
+    final hasUnavailable = _days.any((d) => !d.isEnabled);
+    final saveBlockedReason = !flags.ready
+        ? null
+        : (hasAvailable && !flags.canEnterAvailability)
+            ? AppLocalizations.of(context).availabilityEntryDisabled
+            : (hasUnavailable && !flags.canEnterUnavailability)
+                ? AppLocalizations.of(context).unavailabilityEntryDisabled
+                : null;
+    final saveEnabled = flags.ready && saveBlockedReason == null;
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
@@ -148,7 +180,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
               size: 18, color: AppColors.slate700),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Weekly Availability', style: AppTextStyles.h5),
+        title: Text(AppLocalizations.of(context).availabilityTitle, style: AppTextStyles.h5),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -167,6 +199,19 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_loadError != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(_loadError!, style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.error)),
+                  ),
+                  const SizedBox(height: AppDimensions.spacingMd),
+                ],
                 // Subtitle
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -182,7 +227,7 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Set your standard weekly routine. This will be used as your default availability for scheduling.',
+                          AppLocalizations.of(context).availabilitySubtitle,
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.primary,
                             fontSize: 13,
@@ -198,8 +243,16 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                       (e) => _DayCard(
                         dayIdx:   e.key,
                         settings: e.value,
-                        onToggleEnabled: (val) =>
-                            setState(() => e.value.isEnabled = val),
+                        onToggleEnabled: (val) => setState(() {
+                          e.value.isEnabled = val;
+                          // Enabling a day with no slots and not marked
+                          // all-day would silently fail to persist — give it
+                          // a sensible default so Save always has something
+                          // to write for this day.
+                          if (val && !e.value.isAllDay && e.value.slots.isEmpty) {
+                            e.value.slots.add(_TimeSlot('09:00', '17:00'));
+                          }
+                        }),
                         onToggleAllDay: () => setState(() {
                           e.value.isAllDay = !e.value.isAllDay;
                           if (e.value.isAllDay) {
@@ -235,20 +288,32 @@ class _AvailabilityPageState extends State<AvailabilityPage> {
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: AppDimensions.buttonHeightLg,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Save Routine'),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (saveBlockedReason != null) ...[
+                    Text(saveBlockedReason,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.error)),
+                    const SizedBox(height: AppDimensions.spacingSm),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    height: AppDimensions.buttonHeightLg,
+                    child: ElevatedButton(
+                      onPressed: (_isSaving || !saveEnabled) ? null : _save,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(AppLocalizations.of(context).availabilitySaveRoutine),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -281,6 +346,17 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final localizedDay = switch (settings.day) {
+      'Monday'    => l10n.availabilityMonday,
+      'Tuesday'   => l10n.availabilityTuesday,
+      'Wednesday' => l10n.availabilityWednesday,
+      'Thursday'  => l10n.availabilityThursday,
+      'Friday'    => l10n.availabilityFriday,
+      'Saturday'  => l10n.availabilitySaturday,
+      'Sunday'    => l10n.availabilitySunday,
+      _           => settings.day,
+    };
     return Container(
       margin: const EdgeInsets.only(bottom: AppDimensions.spacingSm),
       padding: const EdgeInsets.all(AppDimensions.spacingMd),
@@ -300,7 +376,7 @@ class _DayCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                settings.day,
+                localizedDay,
                 style: AppTextStyles.bodyBold.copyWith(
                   color: settings.isEnabled
                       ? AppColors.slate900
@@ -311,7 +387,7 @@ class _DayCard extends StatelessWidget {
               const Spacer(),
               Switch.adaptive(
                 value: settings.isEnabled,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: onToggleEnabled,
               ),
             ],
@@ -320,7 +396,7 @@ class _DayCard extends StatelessWidget {
           if (!settings.isEnabled)
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 4),
-              child: Text('Unavailable',
+              child: Text(l10n.availabilityUnavailable,
                   style: AppTextStyles.caption
                       .copyWith(fontStyle: FontStyle.italic)),
             ),
@@ -349,7 +425,7 @@ class _DayCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      'All Day',
+                      l10n.availabilityAllDay,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -386,7 +462,7 @@ class _DayCard extends StatelessWidget {
                 onPressed: onAddSlot,
                 icon: const Icon(Icons.add_rounded,
                     size: 16, color: AppColors.primary),
-                label: Text('Add slot',
+                label: Text(l10n.availabilityAddSlot,
                     style: AppTextStyles.labelSmall
                         .copyWith(color: AppColors.primary)),
                 style: TextButton.styleFrom(
@@ -484,14 +560,12 @@ class _TimeBox extends StatelessWidget {
 class _DaySettings {
   _DaySettings({
     required this.day,
-    this.isEnabled = true,
-    this.isAllDay  = false,
     List<_TimeSlot>? slots,
   }) : slots = slots ?? [];
 
   final String       day;
-  bool               isEnabled;
-  bool               isAllDay;
+  bool               isEnabled = true;
+  bool               isAllDay  = false;
   List<_TimeSlot>    slots;
 }
 

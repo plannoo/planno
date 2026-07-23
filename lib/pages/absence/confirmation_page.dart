@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../models/absence.dart';
@@ -7,13 +8,8 @@ class ConfirmationScreen extends StatelessWidget {
   const ConfirmationScreen({super.key, required this.absence});
   final AbsenceModel absence;
 
-  String _fmt(DateTime d) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[d.month - 1]} ${d.day}';
-  }
+  String _fmt(DateTime d) =>
+      DateFormat('MMM d', Intl.defaultLocale).format(d);
 
   @override
   Widget build(BuildContext context) {

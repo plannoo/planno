@@ -45,11 +45,12 @@ app.*.map.json
 /android/app/release
 
 
-# newly added files i kinda wanna not add 
-/lib/core/theme
-/lib/core/utils
-/lib/widgets/Buttons
-/lib/widgets/common
+# NOTE: lib/core/theme, lib/core/utils, lib/widgets/Buttons and
+# lib/widgets/common used to be ignored here. They are application source
+# (~1700 lines: theme tokens, formatters, validators, shared widgets), so a
+# fresh clone had no AppColors/AppTheme/DateFormatter and `flutter analyze`
+# failed with hundreds of uri_does_not_exist errors — CI could never pass and
+# the app was not reproducible from the repository. Do not re-add them.
 
 /plans
 plans

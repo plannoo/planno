@@ -1,5 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/prefs_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -13,7 +15,31 @@ String _hhmm(String? iso) {
   return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }
 
-// â”€â”€ Main Page (3 tabs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/// Formats a shift's "HH:MM"-"HH:MM" start/end (plus optional break minutes)
+/// into a duration label like "8h" or "7h 30m". Handles overnight shifts.
+String _shiftDuration(String? start, String? end, num? breakMinutes) {
+  final s = _parseHhMm(start);
+  final e = _parseHhMm(end);
+  if (s == null || e == null) return '--';
+  var minutes = e - s;
+  if (minutes < 0) minutes += 24 * 60; // overnight shift
+  minutes -= (breakMinutes ?? 0).toInt();
+  if (minutes < 0) minutes = 0;
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  return m == 0 ? '${h}h' : '${h}h ${m}m';
+}
+
+int? _parseHhMm(String? hhmm) {
+  if (hhmm == null || !hhmm.contains(':')) return null;
+  final parts = hhmm.split(':');
+  final h = int.tryParse(parts[0]);
+  final m = int.tryParse(parts[1]);
+  if (h == null || m == null) return null;
+  return h * 60 + m;
+}
+
+// ── Main Page (3 tabs) ─────────────────────────────────────────────────────────
 
 class TeamSchedulePage extends StatefulWidget {
   const TeamSchedulePage({super.key});
@@ -25,14 +51,18 @@ class TeamSchedulePage extends StatefulWidget {
 class _TeamSchedulePageState extends State<TeamSchedulePage> {
   int _tab = 0; // 0=My Schedule, 1=Day plan, 2=Week plan
 
-  static const _tabs = ['My Schedule', 'Day plan', 'Week plan'];
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final tabs = <String>[
+      l10n.scheduleMySchedule,
+      l10n.scheduleDayPlan,
+      l10n.scheduleWeekPlan,
+    ];
 
     // This page doubles as a root bottom-nav tab (navigation_shell.dart) and
-    // as a pushed sub-page (e.g. from the dashboard's "Open shifts" row) â€” it
+    // as a pushed sub-page (e.g. from the dashboard's "Open shifts" row) — it
     // needs a back button only in the latter case, so this is decided by
     // Navigator.canPop rather than a constructor flag.
     final canPop = Navigator.canPop(context);
@@ -54,7 +84,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                 ],
               ),
             ),
-          // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Content ─────────────────────────────────────────────────────
           Expanded(
             child: IndexedStack(
               index: _tab,
@@ -66,7 +96,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
             ),
           ),
 
-          // â”€â”€ Bottom tab row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Bottom tab row ───────────────────────────────────────────────
           Container(
             color: cs.surface,
             child: Column(
@@ -80,7 +110,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(_tabs.length, (i) {
+                    children: List.generate(tabs.length, (i) {
                       final active = i == _tab;
                       return GestureDetector(
                         onTap: () => setState(() => _tab = i),
@@ -88,7 +118,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                           child: Text(
-                            _tabs[i],
+                            tabs[i],
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: active ? FontWeight.w600 : FontWeight.w400,
@@ -110,7 +140,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
   }
 }
 
-// â”€â”€ Shared: week header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared: week header ────────────────────────────────────────────────────────
 
 int _isoWeek(DateTime d) {
   final startOfYear = DateTime(d.year, 1, 1);
@@ -123,10 +153,8 @@ DateTime _startOfWeek(DateTime d) {
   return d.subtract(Duration(days: d.weekday - 1));
 }
 
-const _deWeekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const _deMonths   = ['Jan','Feb','MÃ¤r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
-// â”€â”€ MY SCHEDULE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── MY SCHEDULE TAB ────────────────────────────────────────────────────────────
 
 class _MyScheduleTab extends StatefulWidget {
   const _MyScheduleTab();
@@ -140,6 +168,8 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
   List<Map<String, dynamic>> _shifts = [];
   bool _loading = false;
   String _location = '';
+  bool _showEntireMonth   = false;
+  bool _minimizeEmptyDays = false;
 
   @override
   void initState() {
@@ -148,11 +178,38 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
+  // All days for the current view (week or full month)
+  List<DateTime> get _allDays {
+    if (_showEntireMonth) {
+      final daysInMonth = DateUtils.getDaysInMonth(_weekStart.year, _weekStart.month);
+      return List.generate(daysInMonth, (i) => DateTime(_weekStart.year, _weekStart.month, i + 1));
+    }
+    return List.generate(7, (i) => _weekStart.add(Duration(days: i)));
+  }
+
+  // Days after applying "minimize empty days" filter
+  List<DateTime> get _viewDays {
+    if (!_minimizeEmptyDays || _shifts.isEmpty) return _allDays;
+    final shiftDates = _shifts
+        .map((s) => (s['date'] as String? ?? '').split('T').first)
+        .toSet();
+    return _allDays.where((d) {
+      final isoKey =
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      return shiftDates.contains(isoKey);
+    }).toList();
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final from = _weekStart.toIso8601String().split('T')[0];
-      final to = _weekStart.add(const Duration(days: 6)).toIso8601String().split('T')[0];
+      final monthStart = DateTime(_weekStart.year, _weekStart.month, 1);
+      final monthEnd   = DateTime(_weekStart.year, _weekStart.month,
+          DateUtils.getDaysInMonth(_weekStart.year, _weekStart.month));
+      final from = (_showEntireMonth ? monthStart : _weekStart)
+          .toIso8601String().split('T')[0];
+      final to   = (_showEntireMonth ? monthEnd : _weekStart.add(const Duration(days: 6)))
+          .toIso8601String().split('T')[0];
       // "My Schedule" = the signed-in user's own shifts (the original intent).
       final data = await ApiClient.instance.get(
           '/api/shifts?from=$from&to=$to&limit=100') as Map<String, dynamic>;
@@ -191,7 +248,12 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _ScheduleSettingsSheet(),
+      builder: (_) => _ScheduleSettingsSheet(
+        showMonth:     _showEntireMonth,
+        minimizeEmpty: _minimizeEmptyDays,
+        onShowMonth:   (v) { setState(() => _showEntireMonth = v); _load(); },
+        onMinimize:    (v) => setState(() => _minimizeEmptyDays = v),
+      ),
     );
   }
 
@@ -200,10 +262,11 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
     final cs = Theme.of(context).colorScheme;
     final cw = _isoWeek(_weekStart);
     final today = DateTime.now();
+    final days = _viewDays;
 
     return Column(
       children: [
-        // â”€â”€ Blue CW header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue CW header ─────────────────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -241,7 +304,7 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
           ),
         ),
 
-        // â”€â”€ Location banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Location banner ────────────────────────────────────────────────
         if (_location.isNotEmpty)
           Container(
             width: double.infinity,
@@ -254,18 +317,18 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
             ),
           ),
 
-        // â”€â”€ Days list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Days list ──────────────────────────────────────────────────────
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.separated(
-                    itemCount: 7,
+                    itemCount: days.length,
                     separatorBuilder: (_, _) =>
                         Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
                     itemBuilder: (_, i) {
-                      final day   = _weekStart.add(Duration(days: i));
+                      final day   = days[i];
                       final isToday = day.year == today.year &&
                                       day.month == today.month &&
                                       day.day == today.day;
@@ -297,8 +360,9 @@ class _WeekDayRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs      = Theme.of(context).colorScheme;
-    final abbrev  = _deWeekdays[day.weekday - 1].toUpperCase();
-    final date    = '${day.day}. ${_deMonths[day.month - 1]}';
+    final locale  = Intl.defaultLocale ?? 'en';
+    final abbrev  = DateFormat('EEE', locale).format(day).replaceAll('.', '').toUpperCase();
+    final date    = DateFormat(locale.startsWith('de') ? 'd. MMM' : 'MMM d', locale).format(day);
 
     return Container(
       color: cs.surface,
@@ -340,7 +404,7 @@ class _WeekDayRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${s['start'] ?? ''} â€“ ${s['end'] ?? ''}',
+                        '${s['start'] ?? ''} – ${s['end'] ?? ''}',
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
                       ),
@@ -353,7 +417,7 @@ class _WeekDayRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ DAY PLAN TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DAY PLAN TAB ───────────────────────────────────────────────────────────────
 
 class _DayPlanTab extends StatefulWidget {
   const _DayPlanTab();
@@ -378,14 +442,14 @@ class _DayPlanTabState extends State<_DayPlanTab> {
   bool _absentExpanded = false;
   final Set<String> _collapsedRoles = {};
 
-  // Palette for role-group headers (cycles by group order), Ã  la the Aplano app.
+  // Palette for role-group headers (cycles by group order), à la the Wrenta app.
   static const List<Color> _rolePalette = [
     Color(0xFFEF4444), // red
     Color(0xFFF97316), // orange
     Color(0xFFF59E0B), // amber
     Color(0xFF84CC16), // lime
     Color(0xFF22C55E), // green
-    Color(0xFF3B82F6), // blue
+    Color(0xFFFB7185), // blue
     Color(0xFF8B5CF6), // purple
     Color(0xFFEC4899), // pink
   ];
@@ -473,7 +537,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           // query param. _allShifts is already scoped to whatever location
           // was active at the last fetch, so re-filtering it client-side
           // (the old behavior) just filtered an already-filtered list down
-          // to nothing and silently fell back to showing the stale data â€”
+          // to nothing and silently fell back to showing the stale data —
           // i.e. switching locations appeared to do nothing.
           setState(() => _location = loc);
           _load();
@@ -519,8 +583,9 @@ class _DayPlanTabState extends State<_DayPlanTab> {
   }
 
   String get _selectedDayLabel {
-    final abbrev = _deWeekdays[_selectedDay.weekday - 1];
-    return '$abbrev ${_selectedDay.day}. ${_deMonths[_selectedDay.month - 1]}';
+    final locale = Intl.defaultLocale ?? 'en';
+    final isDE = locale.startsWith('de');
+    return DateFormat(isDE ? 'EEE d. MMM' : 'EEE, MMM d', locale).format(_selectedDay);
   }
 
   int get _cwNum => _isoWeek(_weekStart);
@@ -552,7 +617,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
       final items = entry.value;
       final isOpenGroup = role == 'Open shifts';
       final color     = isOpenGroup
-          ? const Color(0xFF334155) // slate â€” distinct from role colors
+          ? const Color(0xFF334155) // slate — distinct from role colors
           : _rolePalette[i % _rolePalette.length];
       final collapsed = _collapsedRoles.contains(role);
       widgets.add(Container(
@@ -643,7 +708,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$start â€“ $end',
+              Text('$start – $end',
                   style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: cs.onSurface)),
@@ -692,11 +757,12 @@ class _DayPlanTabState extends State<_DayPlanTab> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       children: [
-        // â”€â”€ Blue header: day selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue header: day selector ────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -714,7 +780,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: List.generate(7, (i) {
                             final day     = _weekStart.add(Duration(days: i));
-                            final abbrev  = _deWeekdays[i].toUpperCase();
+                            final abbrev  = DateFormat('EEE', Intl.defaultLocale ?? 'en').format(day).replaceAll('.', '').toUpperCase();
                             final isActive = day.year == _selectedDay.year &&
                                              day.month == _selectedDay.month &&
                                              day.day == _selectedDay.day;
@@ -775,7 +841,10 @@ class _DayPlanTabState extends State<_DayPlanTab> {
                             color: Colors.white.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Text(_location.isEmpty ? 'Standort' : _location,
+                          child: Text(
+                              _location.isEmpty || _location == 'Alle Standorte'
+                                  ? l10n.scheduleAllLocations
+                                  : _location,
                               style: const TextStyle(
                                   color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                         ),
@@ -794,7 +863,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           ),
         ),
 
-        // â”€â”€ Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Body ────────────────────────────────────────────────────────
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -1001,7 +1070,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
   }
 }
 
-// â”€â”€ WEEK PLAN TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WEEK PLAN TAB ──────────────────────────────────────────────────────────────
 
 class _WeekPlanTab extends StatefulWidget {
   const _WeekPlanTab();
@@ -1012,7 +1081,7 @@ class _WeekPlanTab extends StatefulWidget {
 
 class _WeekPlanTabState extends State<_WeekPlanTab> {
   late DateTime _weekStart;
-  // employees Ã— days grid: Map<employeeId, Map<dateIso, List<shift>>>
+  // employees × days grid: Map<employeeId, Map<dateIso, List<shift>>>
   List<_Employee>  _employees  = [];
   bool _loading    = false;
   bool _published  = false;
@@ -1021,6 +1090,9 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
   bool _hideWeekends = false;
   bool _hideSundays  = false;
   bool _hideEmpty    = false;
+  bool _showTimes    = true;
+  bool _showDuration = false;
+  bool _showLabels   = false;
 
   @override
   void initState() {
@@ -1037,9 +1109,15 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
       PrefsService.getViewBool('week_hide_weekends'),
       PrefsService.getViewBool('week_hide_sundays'),
       PrefsService.getViewBool('week_hide_empty'),
+      PrefsService.getViewBool('week_show_times', fallback: true),
+      PrefsService.getViewBool('week_show_duration'),
+      PrefsService.getViewBool('week_show_labels'),
     ]);
     if (!mounted) return;
-    setState(() { _hideWeekends = r[0]; _hideSundays = r[1]; _hideEmpty = r[2]; });
+    setState(() {
+      _hideWeekends = r[0]; _hideSundays = r[1]; _hideEmpty = r[2];
+      _showTimes = r[3]; _showDuration = r[4]; _showLabels = r[5];
+    });
   }
 
   Future<void> _load() async {
@@ -1112,8 +1190,9 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
 
   @override
   Widget build(BuildContext context) {
-    final cs  = Theme.of(context).colorScheme;
-    final cw  = _isoWeek(_weekStart);
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final cw   = _isoWeek(_weekStart);
     // Day count respects the "hide weekends / hide Sundays" toggles.
     final dayCount = _hideWeekends ? 5 : (_hideSundays ? 6 : 7);
     final days = List.generate(dayCount, (i) => _weekStart.add(Duration(days: i)));
@@ -1122,17 +1201,16 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
         ? _employees.where((e) => e.cells.values.any((l) => l.isNotEmpty)).toList()
         : _employees;
 
-    const deShort = ['Mo','Di','Mi','Do','Fr','Sa','So'];
     String dayHeader(DateTime d) {
-      final i = d.weekday - 1;
+      final abbrev = DateFormat('EEE', Intl.defaultLocale ?? 'en').format(d).replaceAll('.', '');
       final dd = d.day.toString().padLeft(2,'0');
       final mm = d.month.toString().padLeft(2,'0');
-      return '${deShort[i]}\n$dd.$mm';
+      return '$abbrev\n$dd.$mm';
     }
 
     return Column(
       children: [
-        // â”€â”€ Blue CW header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue CW header ─────────────────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -1153,9 +1231,15 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(_location,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                          Flexible(
+                            child: Text(
+                                _location == 'Alle Standorte'
+                                    ? l10n.scheduleAllLocations
+                                    : _location,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                          ),
                           const SizedBox(width: 4),
                           const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
                         ],
@@ -1185,7 +1269,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
           ),
         ),
 
-        // â”€â”€ "Not published" warning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── "Not published" warning ────────────────────────────────────────
         if (!_published)
           GestureDetector(
             onTap: _showPublish,
@@ -1204,7 +1288,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
             ),
           ),
 
-        // â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Grid ───────────────────────────────────────────────────────────
         if (_loading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
         else
@@ -1217,7 +1301,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // â”€â”€ Column headers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Column headers ──────────────────────────────────
                       Row(
                         children: [
                           // "+" new open shift
@@ -1257,7 +1341,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       ),
 
-                      // â”€â”€ Open Shifts row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Open Shifts row ─────────────────────────────────
                       Row(
                         children: [
                           Container(
@@ -1288,7 +1372,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       ),
 
-                      // â”€â”€ Employee rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Employee rows ────────────────────────────────────
                       ...employees.map((emp) => Row(
                         children: [
                           // Name cell
@@ -1303,6 +1387,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                             ),
                             child: Text(emp.name,
                                 maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(fontSize: 11, color: cs.onSurface)),
                           ),
                           ...days.map((d) {
@@ -1325,20 +1410,35 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                                     ? Icon(Icons.add, size: 16, color: cs.outline)
                                     : Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: cell.map((s) => Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 1),
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primaryLight,
-                                            borderRadius: BorderRadius.circular(3),
-                                          ),
-                                          child: Text(
-                                            '${s['start'] ?? ''}-${s['end'] ?? ''}',
-                                            style: const TextStyle(
-                                                fontSize: 9, color: AppColors.primary,
-                                                fontWeight: FontWeight.w500),
-                                          ),
-                                        )).toList(),
+                                        children: cell.map((s) {
+                                          final label = (s['label'] as String?)?.trim();
+                                          final lines = <String>[
+                                            if (_showTimes)
+                                              '${s['start'] ?? ''}-${s['end'] ?? ''}',
+                                            if (_showDuration)
+                                              _shiftDuration(s['start'] as String?,
+                                                  s['end'] as String?, s['break'] as num?),
+                                            if (_showLabels && label != null && label.isNotEmpty)
+                                              label,
+                                          ];
+                                          return Container(
+                                            margin: const EdgeInsets.symmetric(vertical: 1),
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryLight,
+                                              borderRadius: BorderRadius.circular(3),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: lines.map((t) => Text(
+                                                t,
+                                                style: const TextStyle(
+                                                    fontSize: 9, color: AppColors.primary,
+                                                    fontWeight: FontWeight.w500),
+                                              )).toList(),
+                                            ),
+                                          );
+                                        }).toList(),
                                       ),
                               ),
                             );
@@ -1346,7 +1446,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       )),
 
-                      // â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Empty state ──────────────────────────────────────
                       if (employees.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(32),
@@ -1370,7 +1470,7 @@ class _Employee {
   final Map<String, List<Map<String, dynamic>>> cells;
 }
 
-// â”€â”€ Shared small widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared small widgets ───────────────────────────────────────────────────────
 
 class _NavButtons extends StatelessWidget {
   const _NavButtons({required this.onPrev, required this.onNext});
@@ -1419,18 +1519,26 @@ class _ArrowBtn extends StatelessWidget {
   );
 }
 
-// â”€â”€ Schedule Settings sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Schedule Settings sheet ────────────────────────────────────────────────────
 
 class _ScheduleSettingsSheet extends StatefulWidget {
-  const _ScheduleSettingsSheet();
+  const _ScheduleSettingsSheet({
+    required this.showMonth,
+    required this.minimizeEmpty,
+    required this.onShowMonth,
+    required this.onMinimize,
+  });
+
+  final bool showMonth, minimizeEmpty;
+  final ValueChanged<bool> onShowMonth, onMinimize;
 
   @override
   State<_ScheduleSettingsSheet> createState() => _ScheduleSettingsSheetState();
 }
 
 class _ScheduleSettingsSheetState extends State<_ScheduleSettingsSheet> {
-  bool _showEntireMonth   = false;
-  bool _minimizeEmptyDays = false;
+  late final bool _showEntireMonth   = widget.showMonth;
+  late final bool _minimizeEmptyDays = widget.minimizeEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -1479,16 +1587,22 @@ class _ScheduleSettingsSheetState extends State<_ScheduleSettingsSheet> {
             title: Text('Show entire month',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
             value: _showEntireMonth,
-            onChanged: (v) => setState(() => _showEntireMonth = v),
-            activeColor: AppColors.primary,
+            onChanged: (v) {
+              widget.onShowMonth(v);
+              Navigator.pop(context);
+            },
+            activeThumbColor: AppColors.primary,
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
           SwitchListTile(
             title: Text('Minimize empty days',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
             value: _minimizeEmptyDays,
-            onChanged: (v) => setState(() => _minimizeEmptyDays = v),
-            activeColor: AppColors.primary,
+            onChanged: (v) {
+              widget.onMinimize(v);
+              Navigator.pop(context);
+            },
+            activeThumbColor: AppColors.primary,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
         ],
@@ -1497,7 +1611,7 @@ class _ScheduleSettingsSheetState extends State<_ScheduleSettingsSheet> {
   }
 }
 
-// â”€â”€ Location Switch sheet (fetches real locations from API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Location Switch sheet (fetches real locations from API) ───────────────────
 
 class _LocationSwitchSheet extends StatefulWidget {
   const _LocationSwitchSheet({required this.selected, required this.onSelect});
@@ -1538,11 +1652,13 @@ class _LocationSwitchSheetState extends State<_LocationSwitchSheet> {
           .map((e) => (e as Map<String, dynamic>)['name'] as String? ?? '')
           .where((n) => n.isNotEmpty)
           .toList();
-      if (mounted) setState(() {
-        _all      = ['Alle Standorte', ...names];
-        _filtered = _all;
-        _loading  = false;
-      });
+      if (mounted) {
+        setState(() {
+          _all      = ['Alle Standorte', ...names];
+          _filtered = _all;
+          _loading  = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() { _all = ['Alle Standorte']; _filtered = _all; _loading = false; });
     }
@@ -1550,7 +1666,8 @@ class _LocationSwitchSheetState extends State<_LocationSwitchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs   = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.4,
@@ -1626,7 +1743,8 @@ class _LocationSwitchSheetState extends State<_LocationSwitchSheet> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 20, vertical: 16),
-                            child: Text(loc,
+                            child: Text(
+                                loc == 'Alle Standorte' ? l10n.scheduleAllLocations : loc,
                                 style: TextStyle(
                                     fontSize: 15,
                                     color: loc == widget.selected
@@ -1646,7 +1764,7 @@ class _LocationSwitchSheetState extends State<_LocationSwitchSheet> {
   }
 }
 
-// â”€â”€ Publish weekly schedule sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Publish weekly schedule sheet ─────────────────────────────────────────────
 
 class _PublishSheet extends StatefulWidget {
   const _PublishSheet({required this.cw, required this.weekStart, required this.location});
@@ -1728,7 +1846,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Text('Selected branch:',
                     style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                 const SizedBox(height: 2),
-                Text(widget.location.isEmpty ? 'â€”' : widget.location,
+                Text(widget.location.isEmpty ? '—' : widget.location,
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface)),
                 const SizedBox(height: 16),
@@ -1749,7 +1867,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         style: TextStyle(fontSize: 15, color: cs.onSurface)),
                     value: _notify,
                     onChanged: (v) => setState(() => _notify = v),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                 ),
@@ -1782,7 +1900,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   }
 }
 
-// â”€â”€ Week plan Settings sheet (6 toggles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Week plan Settings sheet (6 toggles) ─────────────────────────────────────
 
 class _WeekSettingsSheet extends StatefulWidget {
   const _WeekSettingsSheet();
@@ -1837,7 +1955,7 @@ class _WeekSettingsSheetState extends State<_WeekSettingsSheet> {
           title: Text(label, style: TextStyle(fontSize: 15, color: cs.onSurface)),
           value: val,
           onChanged: cb,
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
         Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
       ],
@@ -1886,7 +2004,7 @@ class _WeekSettingsSheetState extends State<_WeekSettingsSheet> {
             title: Text('Hide Sundays', style: TextStyle(fontSize: 15, color: cs.onSurface)),
             value: _hideSundays,
             onChanged: (v) => _set('week_hide_sundays', v, (x) => _hideSundays = x),
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
         ],
@@ -1895,7 +2013,7 @@ class _WeekSettingsSheetState extends State<_WeekSettingsSheet> {
   }
 }
 
-// â”€â”€ Day plan Settings sheet ("Group by role" only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Day plan Settings sheet ("Group by role" only) ────────────────────────────
 
 class _DayPlanSettingsSheet extends StatefulWidget {
   const _DayPlanSettingsSheet();
@@ -1960,7 +2078,7 @@ class _DayPlanSettingsSheetState extends State<_DayPlanSettingsSheet> {
               setState(() => _groupByRole = v);
               PrefsService.setViewBool('dayplan_group_by_role', v);
             },
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
         ],

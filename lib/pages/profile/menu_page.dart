@@ -1,6 +1,9 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:provider/provider.dart';
 
 import '../../../repositories/document_repository.dart';
@@ -11,7 +14,7 @@ import '../../../core/network/api_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/master_data_labels.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../pages/absence/absence_page.dart';
 import '../../pages/absence/admin_absences_page.dart';
 import '../../pages/absence/admin_entitlement_page.dart';
@@ -28,7 +31,7 @@ import '../../../repositories/user_repository.dart';
 import '../profile/availability_page.dart';
 import '../time_tracking/time_account_page.dart';
 
-// â”€â”€ Supported languages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Supported languages ───────────────────────────────────────────────────────
 
 typedef _Lang = ({String name, String flag, String code});
 
@@ -40,7 +43,7 @@ const List<_Lang> _kLanguages = [
   (name: 'English (US)', flag: '\u{1F1FA}\u{1F1F8}', code: 'en_US'), // 🇺🇸
 ];
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -56,7 +59,7 @@ class ProfilePage extends StatelessWidget {
             : const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         child: Column(
           children: [
-            // â”€â”€ 1. Profile header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── 1. Profile header ────────────────────────────────────────
             Selector<AuthProvider,
                 ({String id, String initials, String firstName, String lastName, String fullName, String role, String email, String? phone, String? avatarUrl})>(
               selector: (_, auth) => (
@@ -64,7 +67,7 @@ class ProfilePage extends StatelessWidget {
                 initials:  auth.user?.initials  ?? 'A',
                 firstName: auth.user?.firstName ?? '',
                 lastName:  auth.user?.lastName  ?? '',
-                fullName:  auth.user?.fullName  ?? 'Aplano User',
+                fullName:  auth.user?.fullName  ?? 'Wrenta User',
                 role:      auth.user?.role      ?? 'employee',
                 email:     auth.user?.email     ?? '',
                 phone:     auth.user?.phone,
@@ -104,26 +107,12 @@ class ProfilePage extends StatelessWidget {
             const _ProfessionalInfoSection(),
             const SizedBox(height: 28),
 
-            // Master data is admin-only.
-            Selector<AuthProvider, bool>(
-              selector: (_, auth) => auth.isAdmin,
-              builder: (_, isAdmin, _) {
-                if (!isAdmin) return const SizedBox.shrink();
-                return const Column(
-                  children: [
-                    _MasterDataSection(),
-                    SizedBox(height: 28),
-                  ],
-                );
-              },
-            ),
-
             _SectionHeader(l10n.profileSectionSettings),
             const SizedBox(height: 12),
             const _AppSettingsSection(),
             const SizedBox(height: 28),
 
-            // â”€â”€ Admin section (gated by role) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Admin section (gated by role) ──────────────────────────
             Selector<AuthProvider, bool>(
               selector: (_, auth) => auth.isAdmin,
               builder: (_, isAdmin, _) {
@@ -179,7 +168,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App bar ───────────────────────────────────────────────────────────────────
 
 class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _ProfileAppBar({required this.onLogout});
@@ -209,7 +198,7 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// â”€â”€ Profile header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Profile header ────────────────────────────────────────────────────────────
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
@@ -341,7 +330,7 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-// â”€â”€ Edit profile sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Edit profile sheet ────────────────────────────────────────────────────────
 
 class _EditProfileSheet extends StatefulWidget {
   const _EditProfileSheet({
@@ -358,15 +347,39 @@ class _EditProfileSheet extends StatefulWidget {
 }
 
 class _EditProfileSheetState extends State<_EditProfileSheet> {
-  late final TextEditingController _firstNameCtrl, _lastNameCtrl, _phoneCtrl;
-  bool _isSaving = false;
+  late final TextEditingController _firstNameCtrl, _lastNameCtrl, _phoneCtrl,
+      _departmentCtrl, _contractCtrl;
+  bool _isSaving  = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _firstNameCtrl = TextEditingController(text: widget.firstName);
-    _lastNameCtrl  = TextEditingController(text: widget.lastName);
-    _phoneCtrl     = TextEditingController(text: widget.phone);
+    _firstNameCtrl  = TextEditingController(text: widget.firstName);
+    _lastNameCtrl   = TextEditingController(text: widget.lastName);
+    _phoneCtrl      = TextEditingController(text: widget.phone);
+    _departmentCtrl = TextEditingController();
+    _contractCtrl   = TextEditingController();
+    _loadExtra();
+  }
+
+  Future<void> _loadExtra() async {
+    try {
+      final res  = await ApiClient.instance.get(ApiConfig.me);
+      final wrap = res is Map<String, dynamic> ? res : <String, dynamic>{};
+      final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
+      if (mounted) {
+        setState(() {
+          _departmentCtrl.text = body['department'] as String?
+                              ?? body['departmentName'] as String? ?? '';
+          _contractCtrl.text   = body['contractType'] as String?
+                              ?? body['contract'] as String? ?? '';
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -374,19 +387,25 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _phoneCtrl.dispose();
+    _departmentCtrl.dispose();
+    _contractCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     setState(() => _isSaving = true);
-    final auth       = context.read<AuthProvider>();
-    final l10nLocal  = AppLocalizations.of(context);
+    final auth      = context.read<AuthProvider>();
+    final l10nLocal = AppLocalizations.of(context);
     try {
       await ApiClient.instance.patch(ApiConfig.updateProfile, data: {
         'firstName': _firstNameCtrl.text.trim(),
         'lastName':  _lastNameCtrl.text.trim(),
         if (_phoneCtrl.text.trim().isNotEmpty)
           'phone': _phoneCtrl.text.trim(),
+        if (_departmentCtrl.text.trim().isNotEmpty)
+          'department': _departmentCtrl.text.trim(),
+        if (_contractCtrl.text.trim().isNotEmpty)
+          'contractType': _contractCtrl.text.trim(),
       });
       await auth.refreshUser();
       if (!mounted) return;
@@ -423,11 +442,23 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           _sheetHandle(),
           Text(l10n.profileEditProfile, style: AppTextStyles.h5),
           const SizedBox(height: 20),
-          _SheetField(label: 'First Name', controller: _firstNameCtrl, keyboard: TextInputType.name),
+          _SheetField(label: l10n.profileFirstName, controller: _firstNameCtrl, keyboard: TextInputType.name),
           const SizedBox(height: 14),
-          _SheetField(label: 'Last Name',  controller: _lastNameCtrl,  keyboard: TextInputType.name),
+          _SheetField(label: l10n.profileLastName,  controller: _lastNameCtrl,  keyboard: TextInputType.name),
           const SizedBox(height: 14),
           _SheetField(label: l10n.profilePhone, controller: _phoneCtrl, keyboard: TextInputType.phone),
+          const SizedBox(height: 14),
+          if (_isLoading) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          ]
+          else ...[
+            _SheetField(label: l10n.profileDepartmentLabel,   controller: _departmentCtrl, keyboard: TextInputType.text),
+            const SizedBox(height: 14),
+            _SheetField(label: l10n.profileContractTypeLabel, controller: _contractCtrl,   keyboard: TextInputType.text),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -465,7 +496,7 @@ class _SheetField extends StatelessWidget {
   }
 }
 
-// â”€â”€ Change password sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Change password sheet ─────────────────────────────────────────────────────
 
 class _ChangePasswordSheet extends StatefulWidget {
   const _ChangePasswordSheet();
@@ -595,7 +626,7 @@ class _PasswordField extends StatelessWidget {
         TextField(
           controller: controller, obscureText: obscure,
           decoration: InputDecoration(
-            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+            hintText: '••••••••',
             suffixIcon: IconButton(
               icon: Icon(
                 obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -610,7 +641,7 @@ class _PasswordField extends StatelessWidget {
   }
 }
 
-// â”€â”€ Work details grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Work details grid ─────────────────────────────────────────────────────────
 
 class _WorkDetailsGrid extends StatefulWidget {
   const _WorkDetailsGrid();
@@ -625,10 +656,6 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
   String _startDate  = '';
   String _contract   = '';
 
-  static const _monthNames = [
-    'Jan','Feb','Mar','Apr','May','Jun',
-    'Jul','Aug','Sep','Oct','Nov','Dec',
-  ];
 
   @override
   void initState() {
@@ -637,44 +664,75 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
   }
 
   Future<void> _load() async {
-    try {
-      final res  = await ApiClient.instance.get(ApiConfig.me);
-      final wrap = res is Map<String, dynamic> ? res : <String, dynamic>{};
-      final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
-      if (!mounted) return;
-      setState(() {
-        _department = body['department']    as String?
-                   ?? body['departmentName'] as String? ?? '';
-        // The API returns a `locations` array of objects; use the first one's
-        // name. Fall back to legacy flat fields if present.
-        final locs = body['locations'] as List<dynamic>?;
-        if (locs != null && locs.isNotEmpty && locs.first is Map) {
-          _location = (locs.first as Map)['name'] as String? ?? '';
-        } else {
-          _location = body['workLocation'] as String?
-                   ?? body['locationName'] as String? ?? '';
-        }
-        // No explicit employment start date is exposed; createdAt is the
-        // closest server-synced value.
-        final raw = body['startDate']  as String?
-                 ?? body['start_date'] as String?
-                 ?? body['createdAt']  as String?;
-        if (raw != null) {
-          try {
-            final d = DateTime.parse(raw).toLocal();
-            _startDate =
-                '${_monthNames[d.month - 1]} ${d.day}, ${d.year}';
-          } catch (_) {
-            _startDate = raw;
-          }
-        }
-        _contract = body['contractType'] as String?
-                 ?? body['contract']     as String? ?? '';
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    // Profile fields and the work location come from different endpoints, and a
+    // failure in one shouldn't blank the other.
+    final results = await Future.wait([
+      ApiClient.instance.get(ApiConfig.me).then<Object?>((v) => v).catchError((_) => null),
+      ApiClient.instance.get(ApiConfig.myWorkLocation).then<Object?>((v) => v).catchError((_) => null),
+    ]);
+    if (!mounted) return;
+
+    // Unwrap defensively: an unexpected payload shape must leave the cells empty,
+    // never throw and strand the grid on its spinner.
+    final body = _asBody(results[0]);
+    final loc = _asBody(results[1]);
+
+    var department = '';
+    var startDate = '';
+    var contract = '';
+    var location = '';
+
+    if (body != null) {
+      department = _asText(body['department']);
+      // Only show a start date the server actually reports. `createdAt` used
+      // to be the fallback, which labelled the signup date as the employment
+      // start date — a plausible-looking but wrong value.
+      final raw = body['startDate'] ?? body['start_date'];
+      if (raw is String && raw.isNotEmpty) {
+        final parsed = DateTime.tryParse(raw);
+        startDate = parsed == null
+            ? raw
+            : DateFormatter.formatShortDateWithYear(parsed.toLocal());
+      }
+      // Likewise: no contract type is exposed by the API today, so leave it
+      // empty rather than defaulting everyone to "Full-time".
+      contract = _asText(body['contractType']);
+      if (contract.isEmpty) contract = _asText(body['contract']);
     }
+
+    // Location comes from /work-locations/my-location, which resolves the
+    // upcoming shift's location first and only then the assigned one — so
+    // this cell matches where the employee is actually scheduled, and agrees
+    // with the clock-in screen. (Reading users/me.locations[0] instead picked
+    // an arbitrary assignment.)
+    if (loc != null) {
+      location = _asText(loc['name']);
+    }
+
+    setState(() {
+      _department = department;
+      _startDate = startDate;
+      _contract = contract;
+      _location = location;
+      _loading = false;
+    });
+  }
+
+  /// Reads a display string without casting: anything that isn't a String (an
+  /// object, a number, null) yields '' so the cell falls back to its em-dash
+  /// placeholder. A cast here would throw and strand the grid on its spinner,
+  /// since _load() only ever runs from initState and has no retry path.
+  String _asText(Object? v) => v is String ? v : '';
+
+  /// Returns the response's payload map, or null if the response isn't a map or
+  /// its `data` envelope holds something other than a map (a list, a string, an
+  /// error body).
+  Map<String, dynamic>? _asBody(Object? res) {
+    if (res is! Map<String, dynamic>) return null;
+    final data = res['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (res.containsKey('data')) return null;
+    return res;
   }
 
   @override
@@ -695,14 +753,14 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
               icon: Icons.work_outline_rounded,
               iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
               label: l10n.profileDepartment,
-              value: _department.isEmpty ? 'â€”' : _department,
+              value: _department.isEmpty ? '—' : _department,
             )),
             const SizedBox(width: 12),
             Expanded(child: _WorkDetailCell(
               icon: Icons.location_on_outlined,
               iconColor: AppColors.success, iconBg: AppColors.successLight,
               label: l10n.profileLocation,
-              value: _location.isEmpty ? 'â€”' : _location,
+              value: _location.isEmpty ? '—' : _location,
             )),
           ]),
           const SizedBox(height: 12),
@@ -711,14 +769,17 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
               icon: Icons.calendar_today_outlined,
               iconColor: AppColors.purple, iconBg: AppColors.purpleLight,
               label: l10n.profileStartDate,
-              value: _startDate.isEmpty ? 'â€”' : _startDate,
+              value: _startDate.isEmpty ? '—' : _startDate,
             )),
             const SizedBox(width: 12),
             Expanded(child: _WorkDetailCell(
               icon: Icons.schedule_outlined,
               iconColor: AppColors.warning, iconBg: AppColors.amberLight,
               label: l10n.profileContract,
-              value: _contract.isEmpty ? l10n.profileContractFullTime : _contract,
+              // No fabricated default: the API exposes no contract type, and
+              // defaulting to "Full-time" told every employee something the
+              // server never said.
+              value: _contract.isEmpty ? '—' : _contract,
             )),
           ]),
         ],
@@ -768,7 +829,7 @@ class _WorkDetailCell extends StatelessWidget {
   }
 }
 
-// â”€â”€ Employment overview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Employment overview ───────────────────────────────────────────────────────
 
 class _EmploymentSection extends StatefulWidget {
   const _EmploymentSection();
@@ -793,7 +854,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
         ApiClient.instance.get('/api/overtime-balances/me'),
       ]);
 
-      // â”€â”€ Vacation entitlement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Vacation entitlement ──────────────────────────────────────────
       final entRaw  = results[0] is Map<String, dynamic>
           ? results[0] as Map<String, dynamic>
           : <String, dynamic>{};
@@ -802,7 +863,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
           ?? entBody['remaining']
           ?? entBody['remainingVacationDays']) as num?;
 
-      // â”€â”€ Time balance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Time balance ──────────────────────────────────────────────────
       final timeRaw  = results[1] is Map<String, dynamic>
           ? results[1] as Map<String, dynamic>
           : <String, dynamic>{};
@@ -824,7 +885,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
         _timeBalance       = balance.isEmpty ? null : balance;
       });
     } catch (_) {
-      // keep null â€” tiles render without trailing widget
+      // keep null — tiles render without trailing widget
     }
   }
 
@@ -959,7 +1020,7 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-// â”€â”€ Document management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Document management ───────────────────────────────────────────────────────
 
 class _DocumentSection extends StatefulWidget {
   const _DocumentSection();
@@ -1180,7 +1241,7 @@ class _UploadTile extends StatelessWidget {
   }
 }
 
-// â”€â”€ App settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App settings ──────────────────────────────────────────────────────────────
 
 class _AppSettingsSection extends StatefulWidget {
   const _AppSettingsSection();
@@ -1272,7 +1333,7 @@ class _AppSettingsSectionState extends State<_AppSettingsSection> {
           value: isDark,
           onChanged: (on) => context.read<ThemeProvider>()
               .setThemeMode(on ? ThemeMode.dark : ThemeMode.light),
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         ),
       ),
     ]);
@@ -1321,7 +1382,7 @@ class _AppSettingsTile extends StatelessWidget {
   }
 }
 
-// â”€â”€ Account actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Account actions ───────────────────────────────────────────────────────────
 
 class _AccountActionsSection extends StatelessWidget {
   const _AccountActionsSection({required this.onLogout});
@@ -1346,43 +1407,449 @@ class _AccountActionsSection extends StatelessWidget {
         const SizedBox(height: 10),
         const _TimeClockPinButton(),
         const SizedBox(height: 10),
-        // Data export is admin-only.
-        Selector<AuthProvider, bool>(
-          selector: (_, auth) => auth.isAdmin,
-          builder: (ctx, isAdmin, _) {
-            if (!isAdmin) return const SizedBox.shrink();
-            return Column(
-              children: [
-                _ActionButton(
-                  icon: Icons.download_outlined,
-                  label: l10n.profileExportData,
-                  iconColor: AppColors.success, iconBg: AppColors.successLight,
-                  onTap: () => ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(
-                      content: Text('Data export is available in the Aplano web app.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            );
-          },
+        _ActionButton(
+          icon: Icons.privacy_tip_outlined,
+          label: l10n.profilePrivacyPolicy,
+          iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
+          onTap: () => Navigator.pushNamed(context, '/privacy-policy'),
         ),
+        const SizedBox(height: 10),
+        _ActionButton(
+          icon: Icons.description_outlined,
+          label: l10n.profileTermsOfService,
+          iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
+          onTap: () => Navigator.pushNamed(context, '/terms-of-service'),
+        ),
+        const SizedBox(height: 10),
+        const _ExportMyDataButton(),
+        const SizedBox(height: 10),
         _ActionButton(
           icon: Icons.logout_rounded,
           label: l10n.profileSignOut,
           iconColor: AppColors.error, iconBg: AppColors.errorLight,
           labelColor: AppColors.error, onTap: onLogout,
         ),
-        // Account deletion is intentionally not exposed in the app â€” employees
-        // cannot delete their own account; that's an admin/web operation.
+        const SizedBox(height: 10),
+        _ActionButton(
+          icon: Icons.delete_forever_outlined,
+          label: l10n.profileDeleteAccount,
+          iconColor: AppColors.error, iconBg: AppColors.errorLight,
+          labelColor: AppColors.error,
+          onTap: () => showModalBottomSheet(
+            context: context, isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const _DeleteAccountSheet(),
+          ),
+        ),
       ]),
     );
   }
 }
 
-// â”€â”€ Time Clock PIN button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Export my data ─────────────────────────────────────────────────────────
+
+class _ExportMyDataButton extends StatefulWidget {
+  const _ExportMyDataButton();
+
+  @override
+  State<_ExportMyDataButton> createState() => _ExportMyDataButtonState();
+}
+
+class _ExportMyDataButtonState extends State<_ExportMyDataButton> {
+  bool _loading = false;
+
+  Future<void> _export() async {
+    setState(() => _loading = true);
+    try {
+      final data = await context.read<UserRepository>().exportMyData();
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => _DataExportViewerPage(data: data),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(_snackBar(
+        context, e.toString().replaceFirst('Exception: ', ''), AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GestureDetector(
+      onTap: _loading ? null : _export,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+                color: AppColors.successLight, borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.download_outlined, size: 18, color: AppColors.success),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(l10n.profileExportMyData,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontSize: 14, fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ))),
+          if (_loading)
+            const SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.slate300),
+        ]),
+      ),
+    );
+  }
+}
+
+class _DataExportViewerPage extends StatelessWidget {
+  const _DataExportViewerPage({required this.data});
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final pretty = const JsonEncoder.withIndent('  ').convert(data);
+
+    // Render the known export sections in a sensible order; anything else the
+    // backend adds later still shows up (the fallback loop at the end).
+    const order = ['profile', 'shifts', 'activities', 'absences', 'exportedAt'];
+    final keys = [
+      ...order.where(data.containsKey),
+      ...data.keys.where((k) => !order.contains(k)),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 18, color: AppColors.slate700),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(l10n.profileExportMyData, style: AppTextStyles.h5),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(AppDimensions.pagePaddingH),
+              children: [
+                for (final k in keys) _ExportSection(keyName: k, value: data[k]),
+              ],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: SizedBox(
+                width: double.infinity,
+                height: AppDimensions.buttonHeightLg,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.copy_all_outlined, size: 18),
+                  // The DPA use-case wants the portable machine copy, so the
+                  // button still copies the raw JSON even though the screen now
+                  // shows it in a readable form.
+                  label: const Text('Copy raw data (JSON)'),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: pretty));
+                    ScaffoldMessenger.of(context).showSnackBar(_snackBar(
+                      context, 'Copied to clipboard', AppColors.success,
+                    ));
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Turns a camelCase / snake_case field key into a human label, e.g.
+/// `firstName` → "First name", `exportedAt` → "Exported at".
+String _humanizeKey(String key) {
+  final spaced = key
+      .replaceAll('_', ' ')
+      .replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (m) => '${m[1]} ${m[2]}');
+  if (spaced.isEmpty) return spaced;
+  final lower = spaced.toLowerCase();
+  return lower[0].toUpperCase() + lower.substring(1);
+}
+
+/// Formats a leaf value for display — ISO datetimes become readable, nulls and
+/// empties become an em dash.
+String _formatValue(dynamic v) {
+  if (v == null || (v is String && v.isEmpty)) return '—';
+  if (v is bool) return v ? 'Yes' : 'No';
+  if (v is String) {
+    final dt = DateTime.tryParse(v);
+    if (dt != null && RegExp(r'^\d{4}-\d{2}-\d{2}T').hasMatch(v)) {
+      final local = dt.toLocal();
+      return '${DateFormatter.formatShortDateWithYear(local)} '
+          '${DateFormatter.formatTime(local)}';
+    }
+    return v;
+  }
+  return v.toString();
+}
+
+/// Flattens a nested object one level into "Label: value · Label: value",
+/// keeping each sub-field's label so e.g. a shift's location reads
+/// "Name: HQ · Address: 5th St" rather than an opaque {…}. Returns an em dash
+/// when the object has no scalar fields to show.
+String _flattenMap(Map<dynamic, dynamic> m) {
+  final parts = <String>[];
+  for (final e in m.entries) {
+    if (e.value == null || e.value is Map || e.value is List) continue;
+    parts.add('${_humanizeKey(e.key.toString())}: ${_formatValue(e.value)}');
+  }
+  return parts.isEmpty ? '—' : parts.join(' · ');
+}
+
+/// One top-level section of the export (Profile, Shifts, …). A list becomes a
+/// count header with each entry as a card; a map becomes label/value rows.
+class _ExportSection extends StatelessWidget {
+  const _ExportSection({required this.keyName, required this.value});
+  final String keyName;
+  final dynamic value;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final title = _humanizeKey(keyName);
+
+    Widget header(String text) => Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 8),
+          child: Text(text,
+              style: AppTextStyles.labelSmall.copyWith(
+                  color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+        );
+
+    if (value is List) {
+      final items = value as List;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header('${title.toUpperCase()} · ${items.length}'),
+          if (items.isEmpty)
+            Text('—', style: TextStyle(color: cs.onSurfaceVariant))
+          else
+            ...items.map((e) => _ExportCard(
+                  child: e is Map<String, dynamic>
+                      ? _KeyValueRows(map: e)
+                      : Text(_formatValue(e))),
+                ),
+        ],
+      );
+    }
+
+    if (value is Map<String, dynamic>) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header(title.toUpperCase()),
+          _ExportCard(child: _KeyValueRows(map: value)),
+        ],
+      );
+    }
+
+    // Scalar (e.g. exportedAt)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header(title.toUpperCase()),
+        _ExportCard(child: Text(_formatValue(value))),
+      ],
+    );
+  }
+}
+
+class _ExportCard extends StatelessWidget {
+  const _ExportCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.15)),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Renders a map's scalar fields as label/value rows. Nested maps/lists are
+/// summarized compactly rather than dumped, to keep the card readable.
+class _KeyValueRows extends StatelessWidget {
+  const _KeyValueRows({required this.map});
+  final Map<String, dynamic> map;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final entries = map.entries.where((e) => e.value != null).toList();
+    if (entries.isEmpty) {
+      return Text('—', style: TextStyle(color: cs.onSurfaceVariant));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final e in entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(_humanizeKey(e.key),
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: cs.onSurfaceVariant)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.value is Map
+                        // Flatten one level so meaningful nested objects (e.g. a
+                        // shift's location {name, address}) are readable, keeping
+                        // each sub-field's label so the values aren't ambiguous.
+                        ? _flattenMap(e.value as Map)
+                        : e.value is List
+                            ? '${(e.value as List).length} item(s)'
+                            : _formatValue(e.value),
+                    style: AppTextStyles.bodySmall.copyWith(color: cs.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Delete account ───────────────────────────────────────────────────────────
+
+class _DeleteAccountSheet extends StatefulWidget {
+  const _DeleteAccountSheet();
+
+  @override
+  State<_DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+}
+
+class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
+  final _password = TextEditingController();
+  bool _obscure = true, _deleting = false;
+  String? _error;
+
+  @override
+  void dispose() { _password.dispose(); super.dispose(); }
+
+  Future<void> _confirmDelete() async {
+    final l10n = AppLocalizations.of(context);
+    if (_password.text.isEmpty) {
+      setState(() => _error = l10n.profilePasswordCurrent);
+      return;
+    }
+    setState(() { _deleting = true; _error = null; });
+    try {
+      await context.read<UserRepository>().deleteAccount(_password.text);
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      Navigator.pop(context);
+      await auth.signOut();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _deleting = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n   = AppLocalizations.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottom),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sheetHandle(),
+          Text(l10n.profileDeleteConfirmTitle, style: AppTextStyles.h5),
+          const SizedBox(height: 8),
+          Text(l10n.profileDeleteConfirmBody,
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.slate500)),
+          const SizedBox(height: 20),
+          _PasswordField(
+            label: l10n.profilePasswordCurrent,
+            controller: _password,
+            obscure: _obscure,
+            onToggle: () => setState(() => _obscure = !_obscure),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_error!,
+                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.error))),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: AppDimensions.buttonHeightLg,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+              onPressed: _deleting ? null : _confirmDelete,
+              child: _deleting ? _spinner() : Text(l10n.profileDelete),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Time Clock PIN button ─────────────────────────────────────────────────────
 
 class _TimeClockPinButton extends StatefulWidget {
   const _TimeClockPinButton();
@@ -1469,13 +1936,12 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon, required this.label,
     required this.iconColor, required this.iconBg, required this.onTap,
-    this.labelColor, this.isDestructive = false,
+    this.labelColor,
   });
   final IconData icon;
   final String label;
   final Color iconColor, iconBg;
   final Color? labelColor;
-  final bool isDestructive;
   final VoidCallback onTap;
 
   @override
@@ -1485,15 +1951,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isDestructive
-              ? AppColors.errorLight.withValues(alpha: 0.5)
-              : Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDestructive
-                ? AppColors.error.withValues(alpha: 0.15)
-                : Theme.of(context).dividerColor,
-          ),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(children: [
           Container(
@@ -1510,16 +1970,14 @@ class _ActionButton extends StatelessWidget {
               ))),
           Icon(Icons.chevron_right,
               size: 18,
-              color: isDestructive
-                  ? AppColors.error.withValues(alpha: 0.4)
-                  : AppColors.slate300),
+              color: AppColors.slate300),
         ]),
       ),
     );
   }
 }
 
-// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
@@ -1551,7 +2009,7 @@ class _CardGroup extends StatelessWidget {
       );
 }
 
-// â”€â”€ Private widget helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Private widget helpers ────────────────────────────────────────────────────
 
 /// Standard drag handle for bottom sheets.
 Widget _sheetHandle() => Center(
@@ -1580,7 +2038,7 @@ SnackBar _snackBar(BuildContext context, String message, Color color) =>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
     );
 
-// â”€â”€ Professional info section (roles / skills / calendar sync) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Professional info section (roles / skills / calendar sync) ────────────────
 
 class _ProfessionalInfoSection extends StatefulWidget {
   const _ProfessionalInfoSection();
@@ -1601,11 +2059,13 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
       final res = await ApiClient.instance.get('/api/users/me');
       final wrap = (res is Map<String, dynamic>) ? res : <String, dynamic>{};
       final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
-      if (mounted) setState(() {
-        _calendarUrl = body['calendarUrl'] as String? ?? '';
-        _calActive = body['calendarSyncActive'] == true;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _calendarUrl = body['calendarUrl'] as String? ?? '';
+          _calActive = body['calendarSyncActive'] == true;
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -1632,7 +2092,7 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
           context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
           builder: (_) => _CalendarSyncSheet(
             url: _calendarUrl.isEmpty
-                ? 'webcal://storage.googleapis.com/aplano-production.appspot.com/calendar.ics'
+                ? 'webcal://storage.googleapis.com/wrenta-production.appspot.com/calendar.ics'
                 : _calendarUrl,
           ),
         ),
@@ -1641,204 +2101,7 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
   }
 }
 
-// â”€â”€ Master data section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _MasterDataSection extends StatefulWidget {
-  const _MasterDataSection();
-  @override
-  State<_MasterDataSection> createState() => _MasterDataSectionState();
-}
-
-class _MasterDataSectionState extends State<_MasterDataSection> {
-  List<Map<String, dynamic>> _masterData = [];
-  bool _loading = true;
-  bool _editing = false;
-  bool _saving  = false;
-  final Map<String, TextEditingController> _ctrls = {};
-
-  @override
-  void initState() { super.initState(); _load(); }
-
-  @override
-  void dispose() {
-    for (final c in _ctrls.values) { c.dispose(); }
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    try {
-      final res = await ApiClient.instance.get('/api/master-data/me');
-      final wrap = (res is Map<String, dynamic>) ? res : <String, dynamic>{};
-      final md = (wrap['data'] as List?)
-          ?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
-      if (mounted) setState(() { _masterData = md; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() { _masterData = []; _loading = false; });
-    }
-  }
-
-  void _enterEdit() {
-    for (final f in _masterData) {
-      if (f['isLocked'] == true) continue;
-      _ctrls[f['fieldId'] as String] =
-          TextEditingController(text: f['value'] as String? ?? '');
-    }
-    setState(() => _editing = true);
-  }
-
-  Future<void> _exitEdit({bool save = false}) async {
-    if (!save) {
-      for (final c in _ctrls.values) { c.dispose(); }
-      _ctrls.clear();
-      setState(() => _editing = false);
-      return;
-    }
-    setState(() => _saving = true);
-    try {
-      final values = _ctrls.entries
-          .map((e) => {'fieldId': e.key, 'value': e.value.text.trim()})
-          .toList();
-      final res = await ApiClient.instance
-          .put('/api/master-data/me', data: {'values': values});
-      final wrap = (res is Map<String, dynamic>) ? res : <String, dynamic>{};
-      final updated = (wrap['data'] as List?)
-          ?.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      for (final c in _ctrls.values) { c.dispose(); }
-      _ctrls.clear();
-      if (mounted) setState(() {
-        if (updated != null) _masterData = updated;
-        _editing = false; _saving = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _saving = false);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating,
-        ));
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(children: [
-            Text('MASTER DATA',
-                style: AppTextStyles.overline.copyWith(
-                    color: cs.onSurfaceVariant, fontSize: 11, letterSpacing: 0.8)),
-            const Spacer(),
-            if (_loading)
-              const SizedBox(width: 18, height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-            else if (_editing) ...[
-              ElevatedButton.icon(
-                onPressed: _saving ? null : () => _exitEdit(save: true),
-                icon: _saving
-                    ? const SizedBox(width: 14, height: 14,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.save_outlined, size: 16, color: Colors.white),
-                label: const Text('Save', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  elevation: 0,
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _saving ? null : () => _exitEdit(),
-                child: Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(
-                      color: AppColors.error, borderRadius: BorderRadius.circular(6)),
-                  child: const Icon(Icons.close, color: Colors.white, size: 20),
-                ),
-              ),
-            ] else
-              OutlinedButton.icon(
-                onPressed: _masterData.isEmpty ? null : _enterEdit,
-                icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
-                label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  minimumSize: Size.zero,
-                ),
-              ),
-          ]),
-          const SizedBox(height: 12),
-          if (!_loading && _masterData.isEmpty)
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Text('No master data available.',
-                  style: TextStyle(color: cs.onSurfaceVariant)),
-            )
-          else if (!_loading)
-            for (int i = 0; i < _masterData.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
-              _masterField(cs, _masterData[i]),
-            ],
-        ],
-      ),
-    );
-  }
-
-  Widget _masterField(ColorScheme cs, Map<String, dynamic> f) {
-    final id       = f['fieldId'] as String;
-    final label    = localizedMasterDataLabel(context, f['label'] as String? ?? '');
-    final value    = f['value']   as String?;
-    final editable = _editing && f['isLocked'] != true && _ctrls.containsKey(id);
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: editable ? AppColors.primary : cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          if (editable)
-            TextField(
-              controller: _ctrls[id],
-              style: TextStyle(fontSize: 15, color: cs.onSurface),
-              decoration: const InputDecoration(
-                isDense: true, border: InputBorder.none, contentPadding: EdgeInsets.zero,
-              ),
-            )
-          else
-            Text((value == null || value.isEmpty) ? '-' : value,
-                style: TextStyle(fontSize: 15, color: cs.onSurface)),
-        ],
-      ),
-    );
-  }
-}
-
-// â”€â”€ Calendar sync sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Calendar sync sheet ───────────────────────────────────────────────────────
 
 class _CalendarSyncSheet extends StatelessWidget {
   const _CalendarSyncSheet({required this.url});
@@ -1880,7 +2143,7 @@ class _CalendarSyncSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Subscribe to your Aplano calendar in any calendar app. New shifts may take a moment to appear â€” you can adjust the update interval in your calendar app settings.',
+                    'Subscribe to your Wrenta calendar in any calendar app. New shifts may take a moment to appear — you can adjust the update interval in your calendar app settings.',
                     style: TextStyle(fontSize: 14, color: cs.onSurface, height: 1.4),
                   ),
                   const SizedBox(height: 16),
@@ -1918,7 +2181,7 @@ class _CalendarSyncSheet extends StatelessWidget {
   }
 }
 
-// â”€â”€ Admin section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Admin section ────────────────────────────────────────────────────────────
 
 class _AdminSection extends StatefulWidget {
   const _AdminSection();
@@ -1935,7 +2198,7 @@ class _AdminSectionState extends State<_AdminSection> {
     final tiles = <(IconData, String, Widget)>[
       (Icons.people_outline,           'Employees',           const EmployeesPage()),
       (Icons.place_outlined,           'Locations',           const AdminLocationsPage()),
-      (Icons.swap_horiz,               'Swap requests',       const SwapRequestsPage()),
+      (Icons.swap_horiz,               'Requests',            const SwapRequestsPage()),
       (Icons.event_busy_outlined,      'Absences',            const AdminAbsencesPage()),
       if (isSuperAdmin)
         (Icons.beach_access_outlined,  'Entitlement',         const AdminEntitlementPage()),

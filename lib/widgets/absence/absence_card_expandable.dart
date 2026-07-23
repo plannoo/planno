@@ -57,12 +57,15 @@ class AbsenceCardExpandable extends StatelessWidget {
                     mainAxisAlignment:
                         MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        absence.typeDisplayName,
-                        style: const TextStyle(
-                          fontSize:   17,
-                          fontWeight: FontWeight.w600,
-                          color:      Color(0xFF1A1A1A),
+                      Expanded(
+                        child: Text(
+                          absence.typeDisplayName,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize:   17,
+                            fontWeight: FontWeight.w600,
+                            color:      Color(0xFF1A1A1A),
+                          ),
                         ),
                       ),
                       Container(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/prefs_service.dart';
+import '../../core/theme/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation_shell.dart';
 import 'forgot_password_page.dart';
@@ -109,9 +110,9 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: cs.surface,
       body: Column(
         children: [
-          // ── Blue header with italic Aplano ─────────────────────────────
+          // ── Header ─────────────────────────────────────────────────────
           Container(
-            color: const Color(0xFF2196F3),
+            color: AppColors.primary,
             width: double.infinity,
             child: SafeArea(
               bottom: false,
@@ -119,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                 height: 190,
                 child: Center(
                   child: Text(
-                    'Aplano',
+                    'Wrenta',
                     style: TextStyle(
                       fontSize: 52,
                       fontWeight: FontWeight.bold,
@@ -193,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: ElevatedButton(
                       onPressed: isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2196F3),
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         elevation: 0,
@@ -222,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: const Text('SSO',
-                          style: TextStyle(color: Color(0xFF2196F3), fontSize: 14)),
+                          style: TextStyle(color: AppColors.primary, fontSize: 14)),
                       ),
                       TextButton(
                         onPressed: () => Navigator.push(
@@ -235,7 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: const Text('Forgot Password?',
-                          style: TextStyle(color: Color(0xFF2196F3), fontSize: 14)),
+                          style: TextStyle(color: AppColors.primary, fontSize: 14)),
                       ),
                     ],
                   ),
@@ -271,7 +272,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 6),
                       const Text('Imprint',
-                        style: TextStyle(color: Color(0xFF2196F3), fontSize: 12)),
+                        style: TextStyle(color: AppColors.primary, fontSize: 12)),
                     ]),
                   ),
                   const SizedBox(height: 32),

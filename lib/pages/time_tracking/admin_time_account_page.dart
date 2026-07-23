@@ -19,6 +19,7 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
 
   int _credited = 0, _absences = 0, _quota = 0, _overtime = 0; // minutes
   bool _loading = false;
+  String? _error;
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
 
   Future<void> _load() async {
     if (_userId.isEmpty) return;
-    setState(() => _loading = true);
+    setState(() { _loading = true; _error = null; });
     try {
       final week = _isoWeek(_weekStart);
       final year = _weekStart.year;
@@ -59,19 +60,26 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
       // Week response: { entries, summary: { totalQuotaMinutes, totalCreditedMinutes,
       //   totalOvertimeMinutes, totalBreakMinutes }, week, year }
       final summary = (wrap['summary'] as Map?)?.cast<String, dynamic>() ?? const {};
-      if (mounted) setState(() {
-        _credited = (summary['totalCreditedMinutes'] as num?)?.toInt() ?? 0;
-        _absences = 0; // absences are not part of the timesheet credited total
-        _quota    = (summary['totalQuotaMinutes'] as num?)?.toInt() ?? 40 * 60;
-        _overtime = (summary['totalOvertimeMinutes'] as num?)?.toInt()
-            ?? (_credited - _quota);
-        _loading  = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() {
-        _credited = 0; _absences = 0; _quota = 40 * 60;
-        _overtime = -_quota; _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _credited = (summary['totalCreditedMinutes'] as num?)?.toInt() ?? 0;
+          _absences = 0;
+          _quota    = (summary['totalQuotaMinutes'] as num?)?.toInt() ?? 40 * 60;
+          _overtime = (summary['totalOvertimeMinutes'] as num?)?.toInt()
+              ?? (_credited - _quota);
+          _loading  = false;
+        });
+      }
+    } catch (e) {
+      // Do NOT synthesise a balance here. The old fallback (quota 40h, overtime
+      // -40h) presented a full week's deficit that no endpoint ever returned, so
+      // a failed request looked like a genuinely absent employee.
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -163,8 +171,11 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
                         size: 22,
                         color: _userName.isEmpty ? cs.onSurfaceVariant : AppColors.primary),
                     const SizedBox(width: 12),
-                    Text(_userName.isEmpty ? 'Select member' : _userName,
-                        style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                    Expanded(
+                      child: Text(_userName.isEmpty ? 'Select member' : _userName,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                    ),
                   ],
                 ),
               ),
@@ -174,6 +185,14 @@ class _AdminTimeAccountPageState extends State<AdminTimeAccountPage> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(_error!, textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+                    ),
+                  )
                 : Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                     child: Column(

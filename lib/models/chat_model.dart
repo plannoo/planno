@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 /// A single chat message.
 class ChatMessage {
   const ChatMessage({
@@ -29,15 +31,8 @@ class ChatMessage {
     final diff = now.difference(sentAt);
     if (diff.inMinutes < 1)  return 'Now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours   < 24) {
-      final h = sentAt.hour;
-      final m = sentAt.minute.toString().padLeft(2, '0');
-      final p = h >= 12 ? 'PM' : 'AM';
-      final hr = h > 12 ? h - 12 : (h == 0 ? 12 : h);
-      return '$hr:$m $p';
-    }
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[sentAt.weekday - 1];
+    if (diff.inHours   < 24) return DateFormat.jm(Intl.defaultLocale).format(sentAt);
+    return DateFormat('EEE', Intl.defaultLocale ?? 'en').format(sentAt).replaceAll('.', '');
   }
 
   ChatMessage copyWith({bool? isRead}) => ChatMessage(

@@ -164,9 +164,12 @@ class _AdminAvailabilityCreatePageState extends State<AdminAvailabilityCreatePag
                               size: 22,
                               color: _userName.isEmpty ? cs.onSurfaceVariant : AppColors.primary),
                           const SizedBox(width: 12),
-                          Text(_userName.isEmpty ? 'Employee' : _userName,
-                              style: TextStyle(fontSize: 16,
-                                  color: _userName.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          Expanded(
+                            child: Text(_userName.isEmpty ? 'Employee' : _userName,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16,
+                                    color: _userName.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -265,7 +268,7 @@ class _AdminAvailabilityCreatePageState extends State<AdminAvailabilityCreatePag
                         style: TextStyle(fontSize: 16, color: cs.onSurface)),
                     value: _wholeDay,
                     onChanged: (v) => setState(() => _wholeDay = v),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
                   SwitchListTile(
@@ -273,7 +276,7 @@ class _AdminAvailabilityCreatePageState extends State<AdminAvailabilityCreatePag
                         style: TextStyle(fontSize: 15, color: cs.onSurface)),
                     value: _notEditable,
                     onChanged: (v) => setState(() => _notEditable = v),
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                   ),
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
                   Padding(

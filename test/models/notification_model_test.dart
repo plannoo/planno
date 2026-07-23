@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aplano/models/notification_model.dart';
+import 'package:wrenta/models/notification_model.dart';
 
 void main() {
   group('NotificationModel.fromJson', () {

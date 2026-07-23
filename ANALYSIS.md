@@ -1,4 +1,4 @@
-# Aplano — Production Readiness Analysis
+# Wrenta — Production Readiness Analysis
 
 Generated: `flutter analyze` — 132 issues found (47 errors, 10 warnings, 75 infos)
 Plus comprehensive manual gap analysis — **41 total gaps** across 4 priority tiers.
@@ -135,7 +135,7 @@ firebase.initializeApp({
 
 **File:** `test/widget_test.dart:9`
 ```dart
-await tester.pumpWidget(const AplanoApp());
+await tester.pumpWidget(const WrentaApp());
 ```
 
 **Root cause:** The app's `MaterialApp` has `initialRoute` as a required parameter after SDK bump (SDK `^3.10.4`).

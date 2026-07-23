@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../widgets/common/member_picker_sheet.dart';
 
 /// Admin screen to manage work locations employees clock in at.
 /// Backed by /api/locations (CRUD, requires `locations:manage`).
@@ -207,7 +208,7 @@ class _LocationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${loc.latitude.toStringAsFixed(4)}, '
-                      '${loc.longitude.toStringAsFixed(4)}  Â·  ${loc.radius.toStringAsFixed(0)} m',
+                      '${loc.longitude.toStringAsFixed(4)}  ·  ${loc.radius.toStringAsFixed(0)} m',
                       style: TextStyle(
                           fontSize: 12, color: cs.onSurfaceVariant),
                     ),
@@ -226,7 +227,7 @@ class _LocationCard extends StatelessWidget {
   }
 }
 
-// â”€â”€ Add / edit sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add / edit sheet ──────────────────────────────────────────────────────────
 
 class _LocationEditorSheet extends StatefulWidget {
   const _LocationEditorSheet({this.existing});
@@ -244,6 +245,9 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
   late final TextEditingController _radius;
   bool _saving = false;
   bool _locating = false;
+  bool _loadingAssignees = false;
+  Set<String> _assignedUserIds = {};
+  final Map<String, String> _assignedNames = {};
 
   bool get _isEdit => widget.existing != null;
 
@@ -256,6 +260,32 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
     _lat     = TextEditingController(text: e != null ? e.latitude.toString() : '');
     _lng     = TextEditingController(text: e != null ? e.longitude.toString() : '');
     _radius  = TextEditingController(text: e != null ? e.radius.toStringAsFixed(0) : '150');
+    if (_isEdit) _loadAssignees();
+  }
+
+  // Employees assigned to this location — clock-in resolves to this location
+  // via that assignment, so a location with nobody assigned means every
+  // employee at this site gets "Location not found" trying to clock in.
+  Future<void> _loadAssignees() async {
+    setState(() => _loadingAssignees = true);
+    try {
+      final res  = await ApiClient.instance
+          .get('/api/locations/${widget.existing!.id}/users?limit=500');
+      final data = (res is Map<String, dynamic> ? res['data'] : res) as List? ?? [];
+      final ids = <String>{};
+      for (final u in data) {
+        final m  = u as Map<String, dynamic>;
+        final id = m['id'] as String? ?? '';
+        if (id.isEmpty) continue;
+        ids.add(id);
+        _assignedNames[id] = ('${m['firstName'] ?? ''} ${m['lastName'] ?? ''}').trim();
+      }
+      if (mounted) setState(() => _assignedUserIds = ids);
+    } catch (_) {
+      // keep empty on error — the picker sheet still works, just starts blank
+    } finally {
+      if (mounted) setState(() => _loadingAssignees = false);
+    }
   }
 
   @override
@@ -314,11 +344,22 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
         'longitude': double.tryParse(_lng.text.trim()) ?? 0,
         'radius':    double.tryParse(_radius.text.trim()) ?? 150,
       };
+      String locationId;
       if (_isEdit) {
-        await ApiClient.instance.put('/api/locations/${widget.existing!.id}', data: body);
+        locationId = widget.existing!.id;
+        await ApiClient.instance.put('/api/locations/$locationId', data: body);
       } else {
-        await ApiClient.instance.post('/api/locations', data: body);
+        final res  = await ApiClient.instance.post('/api/locations', data: body)
+            as Map<String, dynamic>;
+        locationId = (res['data'] as Map<String, dynamic>)['id'] as String;
       }
+      // Persist the assigned-employees set — this is what clock-in resolves
+      // against, so a location saved with nobody assigned means every
+      // employee there gets "Location not found" at clock-in.
+      await ApiClient.instance.put(
+        '/api/locations/$locationId/users',
+        data: {'userIds': _assignedUserIds.toList()},
+      );
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
@@ -394,6 +435,59 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
                 const SizedBox(height: 4),
                 _field(cs, 'Geofence radius (meters)', _radius,
                     keyboard: TextInputType.number),
+                const SizedBox(height: 18),
+                Text('Assigned employees',
+                    style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: cs.onSurface)),
+                const SizedBox(height: 2),
+                Text('Only assigned employees can clock in at this location.',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                const SizedBox(height: 8),
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => MultiMemberPickerSheet(
+                      title: 'Assigned employees',
+                      initialSelectedIds: _assignedUserIds,
+                      onDone: (picked) => setState(() {
+                        _assignedUserIds = picked.map((p) => p.id).toSet();
+                        for (final p in picked) { _assignedNames[p.id] = p.name; }
+                      }),
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.people_outline, size: 18, color: cs.onSurfaceVariant),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _loadingAssignees
+                              ? const SizedBox(
+                                  width: 16, height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : Text(
+                                  _assignedUserIds.isEmpty
+                                      ? 'No employees assigned yet'
+                                      : '${_assignedUserIds.length} employee'
+                                        '${_assignedUserIds.length == 1 ? '' : 's'} assigned',
+                                  style: TextStyle(fontSize: 14, color: cs.onSurface),
+                                ),
+                        ),
+                        Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
@@ -457,7 +551,7 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
   }
 }
 
-// â”€â”€ Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Model ─────────────────────────────────────────────────────────────────────
 
 class _Location {
   final String id, name, address;

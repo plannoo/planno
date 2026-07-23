@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aplano/models/absence_summary.dart';
+import 'package:wrenta/models/absence_summary.dart';
 
 void main() {
   group('AbsenceSummaryModel computed properties', () {

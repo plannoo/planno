@@ -1,4 +1,4 @@
-/// Base class for all Aplano network-layer errors.
+/// Base class for all Wrenta network-layer errors.
 ///
 /// Catch [ApiException] to handle any HTTP / connectivity failure uniformly.
 /// Catch specific subclasses when you need fine-grained handling.

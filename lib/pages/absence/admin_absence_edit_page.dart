@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,7 @@ const _typeLabels = {
   'SICK':           'Krankheit',
   'TRAINING':       'Qualifikation',
   'STANDBY':        'Stand by/ frei',
-  'OVERTIME':       'Ãœberstundenausgleich',
+  'OVERTIME':       'Überstundenausgleich',
   'UNEXCUSED':      'Unentschuldigte Abwesenheit',
   'VACATION':       'Urlaub',
   'PREFERRED_OFF':  'Wunschfrei',
@@ -107,7 +107,7 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
       final data = await ApiClient.instance.get('/api/users');
       final raw  = data is List ? data
           : (data as Map<String, dynamic>)['data'] as List? ?? [];
-      final users = List<Map<String, dynamic>>.from(raw as List);
+      final users = List<Map<String, dynamic>>.from(raw);
       if (!mounted) return;
       showModalBottomSheet(
         context: context,
@@ -221,7 +221,16 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
       await ApiClient.instance.delete('/api/absences/$_id');
       if (!mounted) return;
       Navigator.pop(context, true);
-    } catch (_) {}
+    } catch (e) {
+      // A MANAGER can now be refused here ("Managers can manage absences" off).
+      // Swallowing it left the page open with a dead button, which reads as a
+      // frozen app rather than a policy decision.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   @override
@@ -329,9 +338,12 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                               size: 22,
                               color: _name.isEmpty ? cs.onSurfaceVariant : AppColors.primary),
                           const SizedBox(width: 14),
-                          Text(_name.isEmpty ? (_isEdit ? '' : 'Employees') : _name,
-                              style: TextStyle(fontSize: 16,
-                                  color: _name.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          Expanded(
+                            child: Text(_name.isEmpty ? (_isEdit ? '' : 'Employees') : _name,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16,
+                                    color: _name.isEmpty ? cs.onSurfaceVariant : cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -349,9 +361,12 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                               size: 22,
                               color: _type == null ? cs.onSurfaceVariant : AppColors.primary),
                           const SizedBox(width: 14),
-                          Text(_type == null ? 'Type' : (_typeLabels[_type!] ?? _type!),
-                              style: TextStyle(fontSize: 16,
-                                  color: _type == null ? cs.onSurfaceVariant : cs.onSurface)),
+                          Expanded(
+                            child: Text(_type == null ? 'Type' : (_typeLabels[_type!] ?? _type!),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16,
+                                    color: _type == null ? cs.onSurfaceVariant : cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -461,8 +476,11 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
                           Icon(Icons.insert_drive_file_outlined,
                               size: 22, color: cs.onSurfaceVariant),
                           const SizedBox(width: 14),
-                          Text(_fileName ?? 'Upload file',
-                              style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                          Expanded(
+                            child: Text(_fileName ?? 'Upload file',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 16, color: cs.onSurface)),
+                          ),
                         ],
                       ),
                     ),
@@ -477,7 +495,7 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
   }
 }
 
-// â”€â”€ Picker sheet (employee / type) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Picker sheet (employee / type) ────────────────────────────────────────────
 
 class _PickerItem {
   _PickerItem({required this.id, required this.label});

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -111,14 +112,6 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
     }
   }
 
-  Color _statusColor(String? status) {
-    switch ((status ?? '').toUpperCase()) {
-      case 'APPROVED': return AppColors.success;
-      case 'REJECTED': return AppColors.error;
-      default:         return Colors.orange;
-    }
-  }
-
   IconData _absenceIcon(String? type) {
     switch ((type ?? '').toUpperCase()) {
       case 'VACATION':     return Icons.beach_access;
@@ -130,16 +123,25 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
   }
 
   String _absenceLabel(String? type) {
-    const labels = {
-      'VACATION':      'Vacation',
-      'SICK':          'Sick Leave',
-      'TRAINING':      'Training',
-      'OVERTIME':      'Overtime',
-      'STANDBY':       'Stand-by',
-      'UNEXCUSED':     'Unexcused',
-      'PREFERRED_OFF': 'Preferred Off',
-    };
-    return labels[(type ?? '').toUpperCase()] ?? (type ?? 'Absence');
+    final l10n = AppLocalizations.of(context);
+    switch ((type ?? '').toUpperCase()) {
+      case 'VACATION':
+        return l10n.absenceTypeVacation;
+      case 'SICK':
+        return l10n.absenceTypeSickLeave;
+      case 'TRAINING':
+        return l10n.absenceTypeTraining;
+      case 'OVERTIME':
+        return l10n.absenceTypeOvertime;
+      case 'STANDBY':
+        return l10n.absenceTypeStandby;
+      case 'UNEXCUSED':
+        return l10n.absenceTypeUnexcused;
+      case 'PREFERRED_OFF':
+        return l10n.absenceTypePreferredOff;
+      default:
+        return l10n.absenceTypeDefault;
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -147,6 +149,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
@@ -161,7 +164,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
               color: AppColors.primary, size: 20),
         ),
         centerTitle: true,
-        title: Text('Request History',
+        title: Text(l10n.requestHistoryTitle,
             style: AppTextStyles.h5.copyWith(color: cs.onSurface)),
       ),
       body: Column(
@@ -186,7 +189,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
                       onChanged: (_) => setState(() {}),
                       style: TextStyle(fontSize: 15, color: cs.onSurface),
                       decoration: InputDecoration(
-                        hintText:       'Search requests...',
+                        hintText:       l10n.requestHistorySearchHint,
                         hintStyle:      TextStyle(color: cs.onSurfaceVariant),
                         border:         InputBorder.none,
                         isDense:        true,
@@ -211,8 +214,8 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _Tab('Absences', 0)),
-                  Expanded(child: _Tab('Shift Changes', 1)),
+                  Expanded(child: _tab(l10n.requestHistoryAbsencesTab, 0)),
+                  Expanded(child: _tab(l10n.requestHistoryShiftChangesTab, 1)),
                 ],
               ),
             ),
@@ -230,7 +233,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
     );
   }
 
-  Widget _Tab(String label, int index) {
+  Widget _tab(String label, int index) {
     final cs         = Theme.of(context).colorScheme;
     final isSelected = _selectedTab == index;
     return GestureDetector(
@@ -264,6 +267,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
   // ── Absence list ──────────────────────────────────────────────────────────
 
   Widget _buildAbsencesList(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context);
     if (_loadingAbsences && _absences.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -284,7 +288,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
             Icon(Icons.inbox_outlined, size: 48,
                 color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
-            Text('No absence requests',
+            Text(l10n.requestHistoryNoAbsences,
                 style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
           ],
         ),
@@ -304,10 +308,10 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
                   ? const SizedBox(
                       width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Row(
+                  : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Load more',
+                        Text(l10n.requestHistoryLoadMore,
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600,
                                 color: AppColors.primary)),
@@ -338,6 +342,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
   // ── Shift changes list ────────────────────────────────────────────────────
 
   Widget _buildShiftChangesList(ColorScheme cs) {
+    final l10n = AppLocalizations.of(context);
     if (_loadingShifts && _shiftChanges.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -358,7 +363,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
             Icon(Icons.swap_horiz_outlined, size: 48,
                 color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
-            Text('No shift change requests',
+            Text(l10n.requestHistoryNoShiftChanges,
                 style: TextStyle(fontSize: 15, color: cs.onSurfaceVariant)),
           ],
         ),
@@ -378,10 +383,10 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
                   ? const SizedBox(
                       width: 18, height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Row(
+                  : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Load more',
+                        Text(l10n.requestHistoryLoadMore,
                             style: TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600,
                                 color: AppColors.primary)),
@@ -402,7 +407,7 @@ class _RequestHistoryPageState extends State<RequestHistoryPage> {
           child: _RequestCard(
             cs:       cs,
             icon:     Icons.swap_horiz,
-            title:    (s['type'] as String?) ?? 'Shift Change',
+            title:    (s['type'] as String?) ?? l10n.requestHistoryShiftChangeDefault,
             subtitle: date.isNotEmpty ? '$date · $shift' : shift,
             status:   (s['status'] as String?) ?? 'PENDING',
           ),

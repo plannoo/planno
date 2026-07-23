@@ -1,4 +1,5 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
@@ -7,12 +8,14 @@ import 'package:provider/provider.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
+import '../../../core/network/api_exceptions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/clock_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/scheduling_flags_provider.dart';
 import '../../models/shift_model.dart';
 import '../../widgets/clockIn/clock_face_card.dart';
 import '../../widgets/clockIn/location_card.dart';
@@ -35,7 +38,7 @@ class _ClockPageState extends State<ClockPage> {
   void initState() {
     super.initState();
     // The clock screen reads today's shift from DashboardProvider, but the
-    // employee shell never opens the admin dashboard that loads it â€” so fetch
+    // employee shell never opens the admin dashboard that loads it — so fetch
     // it here. Otherwise the card always reads "No shift today".
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -43,13 +46,17 @@ class _ClockPageState extends State<ClockPage> {
     });
   }
 
-  // â”€â”€ Shift detail sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shift detail sheet ─────────────────────────────────────────────────────
 
   void _showShiftDetails(BuildContext context, ShiftModel shift) {
     final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      // Present above everything (incl. the bottom nav) and respect the safe
+      // area, so the sheet can't sit under or collide with the bottom nav bar.
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
@@ -94,19 +101,35 @@ class _ClockPageState extends State<ClockPage> {
     );
   }
 
-  // â”€â”€ Action handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Action handlers ────────────────────────────────────────────────────────
 
   Future<void> _handleClockIn(BuildContext context) async {
+    // Any uncaught throw in here (a failing refresh, a plugin error) would abort
+    // the tap with an unhandled async error and NOTHING on screen — the button
+    // would just look dead. Wrap the whole flow so every failure is at least
+    // visible instead of silent.
+    try {
+      await _runClockIn(context);
+    } catch (e) {
+      if (!context.mounted) return;
+      _snack(context, e.toString().replaceFirst('Exception: ', ''), AppColors.error);
+    }
+  }
+
+  Future<void> _runClockIn(BuildContext context) async {
     final l10n  = AppLocalizations.of(context);
     final clock = context.read<ClockProvider>();
 
-    // Gate 1 â€” require an active shift today (also enforced server-side).
+    // Gate 1 — require an active shift today (also enforced server-side).
     var dashboard = context.read<DashboardProvider>();
     if (dashboard.todayShift == null) {
       // The shift fetch may have failed due to a token race (load() was
       // fire-and-forget while a concurrent 401 was being resolved). Retry
-      // silently before concluding there's no shift.
-      await dashboard.refresh();
+      // silently before concluding there's no shift. A failure here must not
+      // abort the whole handler — fall through to the null-shift check below.
+      try {
+        await dashboard.refresh();
+      } catch (_) {/* handled by the todayShift == null branch below */}
       if (!context.mounted) return;
       dashboard = context.read<DashboardProvider>();
     }
@@ -121,7 +144,7 @@ class _ClockPageState extends State<ClockPage> {
       return;
     }
 
-    // Gate 2 â€” biometric (mobile only). Skipped on web/desktop where local_auth
+    // Gate 2 — biometric (mobile only). Skipped on web/desktop where local_auth
     // has no implementation (calling it throws MissingPluginException). Any
     // failure to probe biometrics is treated as "not available" so it proceeds.
     if (!kIsWeb) {
@@ -139,19 +162,23 @@ class _ClockPageState extends State<ClockPage> {
             return;
           }
         }
-      } on MissingPluginException {
-        // No biometric plugin on this platform â€” proceed without it.
-      } on PlatformException {
-        // Biometrics unavailable/not enrolled â€” proceed without it.
+      } catch (_) {
+        // Probing biometrics can throw for many reasons besides the two obvious
+        // plugin exceptions (no FragmentActivity, hardware lockout, OEM plugin
+        // quirks). Treat ANY probe failure as "not available" and proceed —
+        // biometric is a soft gate and the backend still enforces the clock-in.
+        // Without this catch-all, an unexpected type escaped to the caller and
+        // aborted the tap with nothing on screen.
       }
     }
 
-    // Gate 3 â€” require the employee's clock PIN.
+    // Gate 3 — require the employee's clock PIN.
+    if (!context.mounted) return;
     final pinOk = await _verifyClockPin(context);
     if (!context.mounted || !pinOk) return;
 
     // _verifyClockPin's dialog now uses a zero-duration transition, so its
-    // element tree is already gone by the time we get here â€” no settle delay
+    // element tree is already gone by the time we get here — no settle delay
     // needed before calling clockIn(), which fires notifyListeners().
 
     // Pass the shift ID so the server knows which shift to clock into.
@@ -183,9 +210,21 @@ class _ClockPageState extends State<ClockPage> {
       final raw = res is Map<String, dynamic> ? res : <String, dynamic>{};
       final data = raw['data'] is Map ? raw['data'] as Map : raw;
       pin = data['pin']?.toString();
-    } catch (_) {
-      // If the PIN can't be loaded, don't hard-block clock-in.
-      return true;
+    } on NotFoundException {
+      return true;   // no PIN set for this employee — nothing to verify
+    } on ForbiddenException {
+      return true;   // org has this gate disabled — it doesn't apply
+    } catch (e) {
+      // A genuine failure (network, timeout, server, parse) must NOT silently
+      // wave the clock-in through — that turned the PIN gate off whenever the
+      // request hiccuped. Fail closed with a retryable message instead.
+      if (context.mounted) {
+        _snack(context,
+            'Could not verify your clock PIN — please try again. '
+            '(${e.toString().replaceFirst('Exception: ', '')})',
+            AppColors.error);
+      }
+      return false;
     }
     if (pin == null || pin.isEmpty) return true; // no PIN configured
     if (!context.mounted) return false;
@@ -217,7 +256,7 @@ class _ClockPageState extends State<ClockPage> {
             style: TextStyle(color: cs.onSurface, letterSpacing: 4),
             decoration: const InputDecoration(
               counterText: '',
-              hintText: 'â€¢â€¢â€¢â€¢',
+              hintText: '••••',
             ),
             onSubmitted: (v) => Navigator.pop(dctx, v.trim() == pin),
           ),
@@ -290,7 +329,7 @@ class _ClockPageState extends State<ClockPage> {
         );
   }
 
-  // â”€â”€ Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dialogs ────────────────────────────────────────────────────────────────
 
   void _handleSessionExpired(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -315,7 +354,7 @@ class _ClockPageState extends State<ClockPage> {
 
   void _showLocationDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // Clock-in is geofenced and server-enforced â€” there is no override path.
+    // Clock-in is geofenced and server-enforced — there is no override path.
     // The user must be physically within the work zone to clock in.
     showDialog(
       context: context,
@@ -342,7 +381,7 @@ class _ClockPageState extends State<ClockPage> {
     context.read<ClockProvider>().initialise();
   }
 
-  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +425,7 @@ class _ClockPageState extends State<ClockPage> {
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
 
-                    // Clock face â€” rebuilds every second via sessionTime
+                    // Clock face — rebuilds every second via sessionTime
                     Selector<ClockProvider,
                         ({ClockStatus status, Duration session, Duration breakTime, bool onBreak})>(
                       selector: (_, c) => (
@@ -404,7 +443,7 @@ class _ClockPageState extends State<ClockPage> {
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
 
-                    // Location â€” only rebuilds when location state changes
+                    // Location — only rebuilds when location state changes
                     Selector<ClockProvider,
                         ({WorkLocationModel? workplace, bool isWithin, bool isLoading, String? dist, String? err, bool workplaceLoading})>(
                       selector: (_, c) => (
@@ -452,7 +491,7 @@ class _ClockPageState extends State<ClockPage> {
                       },
                     ),
 
-                    // Action buttons â€” rebuilds on status / loading / location changes
+                    // Action buttons — rebuilds on status / loading / location changes
                     Selector<ClockProvider,
                         ({ClockStatus status, bool isActionLoading, bool isLocationLoading, bool isWithin})>(
                       selector: (_, c) => (
@@ -470,6 +509,7 @@ class _ClockPageState extends State<ClockPage> {
                         onClockOut:  () => _handleClockOut(ctx),
                         onBreak:     () => _handleBreak(ctx),
                         onScanQr:    () => _handleScanQr(ctx),
+                        showScanQr:  ctx.watch<SchedulingFlagsProvider>().hasQrStation,
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingXxl),
@@ -491,7 +531,7 @@ class _ClockPageState extends State<ClockPage> {
   }
 }
 
-// â”€â”€ Workplace error fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Workplace error fallback ──────────────────────────────────────────────────
 
 class _WorkplaceError extends StatelessWidget {
   const _WorkplaceError({this.message});
@@ -522,7 +562,7 @@ class _WorkplaceError extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page header ───────────────────────────────────────────────────────────────
 
 class _PageHeader extends StatelessWidget {
   const _PageHeader();
@@ -530,14 +570,11 @@ class _PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    const months = [
-      'Jan','Feb','Mar','Apr','May','Jun',
-      'Jul','Aug','Sep','Oct','Nov','Dec',
-    ];
     final now       = DateTime.now();
-    final dateLabel = '${months[now.month - 1]} ${now.day}';
+    final locale    = Intl.defaultLocale ?? 'en';
+    final dateLabel = DateFormat(locale.startsWith('de') ? 'd. MMM' : 'MMM d', locale).format(now);
 
-    // No back button â€” the clock-in screen is a root navigation tab.
+    // No back button — the clock-in screen is a root navigation tab.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -551,7 +588,7 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-// â”€â”€ Action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Action buttons ────────────────────────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
@@ -563,6 +600,7 @@ class _ActionButtons extends StatelessWidget {
     required this.onClockOut,
     required this.onBreak,
     required this.onScanQr,
+    required this.showScanQr,
   });
 
   final ClockStatus  clockStatus;
@@ -573,6 +611,8 @@ class _ActionButtons extends StatelessWidget {
   final VoidCallback onClockOut;
   final VoidCallback onBreak;
   final VoidCallback onScanQr;
+  /// Only shown when the org actually runs a QR time-station.
+  final bool         showScanQr;
 
   bool get _isIdle    => clockStatus == ClockStatus.idle;
   bool get _isOnBreak => clockStatus == ClockStatus.onBreak;
@@ -625,26 +665,28 @@ class _ActionButtons extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AppDimensions.spacingSm),
-        // QR scan button â€” always visible on idle screen
-        SizedBox(
-          width: double.infinity,
-          height: AppDimensions.buttonHeightMd,
-          child: OutlinedButton.icon(
-            onPressed: _buttonsDisabled ? null : onScanQr,
-            icon:  const Icon(Icons.qr_code_scanner, size: 18),
-            label: const Text('Scan Terminal QR'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+        // QR scan button — only shown when the org runs a QR time-station.
+        if (showScanQr) ...[
+          const SizedBox(height: AppDimensions.spacingSm),
+          SizedBox(
+            width: double.infinity,
+            height: AppDimensions.buttonHeightMd,
+            child: OutlinedButton.icon(
+              onPressed: _buttonsDisabled ? null : onScanQr,
+              icon:  const Icon(Icons.qr_code_scanner, size: 18),
+              label: const Text('Scan Terminal QR'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd)),
+              ),
             ),
           ),
-        ),
+        ],
         // Outside the geofence: inform the user instead of offering a bypass.
         // Clock-in is geofenced (and re-checked server-side), so there is no
-        // override â€” the employee must be physically within the work zone.
+        // override — the employee must be physically within the work zone.
         if (!isWithinWorkZone && !isLoadingLocation) ...[
           const SizedBox(height: AppDimensions.spacingSm),
           Row(

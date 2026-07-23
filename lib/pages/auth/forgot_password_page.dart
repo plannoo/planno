@@ -54,7 +54,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 height: 140,
                 child: Center(
                   child: Text(
-                    'Aplano',
+                    'Wrenta',
                     style: TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.bold,

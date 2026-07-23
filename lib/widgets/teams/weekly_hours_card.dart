@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/shift_model.dart';
@@ -427,10 +428,9 @@ class _DayBreakdownPanel extends StatelessWidget {
   }
 
   String _formatDate(DateTime d) {
-    const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const months   = ['Jan','Feb','Mar','Apr','May','Jun',
-                      'Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${weekdays[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
+    final locale  = Intl.defaultLocale ?? 'en';
+    final pattern = locale.startsWith('de') ? 'EEE, d. MMM' : 'EEE, MMM d';
+    return DateFormat(pattern, locale).format(d);
   }
 }
 

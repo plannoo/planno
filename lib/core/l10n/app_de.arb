@@ -1,7 +1,7 @@
 {
   "@@locale": "de",
 
-  "appName": "Aplano",
+  "appName": "Zifto",
   "appTagline": "Einfacher Schichtplan für dein Team",
 
   "languageCode": "de",
@@ -34,7 +34,7 @@
   "loginWrongCredentials": "E-Mail-Adresse oder Passwort ist falsch.",
 
   "signUpTitle": "Deinem Team beitreten",
-  "signUpSubtitle": "Erstelle dein Aplano-Konto, um deinen Schichtplan zu verwalten und deine Arbeitszeiten zu erfassen.",
+  "signUpSubtitle": "Erstelle dein Zifto-Konto, um deinen Schichtplan zu verwalten und deine Arbeitszeiten zu erfassen.",
   "signUpStep": "Schritt {step} von {total}: {label}",
   "signUpStepPersonalDetails": "Persönliche Daten",
   "signUpFullName": "Vollständiger Name",

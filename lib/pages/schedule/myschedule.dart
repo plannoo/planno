@@ -1,13 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-
-// â”€â”€ German locale helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-const _de       = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const _months   = ['Jan','Feb','MÃ¤r','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
 DateTime _monday(DateTime d) {
   final diff = d.weekday - 1;
@@ -30,7 +26,7 @@ String _hhmm(String? iso) {
   return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }
 
-// â”€â”€ Data model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Data model ─────────────────────────────────────────────────────────────────
 
 class _Shift {
   final String id;
@@ -50,7 +46,7 @@ class _Shift {
   });
 }
 
-/// A school-holiday range (e.g. "Sommerferien", 20 Jul â€“ 1 Sep).
+/// A school-holiday range (e.g. "Sommerferien", 20 Jul – 1 Sep).
 class _Holiday {
   final String name;
   final DateTime start;
@@ -72,7 +68,7 @@ class _Holiday {
       );
 }
 
-// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main page ──────────────────────────────────────────────────────────────────
 
 class MySchedulePage extends StatefulWidget {
   const MySchedulePage({super.key});
@@ -180,7 +176,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
       builder: (ctx) => AlertDialog(
         title:   const Text('Request shift swap'),
         content: Text('Request to give up your shift on ${s.dateIso} '
-            '(${s.start}â€“${s.end})? A manager must approve it.'),
+            '(${s.start}–${s.end})? A manager must approve it.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Request')),
@@ -193,6 +189,52 @@ class _MySchedulePageState extends State<MySchedulePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Swap request sent to your manager'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  static String _two(int n) => n.toString().padLeft(2, '0');
+  static TimeOfDay? _parseTime(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length < 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null) return null;
+    return TimeOfDay(hour: h, minute: m);
+  }
+
+  /// Employee proposes new start/end times for their own shift; a manager
+  /// approves via the change-request review flow.
+  Future<void> _requestChange(_Shift s) async {
+    final newStart = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(s.start) ?? const TimeOfDay(hour: 9, minute: 0),
+      helpText: 'New start time',
+    );
+    if (newStart == null || !mounted) return;
+    final newEnd = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(s.end) ?? const TimeOfDay(hour: 17, minute: 0),
+      helpText: 'New end time',
+    );
+    if (newEnd == null || !mounted) return;
+    try {
+      await ApiClient.instance.post('/api/shifts/${s.id}/change-request', data: {
+        'proposedStartTime': '${s.dateIso}T${_two(newStart.hour)}:${_two(newStart.minute)}:00.000Z',
+        'proposedEndTime':   '${s.dateIso}T${_two(newEnd.hour)}:${_two(newEnd.minute)}:00.000Z',
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Change request sent to your manager'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
       ));
@@ -252,6 +294,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
               loading:     _loading,
               onSelectDay: (d) => setState(() => _selectedDay = d),
               onRequestSwap: _requestSwap,
+              onRequestChange: _requestChange,
             ),
           ),
         ],
@@ -308,7 +351,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
 
 }
 
-// â”€â”€ Nav buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Nav buttons ────────────────────────────────────────────────────────────────
 
 class _NavButtons extends StatelessWidget {
   const _NavButtons({required this.onPrev, required this.onNext});
@@ -347,7 +390,7 @@ class _NavBtn extends StatelessWidget {
   );
 }
 
-// â”€â”€ "My Schedule" tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── "My Schedule" tab ──────────────────────────────────────────────────────────
 
 class _MyScheduleTab extends StatelessWidget {
   const _MyScheduleTab({
@@ -358,6 +401,7 @@ class _MyScheduleTab extends StatelessWidget {
     required this.loading,
     required this.onSelectDay,
     required this.onRequestSwap,
+    required this.onRequestChange,
   });
 
   final List<DateTime>     weekDays;
@@ -367,6 +411,30 @@ class _MyScheduleTab extends StatelessWidget {
   final bool               loading;
   final ValueChanged<DateTime> onSelectDay;
   final ValueChanged<_Shift>   onRequestSwap;
+  final ValueChanged<_Shift>   onRequestChange;
+
+  void _showShiftActions(BuildContext context, _Shift s) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.swap_horiz),
+              title: const Text('Request swap'),
+              onTap: () { Navigator.pop(ctx); onRequestSwap(s); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_calendar),
+              title: const Text('Request change'),
+              onTap: () { Navigator.pop(ctx); onRequestChange(s); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +495,7 @@ class _MyScheduleTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _de[d.weekday - 1].toUpperCase(),
+                        DateFormat('EEE', Intl.defaultLocale ?? 'en').format(d).replaceAll('.', '').toUpperCase(),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -437,7 +505,7 @@ class _MyScheduleTab extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${d.day}. ${_months[d.month - 1]}',
+                        DateFormat((Intl.defaultLocale ?? 'en').startsWith('de') ? 'd. MMM' : 'MMM d', Intl.defaultLocale ?? 'en').format(d),
                         style: TextStyle(
                             fontSize: 11, color: cs.onSurfaceVariant),
                       ),
@@ -454,7 +522,7 @@ class _MyScheduleTab extends StatelessWidget {
                           spacing: 6,
                           runSpacing: 4,
                           children: dayShifts.map((s) => GestureDetector(
-                            onTap: () => onRequestSwap(s), // tap to request a swap
+                            onTap: () => _showShiftActions(context, s), // tap for swap/change actions
                             child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
@@ -463,7 +531,7 @@ class _MyScheduleTab extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${s.start} â€“ ${s.end}',
+                              '${s.start} – ${s.end}',
                               style: AppTextStyles.caption.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
@@ -527,7 +595,7 @@ class _MyScheduleTab extends StatelessWidget {
   }
 }
 
-// â”€â”€ Settings sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Settings sheet ─────────────────────────────────────────────────────────────
 
 class _SettingsSheet extends StatefulWidget {
   const _SettingsSheet({
@@ -594,23 +662,23 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           SwitchListTile(
             value: _showMonth,
             onChanged: (v) {
-              setState(() => _showMonth = v);
               widget.onShowMonth(v);
+              Navigator.pop(context);
             },
             title: Text('Show entire month',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           Divider(height: 1, indent: 16, color: cs.outline.withValues(alpha: 0.2)),
           SwitchListTile(
             value: _minimizeEmpty,
             onChanged: (v) {
-              setState(() => _minimizeEmpty = v);
               widget.onMinimize(v);
+              Navigator.pop(context);
             },
             title: Text('Minimize empty days',
                 style: TextStyle(fontSize: 15, color: cs.onSurface)),
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
         ],

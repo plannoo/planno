@@ -107,13 +107,14 @@ class _NewAbsenceScreenState extends State<NewAbsenceScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => Container(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
+          top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -125,7 +126,7 @@ class _NewAbsenceScreenState extends State<NewAbsenceScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text('Select Absence Type',
@@ -163,6 +164,7 @@ class _NewAbsenceScreenState extends State<NewAbsenceScreen> {
                   },
                 );
               }),
+              const SizedBox(height: 8),
             ],
           ),
         ),

@@ -1,18 +1,4 @@
-/// Represents the authenticated employee returned by `GET /api/users/me`.
-///
-/// JSON shape expected from the API:
-/// ```json
-/// {
-///   "id": "u-001",
-///   "email": "alex@aplano.io",
-///   "first_name": "Alex",
-///   "last_name": "Johnson",
-///   "role": "employee",
-///   "avatar_url": "https://...",
-///   "phone": "+49 170 1234567",
-///   "assigned_location_ids": ["loc-1", "loc-2"]
-/// }
-/// ```
+// Represents the authenticated employee returned by GET /api/users/me.
 
 
 class Wrapped<T> {

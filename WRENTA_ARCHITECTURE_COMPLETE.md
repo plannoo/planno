@@ -1,7 +1,7 @@
-# Aplano — Complete Architectural & System Design Document
+# Wrenta — Complete Architectural & System Design Document
 
 > **Generated:** 2026-06-03  
-> **Purpose:** AI-ready comprehensive reference for the entire Aplano codebase  
+> **Purpose:** AI-ready comprehensive reference for the entire Wrenta codebase  
 > **Version:** 1.0.0+1  
 > **Tech Stack:** Flutter 3.35+ / Dart 3.10.4+ / Provider / Dio / Firebase
 
@@ -36,7 +36,7 @@
 
 | Property | Value |
 |---|---|
-| **App Name** | Aplano |
+| **App Name** | Wrenta |
 | **Purpose** | Multi-location employee time tracking, shift scheduling, absence management, team chat, and push notifications |
 | **Target Platforms** | iOS, Android, Web (PWA) |
 | **SDK** | Dart `>=3.10.4 <4.0.0`, Flutter `>=3.35.0` (stable) |
@@ -47,7 +47,7 @@
 | **Geolocation** | `geolocator` package for GPS-based clock-in geofence verification |
 | **Localization** | Custom `AppLocalizations` (English + German, ~232 keys) |
 | **Backend Status** | Auth fully wired to real API; all other features use mock repositories |
-| **Build ID** | `com.example.aplano` (placeholder — needs replacement) |
+| **Build ID** | `com.example.wrenta` (placeholder — needs replacement) |
 
 ---
 
@@ -168,12 +168,12 @@ AppProviders
 ## 3. Directory Structure
 
 ```
-C:\FlutterApps\Aplano\
+C:\FlutterApps\Wrenta\
 │
 ├── .gitignore
 ├── .metadata                          # Flutter metadata (channel: stable, revision: f6ff1529fd)
 ├── analysis_options.yaml              # Lint rules (package:flutter_lints/flutter.yaml)
-├── APLANO_ARCHITECTURE.md             # Existing brief architecture doc
+├── WRENTA_ARCHITECTURE.md             # Existing brief architecture doc
 ├── FLUTTER_BACKEND_ALIGNMENT.md       # Backend JSON alignment issues
 ├── pubspec.yaml                       # Dependency manifest
 ├── pubspec.lock                       # Locked dependency versions
@@ -181,7 +181,7 @@ C:\FlutterApps\Aplano\
 │
 ├── android/
 │   ├── app/
-│   │   ├── build.gradle.kts           # Package: com.example.aplano, AGP 8.11.1, Java 17, Kotlin 2.2.20
+│   │   ├── build.gradle.kts           # Package: com.example.wrenta, AGP 8.11.1, Java 17, Kotlin 2.2.20
 │   │   └── src/                       # Native Android source
 │   ├── build.gradle.kts               # Root Gradle config
 │   ├── gradle.properties
@@ -881,7 +881,7 @@ All repositories follow the same pattern: **abstract interface** → **real impl
 
 ### 7.1 ApiClient (`lib/core/network/api_client.dart`)
 - **Type:** Singleton (Dio-based)
-- **Base URL:** Configurable via `--dart-define=API_BASE_URL=...`, defaults to `https://api.aplano.io`
+- **Base URL:** Configurable via `--dart-define=API_BASE_URL=...`, defaults to `https://api.wrenta.io`
 - **Timeouts:** Connect 10s, Receive 20s, Send 15s
 - **Defaults:** `Content-Type: application/json`, `Accept: application/json`
 
@@ -1382,7 +1382,7 @@ main() → _resolveInitialRoute() {
 
 ### 15.1 Android (`android/app/build.gradle.kts`)
 ```
-package:         com.example.aplano (placeholder)
+package:         com.example.wrenta (placeholder)
 compileSdk:      flutter.wrapper
 minSdk:          flutter.wrapper
 targetSdk:       flutter.wrapper
@@ -1418,7 +1418,7 @@ icons/:            Notification type icons
 
 | Test File | Type | Coverage |
 |---|---|---|
-| `test/widget_test.dart` | Widget (smoke) | Verifies `AplanoApp` renders without crashing |
+| `test/widget_test.dart` | Widget (smoke) | Verifies `WrentaApp` renders without crashing |
 
 **Missing tests:**
 - No unit tests for models (serialization, copyWith, helpers)
@@ -1437,7 +1437,7 @@ icons/:            Notification type icons
 |---|---|---|---|
 | 1 | **3 overlapping location models** — `WorkLocation`, `WorkLocationModel`, `WorkplaceLocation` with different fields and geofence logic | High | `models/` |
 | 2 | **Only auth uses real API** — all other features use mock repositories | High | `repositories/` |
-| 3 | **Placeholder app IDs** — `com.example.aplano`, `$(PRODUCT_BUNDLE_IDENTIFIER)` | High | Android/iOS config |
+| 3 | **Placeholder app IDs** — `com.example.wrenta`, `$(PRODUCT_BUNDLE_IDENTIFIER)` | High | Android/iOS config |
 | 4 | **Firebase not fully configured** — `firebase_options.dart` may be missing, web FCM has placeholder values | High | `web/firebase-messaging-sw.js` |
 | 5 | **No secure storage** — JWT tokens in plaintext SharedPreferences | High | `PrefsService` |
 | 6 | **No dark theme** — only light theme implemented | Medium | `app_theme.dart` |

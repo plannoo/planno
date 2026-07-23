@@ -1,6 +1,7 @@
 import 'package:provider/provider.dart';
-import 'package:aplano/pages/navigation_shell.dart' show NavigationShell;
-import 'package:aplano/providers/auth_provider.dart';
+import 'package:wrenta/pages/navigation_shell.dart' show NavigationShell;
+import 'package:wrenta/providers/auth_provider.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class CreateAccountScreen extends StatefulWidget {
@@ -18,6 +19,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   AuthProvider? _auth; // saved so dispose() never calls context.read()
+  late final _termsRecognizer = TapGestureRecognizer()
+    ..onTap = () => Navigator.pushNamed(context, '/terms-of-service');
+  late final _privacyRecognizer = TapGestureRecognizer()
+    ..onTap = () => Navigator.pushNamed(context, '/privacy-policy');
 
   @override
   void initState() {
@@ -36,6 +41,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     _orgNameController.dispose();
     _passwordController.dispose();
     _auth?.removeListener(_onAuthChanged);
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -227,33 +234,40 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               ),
               const SizedBox(height: 16),
               // Terms Text
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onSurfaceVariant,
-                    height: 1.5,
+              SizedBox(
+                width: double.infinity,
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                    children: [
+                      const TextSpan(text: 'By signing up, you agree to our '),
+                      TextSpan(
+                        text: 'Terms of Service',
+                        recognizer: _termsRecognizer,
+                        style: TextStyle(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      const TextSpan(text: '\nand '),
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        recognizer: _privacyRecognizer,
+                        style: TextStyle(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
                   ),
-                  children: [
-                    const TextSpan(text: 'By signing up, you agree to our '),
-                    TextSpan(
-                      text: 'Terms of Service',
-                      style: TextStyle(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const TextSpan(text: '\nand '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const TextSpan(text: '.'),
-                  ],
                 ),
               ),
               const SizedBox(height: 24),

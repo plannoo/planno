@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../models/notification_model.dart';
@@ -6,6 +7,7 @@ import '../absence/absence_page.dart';
 import '../chat/chat_page.dart';
 import '../dashboard/announcements_page.dart';
 import '../schedule/myschedule.dart';
+import '../time_tracking/clockin_page.dart';
 
 /// Full-screen detail view for a single notification.
 class NotificationDetailPage extends StatelessWidget {
@@ -24,18 +26,30 @@ class NotificationDetailPage extends StatelessWidget {
       case NotificationCategory.shift:
         return (label: 'View schedule', page: const MySchedulePage());
       case NotificationCategory.clockIn:
+        // Clock-in reminders / late alerts are actionable — send the user to
+        // the time clock rather than leaving them on a dead-end screen.
+        return (label: 'Open time clock', page: const ClockPage());
       case NotificationCategory.task:
       case NotificationCategory.system:
         return null;
     }
   }
 
+  /// Shown instead of an action button when the notification refers to
+  /// something this app deliberately doesn't implement.
+  String? get _note => notification.category == NotificationCategory.task
+      ? 'Tasks are managed in the Wrenta web app — open it on the web to view '
+          'or complete this task.'
+      : null;
+
   String _fullTimestamp(DateTime dt) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    final local = dt.toLocal();
+    final local   = dt.toLocal();
+    final locale  = Intl.defaultLocale ?? 'en';
+    final isDE    = locale.startsWith('de');
+    final datePart = DateFormat(isDE ? 'd. MMM yyyy' : 'MMM d, yyyy', locale).format(local);
     final h = local.hour.toString().padLeft(2, '0');
     final m = local.minute.toString().padLeft(2, '0');
-    return '${local.day} ${months[local.month - 1]} ${local.year}, $h:$m';
+    return '$datePart, $h:$m';
   }
 
   @override
@@ -124,6 +138,23 @@ class NotificationDetailPage extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
+              ),
+            ],
+            if (related == null && _note != null) ...[
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      size: 18, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_note!,
+                        style: TextStyle(
+                            fontSize: 13, height: 1.45,
+                            color: cs.onSurfaceVariant)),
+                  ),
+                ],
               ),
             ],
           ],

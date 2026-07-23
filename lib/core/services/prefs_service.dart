@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'token_storage.dart';
 
-/// Centralized persistence service for Aplano.
+/// Centralized persistence service for Wrenta.
 ///
 /// Sensitive data (JWT tokens) use [TokenStorage] which picks the best
 /// backend per platform — [FlutterSecureStorage] on mobile, [SharedPreferences]
@@ -22,9 +22,6 @@ class PrefsService {
   static const _kRememberedEmail   = 'remembered_email';
   static const _kLanguageCode      = 'language_code';
   static const _kThemeMode         = 'theme_mode';
-  static const _kAccessToken  = 'auth_access_token';
-  static const _kRefreshToken = 'auth_refresh_token';
-
   // ── Generic view preferences ─────────────────────────────────────────────────
   // Local-only UI toggles (schedule view options, notification type prefs, etc.).
   // Keys are namespaced by the caller to avoid collisions.

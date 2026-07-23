@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
@@ -45,21 +46,15 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
     super.dispose();
   }
 
-  // Returns "Sonntag 21. Juni" format from dateIso or dateLabel
   String get _longDate {
-    final de = {
-      'So': 'Sonntag', 'Mo': 'Montag', 'Di': 'Dienstag', 'Mi': 'Mittwoch',
-      'Do': 'Donnerstag', 'Fr': 'Freitag', 'Sa': 'Samstag',
-    };
-    final d = widget.entry.dateLabel; // "So 21 Juni"
-    final parts = d.split(' ');
-    if (parts.length >= 3) {
-      final day  = de[parts[0]] ?? parts[0];
-      final num  = parts[1];
-      final mon  = parts[2];
-      return '$day $num. $mon';
+    final iso = widget.entry.dateIso;
+    final dt  = iso.isNotEmpty ? DateTime.tryParse(iso) : null;
+    if (dt != null) {
+      final locale  = Intl.defaultLocale ?? 'en';
+      final pattern = locale.startsWith('de') ? 'EEEE, d. MMMM' : 'EEEE, MMMM d';
+      return DateFormat(pattern, locale).format(dt);
     }
-    return d;
+    return widget.entry.dateLabel;
   }
 
   Future<void> _pickFile() async {
@@ -117,8 +112,15 @@ class _ShiftDetailPageState extends State<ShiftDetailPage> {
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
+      // The optimistic flip is rolled back correctly, but doing it silently made
+      // the button read "Accepted" and then snap back with no explanation, so
+      // the obvious response was to tap it again.
       if (!mounted) return;
       setState(() => _accepted = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error, behavior: SnackBarBehavior.floating),
+      );
     }
   }
 

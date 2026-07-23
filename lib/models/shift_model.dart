@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class ShiftModel {
   const ShiftModel({
     required this.id,
@@ -38,11 +40,7 @@ class ShiftModel {
   String get formattedEndTime   => _fmt(endTime);
   String get timeRange          => '$formattedStartTime - $formattedEndTime';
 
-  String _fmt(DateTime t) {
-    final h = t.hour > 12 ? t.hour - 12 : (t.hour == 0 ? 12 : t.hour);
-    final m = t.minute.toString().padLeft(2, '0');
-    return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
-  }
+  String _fmt(DateTime t) => DateFormat.jm(Intl.defaultLocale).format(t);
 
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;

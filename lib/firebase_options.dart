@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '960371503104',
     projectId: 'shifty-3ca43',
     storageBucket: 'shifty-3ca43.firebasestorage.app',
-    iosBundleId: 'com.example.aplano',
+    iosBundleId: 'com.wrenta.app',
   );
 }

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/auth/require_admin.dart';
 import '../../../core/network/api_client.dart';
@@ -30,7 +30,7 @@ class _AdminAvailabilitiesPageState extends State<AdminAvailabilitiesPage> {
     if (_userId.isEmpty) { setState(() => _items = []); return; }
     setState(() => _loading = true);
     try {
-      // "Current only" â†’ only entries from today onward.
+      // "Current only" → only entries from today onward.
       final q = _currentOnly
           ? '?from=${DateTime.now().toIso8601String().split('T')[0]}'
           : '';
@@ -39,10 +39,12 @@ class _AdminAvailabilitiesPageState extends State<AdminAvailabilitiesPage> {
           : ((data as Map<String, dynamic>)['data']
               ?? data['entries']
               ?? []) as List? ?? [];
-      if (mounted) setState(() {
-        _items   = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _items   = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _loading = false;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() { _items = []; _loading = false; });
     }
@@ -136,9 +138,12 @@ class _AdminAvailabilitiesPageState extends State<AdminAvailabilitiesPage> {
                             const Icon(Icons.person_outline,
                                 color: Colors.white, size: 20),
                             const SizedBox(width: 10),
-                            Text(_userName.isEmpty ? 'Select member' : _userName,
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 16)),
+                            Expanded(
+                              child: Text(_userName.isEmpty ? 'Select member' : _userName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 16)),
+                            ),
                           ],
                         ),
                       ),

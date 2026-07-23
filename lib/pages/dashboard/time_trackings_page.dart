@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import 'shift_detail_page.dart';
 
-// â”€â”€ Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Models ─────────────────────────────────────────────────────────────────────
 
 class TrackingEntry {
   final String  shiftId;
@@ -45,7 +45,7 @@ class TrackingEntry {
   });
 }
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 class TimeTrackingsPage extends StatefulWidget {
   const TimeTrackingsPage({super.key});
@@ -142,7 +142,7 @@ class _TimeTrackingsPageState extends State<TimeTrackingsPage> {
   }
 }
 
-// â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Card ───────────────────────────────────────────────────────────────────────
 
 class _TrackingCard extends StatefulWidget {
   const _TrackingCard({required this.entry, required this.onAccepted});
@@ -201,7 +201,7 @@ class _TrackingCardState extends State<_TrackingCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ Top row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Top row ──────────────────────────────────────────────────
             Row(
               children: [
                 CircleAvatar(
@@ -238,24 +238,26 @@ class _TrackingCardState extends State<_TrackingCard> {
 
             const SizedBox(height: 8),
 
-            // â”€â”€ PLANNED row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── PLANNED row ───────────────────────────────────────────────
             _TimeRow(
               label: 'PLAN\nNED',
               labelColor: cs.onSurfaceVariant,
-              value: '${e.plannedStart} â€“ ${e.plannedEnd} / ${e.plannedBreak}',
+              value: '${e.plannedStart} – ${e.plannedEnd} / ${e.plannedBreak}',
               valueColor: cs.onSurface,
             ),
             const SizedBox(height: 4),
 
-            // â”€â”€ TRACKED row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── TRACKED row ───────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _TimeRow(
-                  label: 'TRAC\nKED',
-                  labelColor: AppColors.primary,
-                  value: '${e.trackedStart} â€“ ${e.trackedEnd} / ${e.trackedBreak}',
-                  valueColor: AppColors.primary,
+                Expanded(
+                  child: _TimeRow(
+                    label: 'TRAC\nKED',
+                    labelColor: AppColors.primary,
+                    value: '${e.trackedStart} – ${e.trackedEnd} / ${e.trackedBreak}',
+                    valueColor: AppColors.primary,
+                  ),
                 ),
                 Text(
                   e.status,
@@ -267,7 +269,7 @@ class _TrackingCardState extends State<_TrackingCard> {
               ],
             ),
 
-            // â”€â”€ Action buttons (expanded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Action buttons (expanded) ─────────────────────────────────
             if (_expanded) ...[
               const SizedBox(height: 12),
               Row(
@@ -339,7 +341,11 @@ class _TimeRow extends StatelessWidget {
         child: Text(label,
             style: TextStyle(fontSize: 9, color: labelColor, height: 1.3)),
       ),
-      Text(value, style: TextStyle(fontSize: 13, color: valueColor)),
+      Expanded(
+        child: Text(value,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13, color: valueColor)),
+      ),
     ],
   );
 }

@@ -54,7 +54,7 @@ class AbsenceModel {
   };
 
   Color get typeIconColor => switch (type) {
-    AbsenceType.vacation    => const Color(0xFF2196F3),
+    AbsenceType.vacation    => const Color(0xFF0EA5E9),
     AbsenceType.training    => const Color(0xFF9C27B0),
     AbsenceType.sickLeave   => const Color(0xFFF44336),
     AbsenceType.personalDay => const Color(0xFF757575),
