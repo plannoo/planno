@@ -683,7 +683,7 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
     var location = '';
 
     if (body != null) {
-      department = body['department'] as String? ?? '';
+      department = _asText(body['department']);
       // Only show a start date the server actually reports. `createdAt` used
       // to be the fallback, which labelled the signup date as the employment
       // start date — a plausible-looking but wrong value.
@@ -696,8 +696,8 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
       }
       // Likewise: no contract type is exposed by the API today, so leave it
       // empty rather than defaulting everyone to "Full-time".
-      contract = body['contractType'] as String?
-              ?? body['contract']     as String? ?? '';
+      contract = _asText(body['contractType']);
+      if (contract.isEmpty) contract = _asText(body['contract']);
     }
 
     // Location comes from /work-locations/my-location, which resolves the
@@ -706,7 +706,7 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
     // with the clock-in screen. (Reading users/me.locations[0] instead picked
     // an arbitrary assignment.)
     if (loc != null) {
-      location = loc['name'] as String? ?? '';
+      location = _asText(loc['name']);
     }
 
     setState(() {
@@ -717,6 +717,12 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
       _loading = false;
     });
   }
+
+  /// Reads a display string without casting: anything that isn't a String (an
+  /// object, a number, null) yields '' so the cell falls back to its em-dash
+  /// placeholder. A cast here would throw and strand the grid on its spinner,
+  /// since _load() only ever runs from initState and has no retry path.
+  String _asText(Object? v) => v is String ? v : '';
 
   /// Returns the response's payload map, or null if the response isn't a map or
   /// its `data` envelope holds something other than a map (a list, a string, an
