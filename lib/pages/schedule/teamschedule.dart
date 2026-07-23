@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -39,7 +39,7 @@ int? _parseHhMm(String? hhmm) {
   return h * 60 + m;
 }
 
-// â”€â”€ Main Page (3 tabs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Page (3 tabs) ─────────────────────────────────────────────────────────
 
 class TeamSchedulePage extends StatefulWidget {
   const TeamSchedulePage({super.key});
@@ -62,7 +62,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
     ];
 
     // This page doubles as a root bottom-nav tab (navigation_shell.dart) and
-    // as a pushed sub-page (e.g. from the dashboard's "Open shifts" row) â€” it
+    // as a pushed sub-page (e.g. from the dashboard's "Open shifts" row) — it
     // needs a back button only in the latter case, so this is decided by
     // Navigator.canPop rather than a constructor flag.
     final canPop = Navigator.canPop(context);
@@ -84,7 +84,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
                 ],
               ),
             ),
-          // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Content ─────────────────────────────────────────────────────
           Expanded(
             child: IndexedStack(
               index: _tab,
@@ -96,7 +96,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
             ),
           ),
 
-          // â”€â”€ Bottom tab row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Bottom tab row ───────────────────────────────────────────────
           Container(
             color: cs.surface,
             child: Column(
@@ -140,7 +140,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
   }
 }
 
-// â”€â”€ Shared: week header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared: week header ────────────────────────────────────────────────────────
 
 int _isoWeek(DateTime d) {
   final startOfYear = DateTime(d.year, 1, 1);
@@ -154,7 +154,7 @@ DateTime _startOfWeek(DateTime d) {
 }
 
 
-// â”€â”€ MY SCHEDULE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── MY SCHEDULE TAB ────────────────────────────────────────────────────────────
 
 class _MyScheduleTab extends StatefulWidget {
   const _MyScheduleTab();
@@ -266,7 +266,7 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
 
     return Column(
       children: [
-        // â”€â”€ Blue CW header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue CW header ─────────────────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -304,7 +304,7 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
           ),
         ),
 
-        // â”€â”€ Location banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Location banner ────────────────────────────────────────────────
         if (_location.isNotEmpty)
           Container(
             width: double.infinity,
@@ -317,7 +317,7 @@ class _MyScheduleTabState extends State<_MyScheduleTab> {
             ),
           ),
 
-        // â”€â”€ Days list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Days list ──────────────────────────────────────────────────────
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -404,7 +404,7 @@ class _WeekDayRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '${s['start'] ?? ''} â€“ ${s['end'] ?? ''}',
+                        '${s['start'] ?? ''} – ${s['end'] ?? ''}',
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
                       ),
@@ -417,7 +417,7 @@ class _WeekDayRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ DAY PLAN TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DAY PLAN TAB ───────────────────────────────────────────────────────────────
 
 class _DayPlanTab extends StatefulWidget {
   const _DayPlanTab();
@@ -442,7 +442,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
   bool _absentExpanded = false;
   final Set<String> _collapsedRoles = {};
 
-  // Palette for role-group headers (cycles by group order), Ã  la the Wrenta app.
+  // Palette for role-group headers (cycles by group order), à la the Wrenta app.
   static const List<Color> _rolePalette = [
     Color(0xFFEF4444), // red
     Color(0xFFF97316), // orange
@@ -537,7 +537,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           // query param. _allShifts is already scoped to whatever location
           // was active at the last fetch, so re-filtering it client-side
           // (the old behavior) just filtered an already-filtered list down
-          // to nothing and silently fell back to showing the stale data â€”
+          // to nothing and silently fell back to showing the stale data —
           // i.e. switching locations appeared to do nothing.
           setState(() => _location = loc);
           _load();
@@ -617,7 +617,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
       final items = entry.value;
       final isOpenGroup = role == 'Open shifts';
       final color     = isOpenGroup
-          ? const Color(0xFF334155) // slate â€” distinct from role colors
+          ? const Color(0xFF334155) // slate — distinct from role colors
           : _rolePalette[i % _rolePalette.length];
       final collapsed = _collapsedRoles.contains(role);
       widgets.add(Container(
@@ -708,7 +708,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$start â€“ $end',
+              Text('$start – $end',
                   style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: cs.onSurface)),
@@ -762,7 +762,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
 
     return Column(
       children: [
-        // â”€â”€ Blue header: day selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue header: day selector ────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -863,7 +863,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
           ),
         ),
 
-        // â”€â”€ Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Body ────────────────────────────────────────────────────────
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -1070,7 +1070,7 @@ class _DayPlanTabState extends State<_DayPlanTab> {
   }
 }
 
-// â”€â”€ WEEK PLAN TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WEEK PLAN TAB ──────────────────────────────────────────────────────────────
 
 class _WeekPlanTab extends StatefulWidget {
   const _WeekPlanTab();
@@ -1081,7 +1081,7 @@ class _WeekPlanTab extends StatefulWidget {
 
 class _WeekPlanTabState extends State<_WeekPlanTab> {
   late DateTime _weekStart;
-  // employees Ã— days grid: Map<employeeId, Map<dateIso, List<shift>>>
+  // employees × days grid: Map<employeeId, Map<dateIso, List<shift>>>
   List<_Employee>  _employees  = [];
   bool _loading    = false;
   bool _published  = false;
@@ -1210,7 +1210,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
 
     return Column(
       children: [
-        // â”€â”€ Blue CW header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Blue CW header ─────────────────────────────────────────────────
         Container(
           color: AppColors.primary,
           child: SafeArea(
@@ -1269,7 +1269,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
           ),
         ),
 
-        // â”€â”€ "Not published" warning â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── "Not published" warning ────────────────────────────────────────
         if (!_published)
           GestureDetector(
             onTap: _showPublish,
@@ -1288,7 +1288,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
             ),
           ),
 
-        // â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Grid ───────────────────────────────────────────────────────────
         if (_loading)
           const Expanded(child: Center(child: CircularProgressIndicator()))
         else
@@ -1301,7 +1301,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // â”€â”€ Column headers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Column headers ──────────────────────────────────
                       Row(
                         children: [
                           // "+" new open shift
@@ -1341,7 +1341,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       ),
 
-                      // â”€â”€ Open Shifts row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Open Shifts row ─────────────────────────────────
                       Row(
                         children: [
                           Container(
@@ -1372,7 +1372,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       ),
 
-                      // â”€â”€ Employee rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Employee rows ────────────────────────────────────
                       ...employees.map((emp) => Row(
                         children: [
                           // Name cell
@@ -1446,7 +1446,7 @@ class _WeekPlanTabState extends State<_WeekPlanTab> {
                         ],
                       )),
 
-                      // â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                      // ── Empty state ──────────────────────────────────────
                       if (employees.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(32),
@@ -1470,7 +1470,7 @@ class _Employee {
   final Map<String, List<Map<String, dynamic>>> cells;
 }
 
-// â”€â”€ Shared small widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared small widgets ───────────────────────────────────────────────────────
 
 class _NavButtons extends StatelessWidget {
   const _NavButtons({required this.onPrev, required this.onNext});
@@ -1519,7 +1519,7 @@ class _ArrowBtn extends StatelessWidget {
   );
 }
 
-// â”€â”€ Schedule Settings sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Schedule Settings sheet ────────────────────────────────────────────────────
 
 class _ScheduleSettingsSheet extends StatefulWidget {
   const _ScheduleSettingsSheet({
@@ -1611,7 +1611,7 @@ class _ScheduleSettingsSheetState extends State<_ScheduleSettingsSheet> {
   }
 }
 
-// â”€â”€ Location Switch sheet (fetches real locations from API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Location Switch sheet (fetches real locations from API) ───────────────────
 
 class _LocationSwitchSheet extends StatefulWidget {
   const _LocationSwitchSheet({required this.selected, required this.onSelect});
@@ -1764,7 +1764,7 @@ class _LocationSwitchSheetState extends State<_LocationSwitchSheet> {
   }
 }
 
-// â”€â”€ Publish weekly schedule sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Publish weekly schedule sheet ─────────────────────────────────────────────
 
 class _PublishSheet extends StatefulWidget {
   const _PublishSheet({required this.cw, required this.weekStart, required this.location});
@@ -1846,7 +1846,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Text('Selected branch:',
                     style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                 const SizedBox(height: 2),
-                Text(widget.location.isEmpty ? 'â€”' : widget.location,
+                Text(widget.location.isEmpty ? '—' : widget.location,
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface)),
                 const SizedBox(height: 16),
@@ -1900,7 +1900,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   }
 }
 
-// â”€â”€ Week plan Settings sheet (6 toggles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Week plan Settings sheet (6 toggles) ─────────────────────────────────────
 
 class _WeekSettingsSheet extends StatefulWidget {
   const _WeekSettingsSheet();
@@ -2013,7 +2013,7 @@ class _WeekSettingsSheetState extends State<_WeekSettingsSheet> {
   }
 }
 
-// â”€â”€ Day plan Settings sheet ("Group by role" only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Day plan Settings sheet ("Group by role" only) ────────────────────────────
 
 class _DayPlanSettingsSheet extends StatefulWidget {
   const _DayPlanSettingsSheet();

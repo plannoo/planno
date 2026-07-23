@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,7 @@ const _typeLabels = {
   'SICK':           'Krankheit',
   'TRAINING':       'Qualifikation',
   'STANDBY':        'Stand by/ frei',
-  'OVERTIME':       'Ãœberstundenausgleich',
+  'OVERTIME':       'Überstundenausgleich',
   'UNEXCUSED':      'Unentschuldigte Abwesenheit',
   'VACATION':       'Urlaub',
   'PREFERRED_OFF':  'Wunschfrei',
@@ -495,7 +495,7 @@ class _AdminAbsenceEditPageState extends State<AdminAbsenceEditPage> {
   }
 }
 
-// â”€â”€ Picker sheet (employee / type) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Picker sheet (employee / type) ────────────────────────────────────────────
 
 class _PickerItem {
   _PickerItem({required this.id, required this.label});

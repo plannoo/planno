@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' hide ActivityType;
 import '../core/network/api_exceptions.dart';
@@ -25,7 +25,7 @@ class ClockProvider extends ChangeNotifier {
 
   final ClockRepository _repo;
 
-  // â”€â”€ Clock state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Clock state ────────────────────────────────────────────────────────────
   ClockStatus _clockStatus   = ClockStatus.idle;
   Duration    _sessionTime   = Duration.zero;
   Duration    _breakTime     = Duration.zero;
@@ -41,7 +41,7 @@ class ClockProvider extends ChangeNotifier {
   String      get formattedSession => DateFormatter.formatDuration(_sessionTime);
   String      get formattedBreak   => DateFormatter.formatDuration(_breakTime);
 
-  // â”€â”€ Loading / error state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Loading / error state ──────────────────────────────────────────────────
 
   /// True while any clock action (in/out/break) is awaiting the API.
   bool    _isActionLoading = false;
@@ -55,7 +55,7 @@ class ClockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€ Location state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Location state ─────────────────────────────────────────────────────────
   bool      _isLoadingLocation = true;
   bool      _isWithinWorkZone  = false;
   double    _distanceMeters    = 0.0;
@@ -72,7 +72,7 @@ class ClockProvider extends ChangeNotifier {
       ? DateFormatter.formatDistance(_distanceMeters)
       : null;
 
-  // â”€â”€ Workplace config (loaded from repo, not hardcoded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Workplace config (loaded from repo, not hardcoded) ─────────────────────
   WorkLocationModel? _workplace;
   bool               _isLoadingWorkplace = true;
   String?            _workplaceError;
@@ -83,11 +83,11 @@ class ClockProvider extends ChangeNotifier {
   String?            get workplaceError      => _workplaceError;
   bool               get workplaceAuthError => _lastWorkplaceLoadError is UnauthorizedException;
 
-  // â”€â”€ Activity log â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Activity log ───────────────────────────────────────────────────────────
   final List<ActivityModel> _activities = [];
   List<ActivityModel> get activities => List.unmodifiable(_activities);
 
-  // â”€â”€ Initialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Initialisation ──────────────────────────────────────────────────────────
 
   Future<void> initialise() async {
     await Future.wait([
@@ -164,7 +164,7 @@ class ClockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€ Location â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Location ───────────────────────────────────────────────────────────────
 
   Future<void> checkLocationPermissionAndFetch() async {
     _isLoadingLocation = true;
@@ -239,15 +239,15 @@ class ClockProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€ Clock actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Clock actions ──────────────────────────────────────────────────────────
   //
   // Pattern for every action:
   //   1. Guard: reject if already loading or state is wrong.
   //   2. Snapshot previous state for rollback.
   //   3. Set loading flag.
   //   4. Call API.
-  //   5a. On success â†’ mutate state, add activity.
-  //   5b. On failure â†’ rollback snapshot, surface error.
+  //   5a. On success → mutate state, add activity.
+  //   5b. On failure → rollback snapshot, surface error.
   //   6. Clear loading flag, notify.
 
   /// Returns an error string if clock-in is blocked, null on success.
@@ -290,14 +290,14 @@ class ClockProvider extends ChangeNotifier {
 
     try {
       // Security: only send the raw GPS reading. The server must compute
-      // distance from the workplace polygon itself â€” never trust a
+      // distance from the workplace polygon itself — never trust a
       // client-supplied distance value.
       //
       // locationId pins the server's geofence check to the exact workplace
       // we already validated `_isWithinWorkZone` against. Without it the
       // server re-resolves "closest assigned location" independently and
       // can land on a different (or, when no assigned location is within
-      // range, an arbitrary fallback) location â€” rejecting a clock-in the
+      // range, an arbitrary fallback) location — rejecting a clock-in the
       // client just showed as "within work zone".
       await _repo.clockIn(
         latitude:   _currentPosition?.latitude,
@@ -354,7 +354,7 @@ class ClockProvider extends ChangeNotifier {
       _lastError    = null;
       _addActivity('Clock Out', ActivityType.clockOut, const Color(0xFFEF4444));
     } catch (e) {
-      // Rollback â€” resume timer if we were clocked in
+      // Rollback — resume timer if we were clocked in
       _clockStatus = previousStatus;
       _sessionTime = previousSession;
       _breakTime   = previousBreak;
@@ -385,7 +385,7 @@ class ClockProvider extends ChangeNotifier {
       _addActivity('Break Started', ActivityType.breakStart, const Color(0xFFF59E0B));
       _lastError = null;
     } catch (e) {
-      // Rollback â€” resume work timer
+      // Rollback — resume work timer
       _clockStatus = previousStatus;
       _startSessionTimer();
       _lastError = 'Could not start break: $e';
@@ -414,7 +414,7 @@ class ClockProvider extends ChangeNotifier {
       _addActivity('Break Ended', ActivityType.breakEnd, const Color(0xFFFB7185));
       _lastError = null;
     } catch (e) {
-      // Rollback â€” resume break timer
+      // Rollback — resume break timer
       _clockStatus = previousStatus;
       _breakTime   = previousBreak;
       _startBreakTimer();
@@ -447,7 +447,7 @@ class ClockProvider extends ChangeNotifier {
     return _lastError;
   }
 
-  // â”€â”€ Timers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Timers ──────────────────────────────────────────────────────────────────
 
   void _startSessionTimer() {
     _sessionTimer?.cancel();
@@ -470,7 +470,7 @@ class ClockProvider extends ChangeNotifier {
     _breakTimer?.cancel();
   }
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers ─────────────────────────────────────────────────────────────────
 
   void _setActionLoading(bool value) {
     _isActionLoading = value;

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/require_admin.dart';
@@ -108,7 +108,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       _SwitchItem(label: 'Krankheit',                value: 'SICK',     dot: Color(0xFF4CAF50)),
       _SwitchItem(label: 'Qualifikation',            value: 'TRAINING', dot: Color(0xFF8BC34A)),
       _SwitchItem(label: 'Stand by/ frei',           value: 'STANDBY',  dot: Color(0xFFFFC107)),
-      _SwitchItem(label: 'Ãœberstundenausgleich',     value: 'OVERTIME', dot: Color(0xFFE91E63)),
+      _SwitchItem(label: 'Überstundenausgleich',     value: 'OVERTIME', dot: Color(0xFFE91E63)),
       _SwitchItem(label: 'Unentschuldigte Abwesenheit', value: 'UNEXCUSED', dot: Color(0xFFE53935)),
       _SwitchItem(label: 'Urlaub',                   value: 'VACATION', dot: Color(0xFF0EA5E9)),
       _SwitchItem(label: 'Wunschfrei',               value: 'PREFERRED_OFF', dot: Color(0xFFE91E63)),
@@ -169,7 +169,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
       ),
       body: Column(
         children: [
-          // â”€â”€ Blue header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Blue header ─────────────────────────────────────────────────
           Container(
             color: AppColors.primary,
             child: SafeArea(
@@ -282,7 +282,7 @@ class _AdminAbsencesPageState extends State<AdminAbsencesPage> {
             ),
           ),
 
-          // â”€â”€ List â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── List ────────────────────────────────────────────────────────
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -364,7 +364,7 @@ class _Entry {
   };
 }
 
-// â”€â”€ Switch sheet (filter picker) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Switch sheet (filter picker) ──────────────────────────────────────────────
 
 class _SwitchItem {
   _SwitchItem({required this.label, this.value, this.dot});

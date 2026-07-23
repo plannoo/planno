@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/prefs_service.dart';
 import '../auth/login_page.dart';
 
-// â”€â”€ Onboarding shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Onboarding shell ──────────────────────────────────────────────────────────
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -130,7 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// â”€â”€ Page 1: Track Your Time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 1: Track Your Time ───────────────────────────────────────────────────
 
 class TrackTimePage extends StatelessWidget {
   const TrackTimePage(
@@ -287,7 +287,7 @@ class TrackTimePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page 2: Manage Schedule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 2: Manage Schedule ───────────────────────────────────────────────────
 
 class ManageSchedulePage extends StatelessWidget {
   const ManageSchedulePage(
@@ -596,7 +596,7 @@ class ManageSchedulePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page 3: Stay Connected â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page 3: Stay Connected ────────────────────────────────────────────────────
 
 class StayConnectedPage extends StatelessWidget {
   const StayConnectedPage({super.key, required this.onGetStarted});

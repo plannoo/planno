@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -78,7 +78,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 }
 
-// â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App bar ───────────────────────────────────────────────────────────────────
 
 class _NotificationsAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -138,7 +138,7 @@ class _NotificationsAppBar extends StatelessWidget
   }
 }
 
-// â”€â”€ Notification types sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Notification types sheet ─────────────────────────────────────────────────
 
 class _NotificationTypesSheet extends StatefulWidget {
   const _NotificationTypesSheet();
@@ -217,7 +217,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // â”€â”€ Handle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Handle ────────────────────────────────────────────────────
           Container(
             margin: const EdgeInsets.only(top: 10),
             width: 36, height: 4,
@@ -226,7 +226,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // â”€â”€ Title row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Title row ─────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -245,7 +245,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
             ),
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
-          // â”€â”€ Scrollable toggles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Scrollable toggles ────────────────────────────────────────
           Flexible(
             child: SingleChildScrollView(
               child: Column(
@@ -262,7 +262,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
               ),
             ),
           ),
-          // â”€â”€ Save button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Save button ───────────────────────────────────────────────
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
           Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottom),
@@ -291,7 +291,7 @@ class _NotificationTypesSheetState extends State<_NotificationTypesSheet> {
   }
 }
 
-// â”€â”€ Grouped list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Grouped list ──────────────────────────────────────────────────────────────
 
 // Flat list item types for lazy ListView.builder
 class _NHeader { const _NHeader(this.label); final String label; }
@@ -369,7 +369,7 @@ class _GroupHeader extends StatelessWidget {
       );
 }
 
-// â”€â”€ Empty / error states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Empty / error states ──────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState();

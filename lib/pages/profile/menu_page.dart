@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -31,7 +31,7 @@ import '../../../repositories/user_repository.dart';
 import '../profile/availability_page.dart';
 import '../time_tracking/time_account_page.dart';
 
-// â”€â”€ Supported languages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Supported languages ───────────────────────────────────────────────────────
 
 typedef _Lang = ({String name, String flag, String code});
 
@@ -43,7 +43,7 @@ const List<_Lang> _kLanguages = [
   (name: 'English (US)', flag: '\u{1F1FA}\u{1F1F8}', code: 'en_US'), // 🇺🇸
 ];
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -59,7 +59,7 @@ class ProfilePage extends StatelessWidget {
             : const ClampingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         child: Column(
           children: [
-            // â”€â”€ 1. Profile header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── 1. Profile header ────────────────────────────────────────
             Selector<AuthProvider,
                 ({String id, String initials, String firstName, String lastName, String fullName, String role, String email, String? phone, String? avatarUrl})>(
               selector: (_, auth) => (
@@ -112,7 +112,7 @@ class ProfilePage extends StatelessWidget {
             const _AppSettingsSection(),
             const SizedBox(height: 28),
 
-            // â”€â”€ Admin section (gated by role) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Admin section (gated by role) ──────────────────────────
             Selector<AuthProvider, bool>(
               selector: (_, auth) => auth.isAdmin,
               builder: (_, isAdmin, _) {
@@ -168,7 +168,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App bar ───────────────────────────────────────────────────────────────────
 
 class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _ProfileAppBar({required this.onLogout});
@@ -198,7 +198,7 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-// â”€â”€ Profile header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Profile header ────────────────────────────────────────────────────────────
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
@@ -330,7 +330,7 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-// â”€â”€ Edit profile sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Edit profile sheet ────────────────────────────────────────────────────────
 
 class _EditProfileSheet extends StatefulWidget {
   const _EditProfileSheet({
@@ -496,7 +496,7 @@ class _SheetField extends StatelessWidget {
   }
 }
 
-// â”€â”€ Change password sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Change password sheet ─────────────────────────────────────────────────────
 
 class _ChangePasswordSheet extends StatefulWidget {
   const _ChangePasswordSheet();
@@ -626,7 +626,7 @@ class _PasswordField extends StatelessWidget {
         TextField(
           controller: controller, obscureText: obscure,
           decoration: InputDecoration(
-            hintText: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+            hintText: '••••••••',
             suffixIcon: IconButton(
               icon: Icon(
                 obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -641,7 +641,7 @@ class _PasswordField extends StatelessWidget {
   }
 }
 
-// â”€â”€ Work details grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Work details grid ─────────────────────────────────────────────────────────
 
 class _WorkDetailsGrid extends StatefulWidget {
   const _WorkDetailsGrid();
@@ -722,14 +722,14 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
               icon: Icons.work_outline_rounded,
               iconColor: AppColors.primary, iconBg: AppColors.primaryLighter,
               label: l10n.profileDepartment,
-              value: _department.isEmpty ? 'â€”' : _department,
+              value: _department.isEmpty ? '—' : _department,
             )),
             const SizedBox(width: 12),
             Expanded(child: _WorkDetailCell(
               icon: Icons.location_on_outlined,
               iconColor: AppColors.success, iconBg: AppColors.successLight,
               label: l10n.profileLocation,
-              value: _location.isEmpty ? 'â€”' : _location,
+              value: _location.isEmpty ? '—' : _location,
             )),
           ]),
           const SizedBox(height: 12),
@@ -738,7 +738,7 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
               icon: Icons.calendar_today_outlined,
               iconColor: AppColors.purple, iconBg: AppColors.purpleLight,
               label: l10n.profileStartDate,
-              value: _startDate.isEmpty ? 'â€”' : _startDate,
+              value: _startDate.isEmpty ? '—' : _startDate,
             )),
             const SizedBox(width: 12),
             Expanded(child: _WorkDetailCell(
@@ -795,7 +795,7 @@ class _WorkDetailCell extends StatelessWidget {
   }
 }
 
-// â”€â”€ Employment overview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Employment overview ───────────────────────────────────────────────────────
 
 class _EmploymentSection extends StatefulWidget {
   const _EmploymentSection();
@@ -820,7 +820,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
         ApiClient.instance.get('/api/overtime-balances/me'),
       ]);
 
-      // â”€â”€ Vacation entitlement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Vacation entitlement ──────────────────────────────────────────
       final entRaw  = results[0] is Map<String, dynamic>
           ? results[0] as Map<String, dynamic>
           : <String, dynamic>{};
@@ -829,7 +829,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
           ?? entBody['remaining']
           ?? entBody['remainingVacationDays']) as num?;
 
-      // â”€â”€ Time balance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Time balance ──────────────────────────────────────────────────
       final timeRaw  = results[1] is Map<String, dynamic>
           ? results[1] as Map<String, dynamic>
           : <String, dynamic>{};
@@ -851,7 +851,7 @@ class _EmploymentSectionState extends State<_EmploymentSection> {
         _timeBalance       = balance.isEmpty ? null : balance;
       });
     } catch (_) {
-      // keep null â€” tiles render without trailing widget
+      // keep null — tiles render without trailing widget
     }
   }
 
@@ -986,7 +986,7 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-// â”€â”€ Document management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Document management ───────────────────────────────────────────────────────
 
 class _DocumentSection extends StatefulWidget {
   const _DocumentSection();
@@ -1207,7 +1207,7 @@ class _UploadTile extends StatelessWidget {
   }
 }
 
-// â”€â”€ App settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── App settings ──────────────────────────────────────────────────────────────
 
 class _AppSettingsSection extends StatefulWidget {
   const _AppSettingsSection();
@@ -1348,7 +1348,7 @@ class _AppSettingsTile extends StatelessWidget {
   }
 }
 
-// â”€â”€ Account actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Account actions ───────────────────────────────────────────────────────────
 
 class _AccountActionsSection extends StatelessWidget {
   const _AccountActionsSection({required this.onLogout});
@@ -1943,7 +1943,7 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
@@ -1975,7 +1975,7 @@ class _CardGroup extends StatelessWidget {
       );
 }
 
-// â”€â”€ Private widget helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Private widget helpers ────────────────────────────────────────────────────
 
 /// Standard drag handle for bottom sheets.
 Widget _sheetHandle() => Center(
@@ -2004,7 +2004,7 @@ SnackBar _snackBar(BuildContext context, String message, Color color) =>
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
     );
 
-// â”€â”€ Professional info section (roles / skills / calendar sync) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Professional info section (roles / skills / calendar sync) ────────────────
 
 class _ProfessionalInfoSection extends StatefulWidget {
   const _ProfessionalInfoSection();
@@ -2067,7 +2067,7 @@ class _ProfessionalInfoSectionState extends State<_ProfessionalInfoSection> {
   }
 }
 
-// â”€â”€ Calendar sync sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Calendar sync sheet ───────────────────────────────────────────────────────
 
 class _CalendarSyncSheet extends StatelessWidget {
   const _CalendarSyncSheet({required this.url});
@@ -2147,7 +2147,7 @@ class _CalendarSyncSheet extends StatelessWidget {
   }
 }
 
-// â”€â”€ Admin section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Admin section ────────────────────────────────────────────────────────────
 
 class _AdminSection extends StatefulWidget {
   const _AdminSection();

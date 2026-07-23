@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/api_client.dart';
@@ -13,7 +13,7 @@ import 'announcements_page.dart';
 import 'birth_dates_page.dart';
 import 'time_trackings_page.dart';
 
-// â”€â”€ Models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Models ─────────────────────────────────────────────────────────────────────
 
 class _DashStats {
   final int clockedIn;
@@ -50,7 +50,7 @@ class _LateEmployee {
   const _LateEmployee({required this.name, required this.shiftStart});
 }
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -179,7 +179,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final unreadCount = context.select<AnnouncementProvider, int>((p) => p.unreadCount);
     final hasNotifUnread = context.select<NotificationsProvider, bool>((p) => p.hasUnread);
-    // ignore auth here â€” dashboard is a standalone page
+    // ignore auth here — dashboard is a standalone page
 
     final cs = Theme.of(context).colorScheme;
     final cardBg = cs.surface;
@@ -193,7 +193,7 @@ class _DashboardPageState extends State<DashboardPage> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // â”€â”€ App bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── App bar ──────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
                   color: cardBg,
@@ -236,7 +236,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-              // â”€â”€ Offline error banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── Offline error banner ─────────────────────────────────────
               if (_hasNetworkError && !_loadingStats)
                 SliverToBoxAdapter(
                   child: Container(
@@ -278,7 +278,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
 
-              // â”€â”€ Stats card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── Stats card ───────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: AppDimensions.pagePaddingH),
@@ -316,7 +316,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-              // â”€â”€ List rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── List rows ────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: AppDimensions.pagePaddingH),
@@ -415,7 +415,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-// â”€â”€ Stat cell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Stat cell ──────────────────────────────────────────────────────────────────
 
 class _StatCell extends StatelessWidget {
   const _StatCell({
@@ -464,7 +464,7 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// â”€â”€ Dashboard row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Dashboard row ──────────────────────────────────────────────────────────────
 
 class _DashRow extends StatelessWidget {
   const _DashRow({
@@ -522,7 +522,7 @@ class _DashRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ Clocked-In bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Clocked-In bottom sheet ────────────────────────────────────────────────────
 
 class _ClockedInSheet extends StatelessWidget {
   const _ClockedInSheet({required this.employees});
@@ -660,7 +660,7 @@ class _ClockedInSheet extends StatelessWidget {
   }
 }
 
-// â”€â”€ Late bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Late bottom sheet ──────────────────────────────────────────────────────────
 
 class _LateSheet extends StatelessWidget {
   const _LateSheet({required this.employees});

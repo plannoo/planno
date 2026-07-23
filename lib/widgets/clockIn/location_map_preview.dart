@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// Interactive map preview widget showing the workplace geofence.
 ///
-/// This widget contains no hardcoded visible text strings â€” all visual
+/// This widget contains no hardcoded visible text strings — all visual
 /// content is purely graphical (icons, colours, animation). No l10n changes
 /// are required here.
 class LocationMapPreview extends StatefulWidget {

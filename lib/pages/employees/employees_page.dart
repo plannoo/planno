@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -185,7 +185,7 @@ class _EmployeesPageState extends State<EmployeesPage> {
   }
 }
 
-// â”€â”€ Invite employee sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Invite employee sheet ─────────────────────────────────────────────────────
 
 class _InviteSheet extends StatefulWidget {
   const _InviteSheet();

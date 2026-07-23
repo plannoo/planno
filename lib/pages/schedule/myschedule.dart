@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/network/api_client.dart';
@@ -26,7 +26,7 @@ String _hhmm(String? iso) {
   return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }
 
-// â”€â”€ Data model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Data model ─────────────────────────────────────────────────────────────────
 
 class _Shift {
   final String id;
@@ -46,7 +46,7 @@ class _Shift {
   });
 }
 
-/// A school-holiday range (e.g. "Sommerferien", 20 Jul â€“ 1 Sep).
+/// A school-holiday range (e.g. "Sommerferien", 20 Jul – 1 Sep).
 class _Holiday {
   final String name;
   final DateTime start;
@@ -68,7 +68,7 @@ class _Holiday {
       );
 }
 
-// â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main page ──────────────────────────────────────────────────────────────────
 
 class MySchedulePage extends StatefulWidget {
   const MySchedulePage({super.key});
@@ -176,7 +176,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
       builder: (ctx) => AlertDialog(
         title:   const Text('Request shift swap'),
         content: Text('Request to give up your shift on ${s.dateIso} '
-            '(${s.start}â€“${s.end})? A manager must approve it.'),
+            '(${s.start}–${s.end})? A manager must approve it.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Request')),
@@ -351,7 +351,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
 
 }
 
-// â”€â”€ Nav buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Nav buttons ────────────────────────────────────────────────────────────────
 
 class _NavButtons extends StatelessWidget {
   const _NavButtons({required this.onPrev, required this.onNext});
@@ -390,7 +390,7 @@ class _NavBtn extends StatelessWidget {
   );
 }
 
-// â”€â”€ "My Schedule" tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── "My Schedule" tab ──────────────────────────────────────────────────────────
 
 class _MyScheduleTab extends StatelessWidget {
   const _MyScheduleTab({
@@ -531,7 +531,7 @@ class _MyScheduleTab extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${s.start} â€“ ${s.end}',
+                              '${s.start} – ${s.end}',
                               style: AppTextStyles.caption.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
@@ -595,7 +595,7 @@ class _MyScheduleTab extends StatelessWidget {
   }
 }
 
-// â”€â”€ Settings sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Settings sheet ─────────────────────────────────────────────────────────────
 
 class _SettingsSheet extends StatefulWidget {
   const _SettingsSheet({

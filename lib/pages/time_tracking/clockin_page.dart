@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +38,7 @@ class _ClockPageState extends State<ClockPage> {
   void initState() {
     super.initState();
     // The clock screen reads today's shift from DashboardProvider, but the
-    // employee shell never opens the admin dashboard that loads it â€” so fetch
+    // employee shell never opens the admin dashboard that loads it — so fetch
     // it here. Otherwise the card always reads "No shift today".
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -46,7 +46,7 @@ class _ClockPageState extends State<ClockPage> {
     });
   }
 
-  // â”€â”€ Shift detail sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shift detail sheet ─────────────────────────────────────────────────────
 
   void _showShiftDetails(BuildContext context, ShiftModel shift) {
     final cs = Theme.of(context).colorScheme;
@@ -101,7 +101,7 @@ class _ClockPageState extends State<ClockPage> {
     );
   }
 
-  // â”€â”€ Action handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Action handlers ────────────────────────────────────────────────────────
 
   Future<void> _handleClockIn(BuildContext context) async {
     // Any uncaught throw in here (a failing refresh, a plugin error) would abort
@@ -120,7 +120,7 @@ class _ClockPageState extends State<ClockPage> {
     final l10n  = AppLocalizations.of(context);
     final clock = context.read<ClockProvider>();
 
-    // Gate 1 â€” require an active shift today (also enforced server-side).
+    // Gate 1 — require an active shift today (also enforced server-side).
     var dashboard = context.read<DashboardProvider>();
     if (dashboard.todayShift == null) {
       // The shift fetch may have failed due to a token race (load() was
@@ -144,7 +144,7 @@ class _ClockPageState extends State<ClockPage> {
       return;
     }
 
-    // Gate 2 â€” biometric (mobile only). Skipped on web/desktop where local_auth
+    // Gate 2 — biometric (mobile only). Skipped on web/desktop where local_auth
     // has no implementation (calling it throws MissingPluginException). Any
     // failure to probe biometrics is treated as "not available" so it proceeds.
     if (!kIsWeb) {
@@ -178,7 +178,7 @@ class _ClockPageState extends State<ClockPage> {
     if (!context.mounted || !pinOk) return;
 
     // _verifyClockPin's dialog now uses a zero-duration transition, so its
-    // element tree is already gone by the time we get here â€” no settle delay
+    // element tree is already gone by the time we get here — no settle delay
     // needed before calling clockIn(), which fires notifyListeners().
 
     // Pass the shift ID so the server knows which shift to clock into.
@@ -256,7 +256,7 @@ class _ClockPageState extends State<ClockPage> {
             style: TextStyle(color: cs.onSurface, letterSpacing: 4),
             decoration: const InputDecoration(
               counterText: '',
-              hintText: 'â€¢â€¢â€¢â€¢',
+              hintText: '••••',
             ),
             onSubmitted: (v) => Navigator.pop(dctx, v.trim() == pin),
           ),
@@ -329,7 +329,7 @@ class _ClockPageState extends State<ClockPage> {
         );
   }
 
-  // â”€â”€ Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dialogs ────────────────────────────────────────────────────────────────
 
   void _handleSessionExpired(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -354,7 +354,7 @@ class _ClockPageState extends State<ClockPage> {
 
   void _showLocationDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // Clock-in is geofenced and server-enforced â€” there is no override path.
+    // Clock-in is geofenced and server-enforced — there is no override path.
     // The user must be physically within the work zone to clock in.
     showDialog(
       context: context,
@@ -381,7 +381,7 @@ class _ClockPageState extends State<ClockPage> {
     context.read<ClockProvider>().initialise();
   }
 
-  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +425,7 @@ class _ClockPageState extends State<ClockPage> {
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
 
-                    // Clock face â€” rebuilds every second via sessionTime
+                    // Clock face — rebuilds every second via sessionTime
                     Selector<ClockProvider,
                         ({ClockStatus status, Duration session, Duration breakTime, bool onBreak})>(
                       selector: (_, c) => (
@@ -443,7 +443,7 @@ class _ClockPageState extends State<ClockPage> {
                     ),
                     const SizedBox(height: AppDimensions.spacingMd),
 
-                    // Location â€” only rebuilds when location state changes
+                    // Location — only rebuilds when location state changes
                     Selector<ClockProvider,
                         ({WorkLocationModel? workplace, bool isWithin, bool isLoading, String? dist, String? err, bool workplaceLoading})>(
                       selector: (_, c) => (
@@ -491,7 +491,7 @@ class _ClockPageState extends State<ClockPage> {
                       },
                     ),
 
-                    // Action buttons â€” rebuilds on status / loading / location changes
+                    // Action buttons — rebuilds on status / loading / location changes
                     Selector<ClockProvider,
                         ({ClockStatus status, bool isActionLoading, bool isLocationLoading, bool isWithin})>(
                       selector: (_, c) => (
@@ -531,7 +531,7 @@ class _ClockPageState extends State<ClockPage> {
   }
 }
 
-// â”€â”€ Workplace error fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Workplace error fallback ──────────────────────────────────────────────────
 
 class _WorkplaceError extends StatelessWidget {
   const _WorkplaceError({this.message});
@@ -562,7 +562,7 @@ class _WorkplaceError extends StatelessWidget {
   }
 }
 
-// â”€â”€ Page header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page header ───────────────────────────────────────────────────────────────
 
 class _PageHeader extends StatelessWidget {
   const _PageHeader();
@@ -574,7 +574,7 @@ class _PageHeader extends StatelessWidget {
     final locale    = Intl.defaultLocale ?? 'en';
     final dateLabel = DateFormat(locale.startsWith('de') ? 'd. MMM' : 'MMM d', locale).format(now);
 
-    // No back button â€” the clock-in screen is a root navigation tab.
+    // No back button — the clock-in screen is a root navigation tab.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -588,7 +588,7 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-// â”€â”€ Action buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Action buttons ────────────────────────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
@@ -686,7 +686,7 @@ class _ActionButtons extends StatelessWidget {
         ],
         // Outside the geofence: inform the user instead of offering a bypass.
         // Clock-in is geofenced (and re-checked server-side), so there is no
-        // override â€” the employee must be physically within the work zone.
+        // override — the employee must be physically within the work zone.
         if (!isWithinWorkZone && !isLoadingLocation) ...[
           const SizedBox(height: AppDimensions.spacingSm),
           Row(

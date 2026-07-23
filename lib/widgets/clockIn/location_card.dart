@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../models/work_location_model.dart';
 
 /// Card showing workplace name, address, and optional distance.
@@ -67,7 +67,7 @@ class LocationCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   workplace?.address ??
-                      'FriedrichstraÃŸe 123, 10117 Berlin',
+                      'Friedrichstraße 123, 10117 Berlin',
                   style: TextStyle(
                     fontSize:   13,
                     color:      cs.onSurfaceVariant,

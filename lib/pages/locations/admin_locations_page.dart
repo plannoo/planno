@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/network/api_client.dart';
@@ -208,7 +208,7 @@ class _LocationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${loc.latitude.toStringAsFixed(4)}, '
-                      '${loc.longitude.toStringAsFixed(4)}  Â·  ${loc.radius.toStringAsFixed(0)} m',
+                      '${loc.longitude.toStringAsFixed(4)}  ·  ${loc.radius.toStringAsFixed(0)} m',
                       style: TextStyle(
                           fontSize: 12, color: cs.onSurfaceVariant),
                     ),
@@ -227,7 +227,7 @@ class _LocationCard extends StatelessWidget {
   }
 }
 
-// â”€â”€ Add / edit sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add / edit sheet ──────────────────────────────────────────────────────────
 
 class _LocationEditorSheet extends StatefulWidget {
   const _LocationEditorSheet({this.existing});
@@ -551,7 +551,7 @@ class _LocationEditorSheetState extends State<_LocationEditorSheet> {
   }
 }
 
-// â”€â”€ Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Model ─────────────────────────────────────────────────────────────────────
 
 class _Location {
   final String id, name, address;

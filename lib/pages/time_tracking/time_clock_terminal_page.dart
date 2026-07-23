@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/require_admin.dart';
@@ -174,7 +174,7 @@ class _TimeClockTerminalSetupPageState extends State<TimeClockTerminalSetupPage>
   }
 }
 
-// â”€â”€ Active terminal view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Active terminal view ──────────────────────────────────────────────────────
 
 class TimeClockTerminalActivePage extends StatefulWidget {
   const TimeClockTerminalActivePage({
@@ -200,7 +200,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
   Future<void> _load() async {
     try {
       // Use the terminal-scoped employee list (requires terminalToken header),
-      // not the global /api/users â€” terminal sessions don't have a JWT user.
+      // not the global /api/users — terminal sessions don't have a JWT user.
       final data = await ApiClient.instance.get(
         '/api/terminal/employees',
         options: Options(headers: { 'x-terminal-token': widget.terminalToken }),
@@ -300,7 +300,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
                           onTap: () {
                             final id = u['id'] as String? ?? '';
                             if (id.isEmpty) return;
-                            // Toggle clock action based on current status â€” if
+                            // Toggle clock action based on current status — if
                             // they're already clocked in, the next tap clocks out.
                             final action = u['isClocked'] == true ? 'out' : 'in';
                             Navigator.push(context, MaterialPageRoute(
@@ -365,7 +365,7 @@ class _TimeClockTerminalActivePageState extends State<TimeClockTerminalActivePag
   }
 }
 
-// â”€â”€ Exit terminal bottom sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Exit terminal bottom sheet ────────────────────────────────────────────────
 
 class _ExitTerminalSheet extends StatefulWidget {
   const _ExitTerminalSheet({required this.terminalToken});
@@ -390,7 +390,7 @@ class _ExitTerminalSheetState extends State<_ExitTerminalSheet> {
     if (!_canSubmit) return;
     setState(() => _submitting = true);
     try {
-      // The right endpoint is `DELETE /api/terminal/session` â€” it verifies the
+      // The right endpoint is `DELETE /api/terminal/session` — it verifies the
       // manager's credentials AND tears down the terminal session so the kiosk
       // token can no longer be used. Using `/auth/login` would create a logged-in
       // user session instead, which is the wrong outcome.

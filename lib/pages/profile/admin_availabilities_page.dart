@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/auth/require_admin.dart';
 import '../../../core/network/api_client.dart';
@@ -30,7 +30,7 @@ class _AdminAvailabilitiesPageState extends State<AdminAvailabilitiesPage> {
     if (_userId.isEmpty) { setState(() => _items = []); return; }
     setState(() => _loading = true);
     try {
-      // "Current only" â†’ only entries from today onward.
+      // "Current only" → only entries from today onward.
       final q = _currentOnly
           ? '?from=${DateTime.now().toIso8601String().split('T')[0]}'
           : '';

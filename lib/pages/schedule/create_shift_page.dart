@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 class CreateShiftPage extends StatefulWidget {
   const CreateShiftPage({
@@ -89,7 +89,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
         }
       });
     } catch (_) {
-      // leave _locationId empty â€” _save will surface a clear message
+      // leave _locationId empty — _save will surface a clear message
     }
   }
 
@@ -245,7 +245,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
   }
 
   Future<void> _save() async {
-    // â”€â”€ Client-side validation (matches backend createShiftSchema) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Client-side validation (matches backend createShiftSchema) ──────────
     if (_locationId.isEmpty) {
       _snack('Please select a location'); return;
     }
@@ -321,7 +321,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ "Shift not clocked" banner (edit mode) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── "Shift not clocked" banner (edit mode) ─────────────────────
             if (widget.isNotClocked)
               Container(
                 width: double.infinity,
@@ -333,7 +333,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
                 ),
               ),
 
-            // â”€â”€ Date row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Date row ───────────────────────────────────────────────────
             InkWell(
               onTap: _toggleDatePicker,
               child: Padding(
@@ -368,7 +368,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
               ),
             ),
 
-            // â”€â”€ Inline date picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Inline date picker ─────────────────────────────────────────
             if (_activePicker == 'date') ...[
               SizedBox(
                 height: 220,
@@ -383,7 +383,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
 
             Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ START / END / BREAK columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── START / END / BREAK columns ────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -419,7 +419,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Inline time picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Inline time picker ─────────────────────────────────────────
             if (_activePicker != null) ...[
               SizedBox(
                 height: 200,
@@ -468,7 +468,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
               Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
             ],
 
-            // â”€â”€ Time tracking section (when expanded) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Time tracking section (when expanded) ─────────────────────
             if (_showTracking) ...[
               Container(
                 width: double.infinity,
@@ -555,7 +555,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
               ],
             ],
 
-            // â”€â”€ Add time tracking link â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Add time tracking link ─────────────────────────────────────
             InkWell(
               onTap: () => setState(() {
                 _showTracking = !_showTracking;
@@ -584,7 +584,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Select location (required) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Select location (required) ─────────────────────────────────
             InkWell(
               onTap: _showLocationSheet,
               child: Padding(
@@ -607,7 +607,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Select role â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Select role ────────────────────────────────────────────────
             InkWell(
               onTap: _showRoleSheet,
               child: Padding(
@@ -630,7 +630,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Open shift toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Open shift toggle ──────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
@@ -648,7 +648,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Employee â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Employee ───────────────────────────────────────────────────
             InkWell(
               onTap: _showMembersSheet,
               child: Padding(
@@ -671,7 +671,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Label ──────────────────────────────────────────────────────
             _TextRow(
               icon: Icons.label_outline,
               hint: 'Label',
@@ -681,7 +681,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Skills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Skills ─────────────────────────────────────────────────────
             _TextRow(
               icon: Icons.verified_user_outlined,
               hint: 'Skills (comma-separated)',
@@ -691,7 +691,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Hashtags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Hashtags ───────────────────────────────────────────────────
             _HashtagsRow(
               hashtags: _hashtags,
               cs: cs,
@@ -699,7 +699,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Upload file â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Upload file ────────────────────────────────────────────────
             GestureDetector(
               onTap: _pickFile,
               child: Padding(
@@ -728,7 +728,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Address ────────────────────────────────────────────────────
             InkWell(
               onTap: _showAddressSheet,
               child: Padding(
@@ -746,7 +746,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, indent: 48, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Comment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Comment ────────────────────────────────────────────────────
             _TextRow(
               icon: Icons.chat_bubble_outline,
               hint: 'Comment',
@@ -756,7 +756,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
             ),
             Divider(height: 1, color: cs.outline.withValues(alpha: 0.2)),
 
-            // â”€â”€ Delete shift (edit mode only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Delete shift (edit mode only) ──────────────────────────────
             if (widget.shiftId != null) ...[
               InkWell(
                 onTap: _delete,
@@ -787,7 +787,7 @@ class _CreateShiftPageState extends State<CreateShiftPage> {
   );
 }
 
-// â”€â”€ Time columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Time columns ───────────────────────────────────────────────────────────────
 
 class _TimeColumn extends StatelessWidget {
   const _TimeColumn({required this.label, required this.value,
@@ -843,7 +843,7 @@ class _BreakColumn extends StatelessWidget {
   );
 }
 
-// â”€â”€ Row helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Row helpers ────────────────────────────────────────────────────────────────
 
 class _TextRow extends StatelessWidget {
   const _TextRow({required this.icon, required this.hint, required this.value,
@@ -878,7 +878,7 @@ class _TextRow extends StatelessWidget {
   );
 }
 
-// â”€â”€ Hashtag row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Hashtag row ────────────────────────────────────────────────────────────────
 
 class _HashtagsRow extends StatelessWidget {
   const _HashtagsRow({required this.hashtags, required this.cs, required this.onChanged});
@@ -1014,7 +1014,7 @@ class _HashtagsRow extends StatelessWidget {
   );
 }
 
-// â”€â”€ Role picker sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Role picker sheet ──────────────────────────────────────────────────────────
 
 class _RoleSheet extends StatelessWidget {
   const _RoleSheet({required this.roles, required this.selectedValue, required this.onSelect});
@@ -1062,12 +1062,12 @@ class _RoleSheet extends StatelessWidget {
           ...roles.asMap().entries.map((entry) {
             final r = entry.value;
             const colors = [
-              Color(0xFF4CAF50), // Admin â€” green
-              Color(0xFFE53935), // GeschÃ¤ftsfÃ¼hrer â€” red
-              Color(0xFFFF9800), // Manager â€” orange
-              Color(0xFF06B6D4), // Sachkunde â€” cyan
-              Color(0xFF8BC34A), // Schichtleiter â€” light green
-              Color(0xFFE91E63), // Sicherheitspersonal â€” pink
+              Color(0xFF4CAF50), // Admin — green
+              Color(0xFFE53935), // Geschäftsführer — red
+              Color(0xFFFF9800), // Manager — orange
+              Color(0xFF06B6D4), // Sachkunde — cyan
+              Color(0xFF8BC34A), // Schichtleiter — light green
+              Color(0xFFE91E63), // Sicherheitspersonal — pink
             ];
             final dotColor = colors[entry.key % colors.length];
             return Column(
@@ -1106,7 +1106,7 @@ class _RoleSheet extends StatelessWidget {
   }
 }
 
-// â”€â”€ Address picker sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Address picker sheet ───────────────────────────────────────────────────────
 
 class _AddressSheet extends StatefulWidget {
   const _AddressSheet({required this.onSelect});
@@ -1227,7 +1227,7 @@ class _AddressSheetState extends State<_AddressSheet> {
   }
 }
 
-// â”€â”€ Location picker sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Location picker sheet ──────────────────────────────────────────────────────
 
 class _LocationSheet extends StatelessWidget {
   const _LocationSheet({
@@ -1322,7 +1322,7 @@ class _LocationSheet extends StatelessWidget {
   }
 }
 
-// â”€â”€ Select members sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Select members sheet ──────────────────────────────────────────────────────
 
 class _MembersSheet extends StatefulWidget {
   const _MembersSheet({required this.selected, required this.onSelect});

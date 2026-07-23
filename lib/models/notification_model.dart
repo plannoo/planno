@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 enum NotificationCategory {
   shift,
@@ -130,7 +130,7 @@ class NotificationModel {
     );
   }
 
-  // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Display helpers ─────────────────────────────────────────────────────
 
   IconData get icon => switch (category) {
     NotificationCategory.shift    => Icons.calendar_today_outlined,
