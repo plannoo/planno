@@ -672,43 +672,61 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
     ]);
     if (!mounted) return;
 
-    final meRes = results[0];
-    final locRes = results[1];
+    // Unwrap defensively: an unexpected payload shape must leave the cells empty,
+    // never throw and strand the grid on its spinner.
+    final body = _asBody(results[0]);
+    final loc = _asBody(results[1]);
+
+    var department = '';
+    var startDate = '';
+    var contract = '';
+    var location = '';
+
+    if (body != null) {
+      department = body['department'] as String? ?? '';
+      // Only show a start date the server actually reports. `createdAt` used
+      // to be the fallback, which labelled the signup date as the employment
+      // start date — a plausible-looking but wrong value.
+      final raw = body['startDate'] ?? body['start_date'];
+      if (raw is String && raw.isNotEmpty) {
+        final parsed = DateTime.tryParse(raw);
+        startDate = parsed == null
+            ? raw
+            : DateFormatter.formatShortDateWithYear(parsed.toLocal());
+      }
+      // Likewise: no contract type is exposed by the API today, so leave it
+      // empty rather than defaulting everyone to "Full-time".
+      contract = body['contractType'] as String?
+              ?? body['contract']     as String? ?? '';
+    }
+
+    // Location comes from /work-locations/my-location, which resolves the
+    // upcoming shift's location first and only then the assigned one — so
+    // this cell matches where the employee is actually scheduled, and agrees
+    // with the clock-in screen. (Reading users/me.locations[0] instead picked
+    // an arbitrary assignment.)
+    if (loc != null) {
+      location = loc['name'] as String? ?? '';
+    }
 
     setState(() {
-      if (meRes is Map<String, dynamic>) {
-        final body = (meRes['data'] ?? meRes) as Map<String, dynamic>;
-        _department = body['department'] as String? ?? '';
-        // Only show a start date the server actually reports. `createdAt` used
-        // to be the fallback, which labelled the signup date as the employment
-        // start date — a plausible-looking but wrong value.
-        final raw = body['startDate'] as String? ?? body['start_date'] as String?;
-        if (raw != null && raw.isNotEmpty) {
-          try {
-            _startDate =
-                DateFormatter.formatShortDateWithYear(DateTime.parse(raw).toLocal());
-          } catch (_) {
-            _startDate = raw;
-          }
-        }
-        // Likewise: no contract type is exposed by the API today, so leave it
-        // empty rather than defaulting everyone to "Full-time".
-        _contract = body['contractType'] as String?
-                 ?? body['contract']     as String? ?? '';
-      }
-
-      // Location comes from /work-locations/my-location, which resolves the
-      // upcoming shift's location first and only then the assigned one — so
-      // this cell matches where the employee is actually scheduled, and agrees
-      // with the clock-in screen. (Reading users/me.locations[0] instead picked
-      // an arbitrary assignment.)
-      if (locRes is Map<String, dynamic>) {
-        final loc = (locRes['data'] ?? locRes) as Map<String, dynamic>;
-        _location = loc['name'] as String? ?? '';
-      }
-
+      _department = department;
+      _startDate = startDate;
+      _contract = contract;
+      _location = location;
       _loading = false;
     });
+  }
+
+  /// Returns the response's payload map, or null if the response isn't a map or
+  /// its `data` envelope holds something other than a map (a list, a string, an
+  /// error body).
+  Map<String, dynamic>? _asBody(Object? res) {
+    if (res is! Map<String, dynamic>) return null;
+    final data = res['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (res.containsKey('data')) return null;
+    return res;
   }
 
   @override
