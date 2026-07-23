@@ -385,7 +385,6 @@ abstract class AppLocalizations {
   String get profileLocation;
   String get profileStartDate;
   String get profileContract;
-  String get profileContractFullTime;
   String get profileVacationAccount;
   String get profileVacationSubtitle;
   String get profileTimeAccount;
@@ -780,7 +779,6 @@ class _AppLocalizationsEn extends AppLocalizations {
   @override String get profileLocation => 'Location';
   @override String get profileStartDate => 'Start Date';
   @override String get profileContract => 'Contract';
-  @override String get profileContractFullTime => 'Full-time';
   @override String get profileVacationAccount => 'Vacation Account';
   @override String get profileVacationSubtitle => '24 days total per year';
   @override String get profileTimeAccount => 'Time Account';
@@ -1188,7 +1186,6 @@ class _AppLocalizationsDe extends AppLocalizations {
   @override String get profileLocation => 'Standort';
   @override String get profileStartDate => 'Eintrittsdatum';
   @override String get profileContract => 'Vertrag';
-  @override String get profileContractFullTime => 'Vollzeit';
   @override String get profileVacationAccount => 'Urlaubskonto';
   @override String get profileVacationSubtitle => '24 Tage gesamt pro Jahr';
   @override String get profileTimeAccount => 'Zeitkonto';

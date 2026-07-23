@@ -664,44 +664,51 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
   }
 
   Future<void> _load() async {
-    try {
-      final res  = await ApiClient.instance.get(ApiConfig.me);
-      final wrap = res is Map<String, dynamic> ? res : <String, dynamic>{};
-      final body = (wrap['data'] ?? wrap) as Map<String, dynamic>;
-      if (!mounted) return;
-      setState(() {
-        _department = body['department']    as String?
-                   ?? body['departmentName'] as String? ?? '';
-        // The API returns a `locations` array of objects; use the first one's
-        // name. Fall back to legacy flat fields if present.
-        final locs = body['locations'] as List<dynamic>?;
-        if (locs != null && locs.isNotEmpty && locs.first is Map) {
-          _location = (locs.first as Map)['name'] as String? ?? '';
-        } else {
-          _location = body['workLocation'] as String?
-                   ?? body['locationName'] as String? ?? '';
-        }
-        // No explicit employment start date is exposed; createdAt is the
-        // closest server-synced value.
-        final raw = body['startDate']  as String?
-                 ?? body['start_date'] as String?
-                 ?? body['createdAt']  as String?;
-        if (raw != null) {
+    // Profile fields and the work location come from different endpoints, and a
+    // failure in one shouldn't blank the other.
+    final results = await Future.wait([
+      ApiClient.instance.get(ApiConfig.me).then<Object?>((v) => v).catchError((_) => null),
+      ApiClient.instance.get(ApiConfig.myWorkLocation).then<Object?>((v) => v).catchError((_) => null),
+    ]);
+    if (!mounted) return;
+
+    final meRes = results[0];
+    final locRes = results[1];
+
+    setState(() {
+      if (meRes is Map<String, dynamic>) {
+        final body = (meRes['data'] ?? meRes) as Map<String, dynamic>;
+        _department = body['department'] as String? ?? '';
+        // Only show a start date the server actually reports. `createdAt` used
+        // to be the fallback, which labelled the signup date as the employment
+        // start date — a plausible-looking but wrong value.
+        final raw = body['startDate'] as String? ?? body['start_date'] as String?;
+        if (raw != null && raw.isNotEmpty) {
           try {
-            final d = DateTime.parse(raw).toLocal();
             _startDate =
-                DateFormatter.formatShortDateWithYear(d);
+                DateFormatter.formatShortDateWithYear(DateTime.parse(raw).toLocal());
           } catch (_) {
             _startDate = raw;
           }
         }
+        // Likewise: no contract type is exposed by the API today, so leave it
+        // empty rather than defaulting everyone to "Full-time".
         _contract = body['contractType'] as String?
                  ?? body['contract']     as String? ?? '';
-        _loading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
+      }
+
+      // Location comes from /work-locations/my-location, which resolves the
+      // upcoming shift's location first and only then the assigned one — so
+      // this cell matches where the employee is actually scheduled, and agrees
+      // with the clock-in screen. (Reading users/me.locations[0] instead picked
+      // an arbitrary assignment.)
+      if (locRes is Map<String, dynamic>) {
+        final loc = (locRes['data'] ?? locRes) as Map<String, dynamic>;
+        _location = loc['name'] as String? ?? '';
+      }
+
+      _loading = false;
+    });
   }
 
   @override
@@ -745,7 +752,10 @@ class _WorkDetailsGridState extends State<_WorkDetailsGrid> {
               icon: Icons.schedule_outlined,
               iconColor: AppColors.warning, iconBg: AppColors.amberLight,
               label: l10n.profileContract,
-              value: _contract.isEmpty ? l10n.profileContractFullTime : _contract,
+              // No fabricated default: the API exposes no contract type, and
+              // defaulting to "Full-time" told every employee something the
+              // server never said.
+              value: _contract.isEmpty ? '—' : _contract,
             )),
           ]),
         ],
